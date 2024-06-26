@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:name="ir.example.androidsocket.MainApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AndroidSocket"
+        tools:targetApi="31">
+        <activity
+            android:name="ir.example.androidsocket.ui.server.ServerActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.AndroidSocket">
+
+        </activity>
+        <activity
+            android:name="ir.example.androidsocket.ui.client.ClientActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.AndroidSocket">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <service
+            android:name="ir.example.androidsocket.socket.SocketServerForegroundService"
+            android:foregroundServiceType="shortService" />
+        <service
+            android:name="ir.example.androidsocket.socket.SocketClientForegroundService"
+            android:foregroundServiceType="shortService" />
+        <receiver android:name="ir.example.androidsocket.utils.NotificationMessageBroadcastReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name= "payment" />
+                <action android:name= "print" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>
