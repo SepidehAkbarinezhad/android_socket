@@ -60,6 +60,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             serverLog("SocketConnectionListener onMessage:  $message")
             socketServerService?.sendMessageWithTimeout("message is received by server")
             onEvent(ServerEvent.SetClientMessage(message ?: ""))
+            createNotificationFromClientMessage(message = message)
         }
 
         override fun onDisconnected(code: Int, reason: String?) {
@@ -143,6 +144,26 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
+    private fun createNotificationFromClientMessage(message: String?) {
+        if (!message.isNullOrEmpty())
+            socketServerService?.displayNotification(
+                notificationId = CLIENT_MESSAGE_NOTIFICATION_ID,
+                title = Constants.ActionCode.NotificationMessage.title,
+                message = message,
+                onContentIntent = { context ->
+                    //will be triggered when the user taps on the notification
+                    if (!MainApplication.isAppInForeground) {
+                        val intent = Intent(Constants.ActionCode.NotificationMessage?.title)
+                        PendingIntent.getBroadcast(
+                            context,
+                            0,
+                            intent,
+                            PendingIntent.FLAG_UPDATE_CURRENT
+                        )
+                    } else null
+                }
+            )
+    }
 
     fun performCleanup() {
         try {

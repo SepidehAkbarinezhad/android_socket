@@ -1,12 +1,16 @@
 package ir.example.androidsocket.utils
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.RingtoneManager
 import android.os.Build
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
 import com.example.androidSocket.R
 
 class NotificationHandler(val context: Context, private val channelId: String) {
@@ -56,6 +60,34 @@ class NotificationHandler(val context: Context, private val channelId: String) {
         notificationBuilder.setContentIntent(onContentIntent(context)).setAutoCancel(true)
 
         return notificationBuilder.build()
+    }
+
+
+    fun displayNotification(
+        context: Context,
+        notificationId: Int,
+        title: String,
+        message: String,
+        onContentIntent: (Context) -> PendingIntent?
+    ) {
+        val notification =
+            createNotification(
+                title = title,
+                message = message,
+                onContentIntent = onContentIntent
+            )
+
+        val notificationManager = NotificationManagerCompat.from(context)
+
+        //checks whether the app has the necessary permission to post notifications
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        notificationManager.notify(notificationId, notification)
     }
 
 
