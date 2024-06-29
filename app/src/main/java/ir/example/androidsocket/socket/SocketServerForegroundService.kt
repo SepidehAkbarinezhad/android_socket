@@ -1,9 +1,15 @@
 package ir.example.androidsocket.socket
 
+import android.Manifest
+import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Binder
 import android.os.IBinder
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
 import ir.example.androidsocket.utils.NotificationHandler
 import ir.example.androidsocket.utils.serverLog
 import kotlinx.coroutines.CoroutineScope
@@ -123,7 +129,22 @@ class SocketServerForegroundService() : Service() {
     }
 
 
-    fun sendMessageWithTimeout(message: String ,timeoutMillis: Long = 20000) {
+    fun displayNotification(
+        notificationId: Int,
+        title: String,
+        message: String,
+        onContentIntent: (Context) -> PendingIntent?
+    ) {
+        notificationHandler.displayNotification(
+            context = this,
+            notificationId = notificationId,
+            title = title,
+            message = message,
+            onContentIntent = onContentIntent
+        )
+    }
+
+    fun sendMessageWithTimeout(message: String, timeoutMillis: Long = 20000) {
         serverLog("SocketForegroundService sendMessageWithTimeout")
         CoroutineScope(Dispatchers.IO).launch {
             server.sendMessageWithTimeout(timeoutMillis = timeoutMillis, message = message)
