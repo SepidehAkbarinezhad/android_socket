@@ -80,6 +80,7 @@
                                               <map>
                                                 <entry key="color" value="000000" />
                                                 <entry key="imagePath" value="D:\me\ic_android_socket.png" />
+                                                <entry key="scalingPercent" value="69" />
                                                 <entry key="trimmed" value="true" />
                                               </map>
                                             </option>
@@ -113,7 +114,7 @@
                                   <option name="values">
                                     <map>
                                       <entry key="backgroundAssetType" value="COLOR" />
-                                      <entry key="backgroundColor" value="ffffff" />
+                                      <entry key="backgroundColor" value="3f51b5" />
                                       <entry key="outputName" value="android_socket_icon" />
                                     </map>
                                   </option>
