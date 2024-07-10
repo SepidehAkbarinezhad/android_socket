@@ -21,7 +21,7 @@ class ClientActivity : ComponentActivity() {
         clientLog("ClientActivity onCreate()")
         super.onCreate(savedInstanceState)
         setContent {
-            ClientCompose(viewModel = viewModel)
+            ClientCompose(viewModel = viewModel){event->viewModel.onEvent(event)}
         }
     }
 

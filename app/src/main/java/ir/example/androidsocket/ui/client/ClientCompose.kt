@@ -43,7 +43,8 @@ import ir.example.androidsocket.utils.isPortValid
 
 @Composable
 internal fun ClientCompose(
-    viewModel: ClientViewModel
+    viewModel: ClientViewModel,
+    onEvent: (ClientEvent) -> Unit
 ) {
 
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -64,8 +65,8 @@ internal fun ClientCompose(
 
     LaunchedEffect(key1 = clientStatus) {
         if (clientStatus == Constants.ClientStatus.DISCONNECTED) {
-            viewModel.onEvent(ClientEvent.SetClientMessage(""))
-            viewModel.onEvent(ClientEvent.SetServerMessage(""))
+            onEvent(ClientEvent.SetClientMessage(""))
+            onEvent(ClientEvent.SetServerMessage(""))
         }
     }
     LaunchedEffect(key1 = isServiceBound) {
@@ -87,7 +88,7 @@ internal fun ClientCompose(
         ) {
 
             ClientContent(
-                onEvent = { viewModel.onEvent(it) },
+                onEvent = onEvent,
                 serverIp = serverIp,
                 serverIpError = serverIpError,
                 serverPort = serverPort,
@@ -98,22 +99,22 @@ internal fun ClientCompose(
                 isConnected = isConnected,
                 onConnectToServer = {
                     clientLog("onConnectToServer  $isServiceBound")
-                    viewModel.onEvent(ClientEvent.OnConnectToServer)
+                    onEvent(ClientEvent.OnConnectToServer)
                     keyboardController?.hide()
                 },
                 onDisconnectFromServer = {
-                    viewModel.onEvent(ClientEvent.OnDisconnectFromServer)
+                    onEvent(ClientEvent.OnDisconnectFromServer)
                     keyboardController?.hide()
                 },
                 onSendMessageEvent = { message ->
                     clientLog("onSendMessageEvent")
                     keyboardController?.hide()
-
+                    onEvent(ClientEvent.SetServerMessage(""))
                     if (message.isEmpty())
                         viewModel.emitMessageValue(R.string.message_empty_error)
                     else {
-                        viewModel.onEvent(ClientEvent.SetLoading(true))
-                        viewModel.onEvent(ClientEvent.SendMessageToServer(message))
+                        onEvent(ClientEvent.SetLoading(true))
+                        onEvent(ClientEvent.SendMessageToServer(message))
                     }
 
                 }
@@ -171,9 +172,8 @@ fun ClientContent(
                         .padding(MaterialTheme.spacing.small),
                     value = serverPort,
                     onValueChange = { port ->
-                        if (isPortValid(port)) onEvent(
-                            ClientEvent.SetServerPort(port)
-                        )
+                        if (isPortValid(port))
+                            onEvent(ClientEvent.SetServerPort(port))
                     },
                     label = stringResource(id = R.string.port_label),
                     hasError = serverPortError
