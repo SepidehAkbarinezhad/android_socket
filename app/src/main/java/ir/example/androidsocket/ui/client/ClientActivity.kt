@@ -40,7 +40,6 @@ class ClientActivity : ComponentActivity() {
         clientLog("mainActivity onDestroy ")
         lifecycleScope.launch {
             viewModel.performCleanup()
-            clientLog("mainActivity onDestroy lifecycleScope 2")
         }
         super.onDestroy()
 

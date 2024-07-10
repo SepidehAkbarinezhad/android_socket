@@ -5,10 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import ir.example.androidsocket.Constants
@@ -67,6 +69,7 @@ class ServerActivity : ComponentActivity() {
     /**
      * set a broadcastReceiver to react to the action which is sent by the notification containing client's message
      * */
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun setClientMessageBroadcastReceiver() {
         notificationMessageReceiver = NotificationMessageBroadcastReceiver(
             onMessageReceivedAction = {
@@ -80,7 +83,14 @@ class ServerActivity : ComponentActivity() {
             addAction(Constants.ActionCode.NotificationMessage.title)
         }
 
-        registerReceiver(notificationMessageReceiver, intentFilter)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // For Android Oreo (API level 26) and above
+            registerReceiver(notificationMessageReceiver, intentFilter, RECEIVER_NOT_EXPORTED)
+        } else {
+            // For older Android versions (before Oreo), use Context.registerReceiver without flags
+            registerReceiver(notificationMessageReceiver, intentFilter)
+        }
     }
 
 

@@ -24,17 +24,17 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.AndroidSocket">
-
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
         <activity
             android:name="ir.example.androidsocket.ui.client.ClientActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.AndroidSocket">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+
         </activity>
         <service
             android:name="ir.example.androidsocket.socket.SocketServerForegroundService"
@@ -43,11 +43,7 @@
             android:name="ir.example.androidsocket.socket.SocketClientForegroundService"
             android:foregroundServiceType="shortService" />
         <receiver android:name="ir.example.androidsocket.utils.NotificationMessageBroadcastReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name= "payment" />
-                <action android:name= "print" />
-            </intent-filter>
+            android:exported="false">
         </receiver>
     </application>
 

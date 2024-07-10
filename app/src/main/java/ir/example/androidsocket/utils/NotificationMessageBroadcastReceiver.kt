@@ -14,14 +14,6 @@ class NotificationMessageBroadcastReceiver(
 
         val packageName = context?.packageName
         packageName?.let {
-
-            val launchIntent = context.packageManager?.getLaunchIntentForPackage(packageName)
-
-            launchIntent?.let {
-                launchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                context.startActivity(launchIntent)
-            }
-
             when (intent?.action) {
                 Constants.ActionCode.NotificationMessage.title -> {
                     onMessageReceivedAction()

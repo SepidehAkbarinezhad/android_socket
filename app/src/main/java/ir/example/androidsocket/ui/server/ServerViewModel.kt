@@ -153,8 +153,9 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
                 onContentIntent = { context ->
                     //will be triggered when the user taps on the notification
                     if (!MainApplication.isAppInForeground) {
-                        val intent = Intent(Constants.ActionCode.NotificationMessage?.title)
-                        PendingIntent.getBroadcast(
+                        val intent = Intent(context, ServerActivity::class.java)
+                        intent.action = Constants.ActionCode.NotificationMessage.title
+                        PendingIntent.getActivity(
                             context,
                             0,
                             intent,
