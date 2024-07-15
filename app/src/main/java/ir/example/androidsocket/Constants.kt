@@ -5,9 +5,10 @@ object Constants {
     const val CLIENT_MESSAGE_NOTIFICATION_ID = 10
 
     enum class ClientStatus(
-        val title: String
+        val title: String,
+        val connection : Boolean
     ) {
-        CONNECTED("connected"), DISCONNECTED("Disconnected")
+        CONNECTED("connected",connection = true), DISCONNECTED("Disconnected",connection = false)
     }
 
     enum class ConnectionType(

@@ -59,9 +59,6 @@ internal fun ServerComposable(
     val lanIpAddress by viewModel.ethernetServerIp.collectAsState()
     val isServiceBound by viewModel.isServiceBound.collectAsStateWithLifecycle(initialValue = false)
     val connectionStatus by viewModel.clientStatus.collectAsState()
-    val isConnected = remember(connectionStatus) {
-        connectionStatus == Constants.ClientStatus.CONNECTED
-    }
 
     LaunchedEffect(key1 = connectionStatus) {
         if (connectionStatus == Constants.ClientStatus.DISCONNECTED) {
@@ -93,7 +90,6 @@ internal fun ServerComposable(
                 wifiIpAddress = wifiIpAddress,
                 lanIpAddress = lanIpAddress,
                 clientStatus = connectionStatus,
-                isConnected = isConnected,
                 clientMessage = clientMessage
             )
         }
@@ -106,7 +102,6 @@ fun ServerContent(
     wifiIpAddress: String,
     lanIpAddress: String,
     clientStatus: Constants.ClientStatus,
-    isConnected: Boolean,
     clientMessage: String
 ) {
 
@@ -233,7 +228,7 @@ fun ServerContent(
                     id = R.string.connection_status_title
                 ),
                 value = clientStatus.title,
-                valueColor = if (!isConnected) Color.Red else Green900,
+                valueColor = if (!clientStatus.connection) Color.Red else Green900,
                 titleTextType = TextType.TEXT,
                 valueTextType = TextType.TEXT
             )

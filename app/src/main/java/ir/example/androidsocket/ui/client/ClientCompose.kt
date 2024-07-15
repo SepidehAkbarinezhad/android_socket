@@ -60,13 +60,9 @@ internal fun ClientCompose(
     val clientStatus by viewModel.clientStatus.collectAsState()
     val context = LocalContext.current
     val uiEvent by viewModel.uiEvent.collectAsStateWithLifecycle(initialValue = BaseUiEvent.None)
-    val isConnected = remember(clientStatus) {
-        clientStatus == Constants.ClientStatus.CONNECTED
-    }
-
 
     LaunchedEffect(key1 = clientStatus) {
-        if (clientStatus == Constants.ClientStatus.DISCONNECTED) {
+        if (!clientStatus.connection) {
             onEvent(ClientEvent.SetClientMessage(""))
             onEvent(ClientEvent.SetServerMessage(""))
         }
@@ -98,7 +94,6 @@ internal fun ClientCompose(
                 clientMessage = clientMessage,
                 serverMessage = serverMessage,
                 clientStatus = clientStatus,
-                isConnected = isConnected,
                 onConnectToServer = {
                     clientLog("onConnectToServer  $isServiceBound")
                     onEvent(ClientEvent.OnConnectToServer)
@@ -135,7 +130,6 @@ fun ClientContent(
     clientMessage: String,
     serverMessage: String,
     clientStatus: Constants.ClientStatus,
-    isConnected: Boolean,
     onConnectToServer: () -> Unit,
     onDisconnectFromServer: () -> Unit,
     onSendMessageEvent: (String) -> Unit
@@ -191,7 +185,7 @@ fun ClientContent(
                     id = R.string.connection_status_title
                 ),
                 value = clientStatus.title,
-                valueColor = if (!isConnected) Color.Red else Green900,
+                valueColor = if (!clientStatus.connection) Color.Red else Green900,
                 titleTextType = TextType.TEXT,
                 valueTextType = TextType.TEXT
             )
@@ -204,7 +198,7 @@ fun ClientContent(
                 onValueChange = {
                     onEvent(ClientEvent.SetClientMessage(it))
                 },
-                enabled = isConnected,
+                enabled = clientStatus.connection,
                 singleLine = true,
                 label = stringResource(id = R.string.message),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
@@ -218,7 +212,7 @@ fun ClientContent(
                 ),
             )
 
-            if(waitingForServerConfirmation && serverMessage.isEmpty()){
+            if(clientStatus.connection && waitingForServerConfirmation && serverMessage.isEmpty()){
                 AppText(
                     modifier = Modifier.padding(MaterialTheme.spacing.small),
                     text = stringResource(R.string.server_confirmation_message),
@@ -240,16 +234,16 @@ fun ClientContent(
 
     }) {
         AppButtonsRow(
-            firstButtonTitle = if (!isConnected) stringResource(id = R.string.connect_to_server) else stringResource(
+            firstButtonTitle = if (!clientStatus.connection) stringResource(id = R.string.connect_to_server) else stringResource(
                 id = R.string.disconnect_from_server
             ),
-            onFirstClicked = { if (!isConnected) onConnectToServer() else onDisconnectFromServer() },
+            onFirstClicked = { if (!clientStatus.connection) onConnectToServer() else onDisconnectFromServer() },
             firstButtonColor = ButtonDefaults.buttonColors(
                 disabledBackgroundColor = Color.LightGray,
                 backgroundColor = Indigo,
             ),
             secondButtonTitle = stringResource(id = R.string.send_message),
-            secondEnable = isConnected,
+            secondEnable = clientStatus.connection,
             secondButtonColor = ButtonDefaults.buttonColors(
                 disabledBackgroundColor = Color.LightGray,
                 backgroundColor = Indigo,
