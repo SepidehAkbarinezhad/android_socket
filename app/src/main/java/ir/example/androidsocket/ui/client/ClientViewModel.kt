@@ -13,7 +13,6 @@ import ir.example.androidsocket.Constants
 import ir.example.androidsocket.socket.SocketClientForegroundService
 import ir.example.androidsocket.socket.SocketConnectionListener
 import ir.example.androidsocket.ui.base.BaseViewModel
-import ir.example.androidsocket.utils.IpAddressManager
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.java_websocket.WebSocket
@@ -154,25 +153,12 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
 
     fun onEvent(event: ClientEvent) {
         when (event) {
-            is ClientEvent.SetLoading -> {
-                clientLog("ClientEvent.SetLoading")
-                loading.value = event.value
-            }
-
-            is ClientEvent.SetServerIp -> {
-                serverIp.value = event.ip
-            }
-
+            is ClientEvent.SetLoading -> loading.value = event.value
+            is ClientEvent.SetServerIp -> serverIp.value = event.ip
             is ClientEvent.SetServerPort -> serverPort.value = event.port
             is ClientEvent.SetConnectionStatus -> clientStatus.value = event.status
-            is ClientEvent.SetClientMessage -> {
-                clientMessage.value = event.message
-            }
-
-            is ClientEvent.SetServerMessage -> {
-                serverMessage.value = event.message
-            }
-
+            is ClientEvent.SetClientMessage -> clientMessage.value = event.message
+            is ClientEvent.SetServerMessage -> serverMessage.value = event.message
             ClientEvent.OnConnectToServer -> {
                 serverIpError.value = serverIp.value.isEmpty()
                 serverPortError.value = serverPort.value.isEmpty()

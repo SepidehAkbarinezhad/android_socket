@@ -14,7 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -139,6 +141,9 @@ fun ClientContent(
     onSendMessageEvent: (String) -> Unit
 ) {
 
+    var waitingForServerConfirmation by remember {
+        mutableStateOf(false)
+    }
     AppBaseScreen(headerTitle = R.string.client_header, headerBackGround = Indigo, bodyContent = {
 
         Column(
@@ -213,13 +218,24 @@ fun ClientContent(
                 ),
             )
 
+            if(waitingForServerConfirmation && serverMessage.isEmpty()){
+                AppText(
+                    modifier = Modifier.padding(MaterialTheme.spacing.small),
+                    text = stringResource(R.string.server_confirmation_message),
+                    textColor = Color.Red
+                )
+            }
 
-            if (serverMessage.isNotEmpty())
+
+            if (serverMessage.isNotEmpty()){
+                waitingForServerConfirmation=false
                 AppText(
                     modifier = Modifier.padding(MaterialTheme.spacing.small),
                     text = serverMessage,
                     textColor = Orange700
                 )
+            }
+
         }
 
     }) {
@@ -239,6 +255,7 @@ fun ClientContent(
                 backgroundColor = Indigo,
             )
         ) {
+            waitingForServerConfirmation = true
             onSendMessageEvent(clientMessage)
         }
 
