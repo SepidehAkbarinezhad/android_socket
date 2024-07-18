@@ -45,7 +45,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
     private var socketServerService: SocketServerForegroundService? = null
 
-    val serverConnectionListener = object : SocketConnectionListener {
+    val socketConnectionListener = object : SocketConnectionListener {
         override fun onStart() {
             serverLog("SocketConnectionListener onStart")
             onEvent(ServerEvent.SetLoading(true))
@@ -72,7 +72,10 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
         override fun onError(exception: Exception?) {
             serverLog("SocketConnectionListener onError:  ${exception?.message}")
-            socketStatus.value = Constants.SocketStatus.DISCONNECTED
+
+            /*socketStatus should not changed to disconnected because in some cases such as when creating notification from client
+            *message got error on >=31 ,the socket was connected but onError was called.
+            */
             emitMessageValue(R.string.error_message, exception?.message)
         }
 
@@ -89,7 +92,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             serverLog("serverConnectionListener onServiceConnected")
             val binder = service as SocketServerForegroundService.LocalBinder
             socketServerService = binder.getService()
-            socketServerService?.registerConnectionListener(serverConnectionListener)
+            socketServerService?.registerConnectionListener(socketConnectionListener)
             isServiceBound.value = true
         }
 
