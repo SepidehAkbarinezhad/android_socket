@@ -117,7 +117,7 @@ fun AndroidSocketTheme(
                     if (displayProgressBar == true)
                         CircularProgressIndicator(
                             Modifier
-                                .align(Alignment.BottomCenter)
+                                .align(Alignment.Center)
                                 .padding(24.dp),
                         )
 
