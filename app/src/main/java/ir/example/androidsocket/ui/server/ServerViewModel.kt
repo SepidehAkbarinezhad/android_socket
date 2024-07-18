@@ -35,7 +35,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
     var ethernetServerIp = MutableStateFlow("")
         private set
 
-    var clientStatus = MutableStateFlow(Constants.ClientStatus.DISCONNECTED)
+    var socketStatus = MutableStateFlow(Constants.SocketStatus.DISCONNECTED)
         private set
 
 
@@ -53,7 +53,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
         override fun onConnected() {
             serverLog("SocketConnectionListener onConnected")
-            clientStatus.value = Constants.ClientStatus.CONNECTED
+            socketStatus.value = Constants.SocketStatus.CONNECTED
         }
 
         override fun onMessage(conn: WebSocket?, message: String?) {
@@ -66,13 +66,13 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
         override fun onDisconnected(code: Int, reason: String?) {
             serverLog("SocketConnectionListener onDisconnected: $reason")
             emitMessageValue(R.string.disconnected_error_message, reason)
-            clientStatus.value = Constants.ClientStatus.DISCONNECTED
+            socketStatus.value = Constants.SocketStatus.DISCONNECTED
 
         }
 
         override fun onError(exception: Exception?) {
             serverLog("SocketConnectionListener onError:  ${exception?.message}")
-            clientStatus.value = Constants.ClientStatus.DISCONNECTED
+            socketStatus.value = Constants.SocketStatus.DISCONNECTED
             emitMessageValue(R.string.error_message, exception?.message)
         }
 
@@ -135,7 +135,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
     fun onEvent(event: ServerEvent) {
         when (event) {
             is ServerEvent.SetLoading -> loading.value = event.value
-            is ServerEvent.SetConnectionStatus -> clientStatus.value = event.status
+            is ServerEvent.SetSocketConnectionStatus -> socketStatus.value = event.status
             is ServerEvent.SetClientMessage -> clientMessage.value = event.message
             is ServerEvent.GetWifiIpAddress -> wifiServerIp.value =
                 IpAddressManager.getLocalIpAddress(event.context).first ?: ""

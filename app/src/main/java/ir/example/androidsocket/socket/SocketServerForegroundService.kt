@@ -1,15 +1,11 @@
 package ir.example.androidsocket.socket
 
-import android.Manifest
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Binder
 import android.os.IBinder
-import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationManagerCompat
 import ir.example.androidsocket.utils.NotificationHandler
 import ir.example.androidsocket.utils.serverLog
 import kotlinx.coroutines.CoroutineScope

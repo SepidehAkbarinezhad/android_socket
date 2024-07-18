@@ -41,7 +41,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     var serverPortError = MutableStateFlow(false)
         private set
 
-    var clientStatus = MutableStateFlow(Constants.ClientStatus.DISCONNECTED)
+    var socketStatus = MutableStateFlow(Constants.SocketStatus.DISCONNECTED)
         private set
 
     var isServiceBound = MutableStateFlow<Boolean>(false)
@@ -62,7 +62,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 "clientConnectionListener onConnected"
             )
             onEvent(ClientEvent.SetLoading(false))
-            onEvent(ClientEvent.SetConnectionStatus(Constants.ClientStatus.CONNECTED))
+            onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.CONNECTED))
         }
 
         override fun onMessage(conn: WebSocket?, message: String?) {
@@ -76,25 +76,21 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
 
         override fun onDisconnected(code: Int, reason: String?) {
             clientLog(
-                "clientConnectionListener onDisconnected : $reason"
+                "clientConnectionListener onDisconnected : $code $reason"
             )
             emitMessageValue(R.string.disconnected_error_message, reason)
-            onEvent(ClientEvent.SetConnectionStatus(Constants.ClientStatus.DISCONNECTED))
+            onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
             onEvent(ClientEvent.SetLoading(false))
 
-            clientLog(
-                "clientConnectionListener ClientActivity onDisconnected coed: $code  reason: $reason"
-            )
         }
 
         override fun onError(exception: Exception?) {
-            emitMessageValue(R.string.error_message, exception?.message ?: "")
-            onEvent(ClientEvent.SetLoading(false))
-            onEvent(ClientEvent.SetConnectionStatus(Constants.ClientStatus.DISCONNECTED))
-
             clientLog(
                 "clientConnectionListener ClientActivity onError  ${exception?.message}"
             )
+            emitMessageValue(R.string.error_message, exception?.message ?: "")
+            onEvent(ClientEvent.SetLoading(false))
+            onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
         }
 
         override fun onException(exception: Exception?) {
@@ -164,7 +160,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             }
 
             is ClientEvent.SetServerPort -> serverPort.value = event.port
-            is ClientEvent.SetConnectionStatus -> clientStatus.value = event.status
+            is ClientEvent.SetSocketConnectionStatus -> socketStatus.value = event.status
             is ClientEvent.SetClientMessage -> {
                 clientMessage.value = event.message
             }

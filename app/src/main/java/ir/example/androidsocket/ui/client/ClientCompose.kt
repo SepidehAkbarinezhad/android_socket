@@ -14,7 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -55,16 +57,13 @@ internal fun ClientCompose(
     val serverIpError by viewModel.serverIpError.collectAsState()
     val serverPort by viewModel.serverPort.collectAsState()
     val serverPortError by viewModel.serverPortError.collectAsState()
-    val clientStatus by viewModel.clientStatus.collectAsState()
+    val socketStatus by viewModel.socketStatus.collectAsState()
     val context = LocalContext.current
     val uiEvent by viewModel.uiEvent.collectAsStateWithLifecycle(initialValue = BaseUiEvent.None)
-    val isConnected = remember(clientStatus) {
-        clientStatus == Constants.ClientStatus.CONNECTED
-    }
 
 
-    LaunchedEffect(key1 = clientStatus) {
-        if (clientStatus == Constants.ClientStatus.DISCONNECTED) {
+    LaunchedEffect(key1 = socketStatus) {
+        if (!socketStatus.connection) {
             onEvent(ClientEvent.SetClientMessage(""))
             onEvent(ClientEvent.SetServerMessage(""))
         }
@@ -95,8 +94,7 @@ internal fun ClientCompose(
                 serverPortError = serverPortError,
                 clientMessage = clientMessage,
                 serverMessage = serverMessage,
-                clientStatus = clientStatus,
-                isConnected = isConnected,
+                socketStatus = socketStatus,
                 onConnectToServer = {
                     clientLog("onConnectToServer  $isServiceBound")
                     onEvent(ClientEvent.OnConnectToServer)
@@ -132,13 +130,15 @@ fun ClientContent(
     serverPortError: Boolean,
     clientMessage: String,
     serverMessage: String,
-    clientStatus: Constants.ClientStatus,
-    isConnected: Boolean,
+    socketStatus: Constants.SocketStatus,
     onConnectToServer: () -> Unit,
     onDisconnectFromServer: () -> Unit,
     onSendMessageEvent: (String) -> Unit
 ) {
 
+    var waitingForServer by remember {
+        mutableStateOf(false)
+    }
     AppBaseScreen(headerTitle = R.string.client_header, headerBackGround = Indigo, bodyContent = {
 
         Column(
@@ -185,8 +185,8 @@ fun ClientContent(
                 title = stringResource(
                     id = R.string.connection_status_title
                 ),
-                value = clientStatus.title,
-                valueColor = if (!isConnected) Color.Red else Green900,
+                value = socketStatus.title,
+                valueColor = if (!socketStatus.connection) Color.Red else Green900,
                 titleTextType = TextType.TEXT,
                 valueTextType = TextType.TEXT
             )
@@ -199,7 +199,7 @@ fun ClientContent(
                 onValueChange = {
                     onEvent(ClientEvent.SetClientMessage(it))
                 },
-                enabled = isConnected,
+                enabled = socketStatus.connection,
                 singleLine = true,
                 label = stringResource(id = R.string.message),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
@@ -213,32 +213,44 @@ fun ClientContent(
                 ),
             )
 
+            if(socketStatus.connection && waitingForServer && serverMessage.isEmpty()){
+                AppText(
+                    modifier = Modifier.padding(MaterialTheme.spacing.small),
+                    text = stringResource(R.string.server_confirmation_message),
+                    textColor = Color.Red
+                )
+            }
 
-            if (serverMessage.isNotEmpty())
+
+            if (serverMessage.isNotEmpty()){
+                waitingForServer=false
                 AppText(
                     modifier = Modifier.padding(MaterialTheme.spacing.small),
                     text = serverMessage,
                     textColor = Orange700
                 )
+            }
+
         }
 
     }) {
         AppButtonsRow(
-            firstButtonTitle = if (!isConnected) stringResource(id = R.string.connect_to_server) else stringResource(
+            firstButtonTitle = if (!socketStatus.connection) stringResource(id = R.string.connect_to_server) else stringResource(
                 id = R.string.disconnect_from_server
             ),
-            onFirstClicked = { if (!isConnected) onConnectToServer() else onDisconnectFromServer() },
+            onFirstClicked = { if (!socketStatus.connection) onConnectToServer() else onDisconnectFromServer() },
             firstButtonColor = ButtonDefaults.buttonColors(
                 disabledBackgroundColor = Color.LightGray,
                 backgroundColor = Indigo,
             ),
             secondButtonTitle = stringResource(id = R.string.send_message),
-            secondEnable = isConnected,
+            secondEnable = socketStatus.connection,
             secondButtonColor = ButtonDefaults.buttonColors(
                 disabledBackgroundColor = Color.LightGray,
                 backgroundColor = Indigo,
             )
         ) {
+            waitingForServer = true
             onSendMessageEvent(clientMessage)
         }
 

@@ -24,6 +24,7 @@
     <string name="message_from_server">server message :</string>
     <string name="message"> message </string>
     <string name="message_empty_error"> message is empty </string>
+    <string name="server_confirmation_message"> waiting for server confirmation ... </string>
 
 
     <string name="cancel_label">cancel</string>
