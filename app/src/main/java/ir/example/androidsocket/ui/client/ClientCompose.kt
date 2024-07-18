@@ -53,6 +53,7 @@ internal fun ClientCompose(
     val isServiceBound by viewModel.isServiceBound.collectAsStateWithLifecycle(initialValue = false)
     val clientMessage by viewModel.clientMessage.collectAsStateWithLifecycle("")
     val serverMessage by viewModel.serverMessage.collectAsStateWithLifecycle("")
+    val waitingForServerConfirmation by viewModel.waitingForServerConfirmation.collectAsStateWithLifecycle(false)
     val serverIp by viewModel.serverIp.collectAsState()
     val serverIpError by viewModel.serverIpError.collectAsState()
     val serverPort by viewModel.serverPort.collectAsState()
@@ -60,7 +61,6 @@ internal fun ClientCompose(
     val socketStatus by viewModel.socketStatus.collectAsState()
     val context = LocalContext.current
     val uiEvent by viewModel.uiEvent.collectAsStateWithLifecycle(initialValue = BaseUiEvent.None)
-
 
     LaunchedEffect(key1 = socketStatus) {
         if (!socketStatus.connection) {
@@ -94,6 +94,7 @@ internal fun ClientCompose(
                 serverPortError = serverPortError,
                 clientMessage = clientMessage,
                 serverMessage = serverMessage,
+                waitingForServer = waitingForServerConfirmation,
                 socketStatus = socketStatus,
                 onConnectToServer = {
                     clientLog("onConnectToServer  $isServiceBound")
@@ -130,15 +131,13 @@ fun ClientContent(
     serverPortError: Boolean,
     clientMessage: String,
     serverMessage: String,
+    waitingForServer : Boolean,
     socketStatus: Constants.SocketStatus,
     onConnectToServer: () -> Unit,
     onDisconnectFromServer: () -> Unit,
     onSendMessageEvent: (String) -> Unit
 ) {
 
-    var waitingForServer by remember {
-        mutableStateOf(false)
-    }
     AppBaseScreen(headerTitle = R.string.client_header, headerBackGround = Indigo, bodyContent = {
 
         Column(
@@ -223,7 +222,6 @@ fun ClientContent(
 
 
             if (serverMessage.isNotEmpty()){
-                waitingForServer=false
                 AppText(
                     modifier = Modifier.padding(MaterialTheme.spacing.small),
                     text = serverMessage,
@@ -250,7 +248,6 @@ fun ClientContent(
                 backgroundColor = Indigo,
             )
         ) {
-            waitingForServer = true
             onSendMessageEvent(clientMessage)
         }
 

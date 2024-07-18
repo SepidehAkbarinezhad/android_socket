@@ -29,6 +29,9 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     var serverMessage = MutableStateFlow("")
         private set
 
+    var waitingForServerConfirmation = MutableStateFlow<Boolean>(false)
+        private set
+
     var serverIp = MutableStateFlow<String>("")
         private set
 
@@ -154,21 +157,18 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 clientLog("ClientEvent.SetLoading")
                 loading.value = event.value
             }
-
             is ClientEvent.SetServerIp -> {
                 serverIp.value = event.ip
             }
-
             is ClientEvent.SetServerPort -> serverPort.value = event.port
             is ClientEvent.SetSocketConnectionStatus -> socketStatus.value = event.status
             is ClientEvent.SetClientMessage -> {
                 clientMessage.value = event.message
             }
-
             is ClientEvent.SetServerMessage -> {
                 serverMessage.value = event.message
+                setWaitingForServer(false)
             }
-
             ClientEvent.OnConnectToServer -> {
                 serverIpError.value = serverIp.value.isEmpty()
                 serverPortError.value = serverPort.value.isEmpty()
@@ -183,10 +183,16 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             }
 
             ClientEvent.OnDisconnectFromServer -> clientForegroundService?.disconnect()
-            is ClientEvent.SendMessageToServer -> clientForegroundService?.sendMessageWithTimeout(
-                message = event.message
-            )
+            is ClientEvent.SendMessageToServer -> {
+                if(event.message.isNotEmpty()){
+                setWaitingForServer(true)}
+                clientForegroundService?.sendMessageWithTimeout(message = event.message)}
         }
+    }
+
+
+    private fun setWaitingForServer(waiting : Boolean){
+        waitingForServerConfirmation.value=waiting
     }
 
     fun performCleanup() {
