@@ -13,7 +13,6 @@ import ir.example.androidsocket.Constants
 import ir.example.androidsocket.socket.SocketClientForegroundService
 import ir.example.androidsocket.socket.SocketConnectionListener
 import ir.example.androidsocket.ui.base.BaseViewModel
-import ir.example.androidsocket.utils.IpAddressManager
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.java_websocket.WebSocket
@@ -22,6 +21,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 internal class ClientViewModel @Inject constructor() : BaseViewModel() {
+
+    var openPermissionDialog = MutableStateFlow(false)
 
     var clientMessage = MutableStateFlow("")
         private set
@@ -120,41 +121,39 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
-    fun startClientService(context: Context) {
-        clientLog("startSocketService")
-        try {
-            serviceConnection?.let { connection ->
-                val serviceIntent = Intent(context, SocketClientForegroundService::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(serviceIntent)
-                    context.bindService(
-                        serviceIntent,
-                        connection,
-                        ComponentActivity.BIND_AUTO_CREATE
-                    )
-                    isServiceBound.value = true
-                } else {
-                    context.startService(serviceIntent)
-                    context.bindService(
-                        serviceIntent,
-                        connection,
-                        ComponentActivity.BIND_AUTO_CREATE
-                    )
-                }
-            } ?: throw Exception()
-
-        } catch (e: Exception) {
-            clientLog("startSocketService  catch : ${e.message}")
-
-        }
-
-    }
-
-
     fun onEvent(event: ClientEvent) {
         when (event) {
+            is ClientEvent.StartClientService -> {
+                if (!isServiceBound.value){
+                    try {
+                        serviceConnection?.let { connection ->
+                            val serviceIntent = Intent(event.context, SocketClientForegroundService::class.java)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                event.context.startForegroundService(serviceIntent)
+                                event.context.bindService(
+                                    serviceIntent,
+                                    connection,
+                                    ComponentActivity.BIND_AUTO_CREATE
+                                )
+                                isServiceBound.value = true
+                            } else {
+                                event.context.startService(serviceIntent)
+                                event.context.bindService(
+                                    serviceIntent,
+                                    connection,
+                                    ComponentActivity.BIND_AUTO_CREATE
+                                )
+                            }
+                        } ?: throw Exception()
+
+                    } catch (e: Exception) {
+                        clientLog("startSocketService  catch : ${e.message}")
+
+                    }
+                }
+
+            }
             is ClientEvent.SetLoading -> {
-                clientLog("ClientEvent.SetLoading")
                 loading.value = event.value
             }
             is ClientEvent.SetServerIp -> {
@@ -187,6 +186,9 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 if(event.message.isNotEmpty()){
                 setWaitingForServer(true)}
                 clientForegroundService?.sendMessageWithTimeout(message = event.message)}
+            is ClientEvent.SetOpenPermissionDialog -> {
+                openPermissionDialog.value = event.open
+            }
         }
     }
 

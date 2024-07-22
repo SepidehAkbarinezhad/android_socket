@@ -1,8 +1,11 @@
 package ir.example.androidsocket.ui.client
 
+import android.content.Context
 import ir.example.androidsocket.Constants
 
 sealed class ClientEvent {
+    data class StartClientService(val context: Context) : ClientEvent()
+    data class SetOpenPermissionDialog(val open : Boolean) : ClientEvent()
     data class SetLoading(val value: Boolean) : ClientEvent()
     data class SetServerIp(val ip: String) : ClientEvent()
     data class SetServerPort(val port: String) : ClientEvent()

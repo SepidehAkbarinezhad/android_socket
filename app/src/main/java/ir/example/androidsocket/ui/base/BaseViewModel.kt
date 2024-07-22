@@ -15,10 +15,7 @@ internal abstract class BaseViewModel() : ViewModel() {
 
     val loading = mutableStateOf(false)
 
-    var hideKeyboard = MutableSharedFlow<Boolean?>()
-
-
-    fun runOnCoroutineScope(
+    private fun runOnCoroutineScope(
         coroutineScope: CoroutineScope = viewModelScope,
         catchFunction: (e: Exception) -> Unit = { e -> },
         block: suspend () -> Unit

@@ -20,7 +20,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,7 +49,6 @@ internal fun ClientCompose(
 ) {
 
     val keyboardController = LocalSoftwareKeyboardController.current
-    val isServiceBound by viewModel.isServiceBound.collectAsStateWithLifecycle(initialValue = false)
     val clientMessage by viewModel.clientMessage.collectAsStateWithLifecycle("")
     val serverMessage by viewModel.serverMessage.collectAsStateWithLifecycle("")
     val waitingForServerConfirmation by viewModel.waitingForServerConfirmation.collectAsStateWithLifecycle(false)
@@ -59,19 +57,12 @@ internal fun ClientCompose(
     val serverPort by viewModel.serverPort.collectAsState()
     val serverPortError by viewModel.serverPortError.collectAsState()
     val socketStatus by viewModel.socketStatus.collectAsState()
-    val context = LocalContext.current
     val uiEvent by viewModel.uiEvent.collectAsStateWithLifecycle(initialValue = BaseUiEvent.None)
 
     LaunchedEffect(key1 = socketStatus) {
         if (!socketStatus.connection) {
             onEvent(ClientEvent.SetClientMessage(""))
             onEvent(ClientEvent.SetServerMessage(""))
-        }
-    }
-    LaunchedEffect(key1 = isServiceBound) {
-        clientLog("LaunchedEffect  $isServiceBound")
-        if (!isServiceBound) {
-            viewModel.startClientService(context)
         }
     }
 
@@ -97,7 +88,7 @@ internal fun ClientCompose(
                 waitingForServer = waitingForServerConfirmation,
                 socketStatus = socketStatus,
                 onConnectToServer = {
-                    clientLog("onConnectToServer  $isServiceBound")
+                    clientLog("onConnectToServer")
                     onEvent(ClientEvent.OnConnectToServer)
                     keyboardController?.hide()
                 },
@@ -131,7 +122,7 @@ fun ClientContent(
     serverPortError: Boolean,
     clientMessage: String,
     serverMessage: String,
-    waitingForServer : Boolean,
+    waitingForServer: Boolean,
     socketStatus: Constants.SocketStatus,
     onConnectToServer: () -> Unit,
     onDisconnectFromServer: () -> Unit,
