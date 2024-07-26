@@ -35,17 +35,17 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
     var ethernetServerIp = MutableStateFlow("")
         private set
 
-    var clientStatus = MutableStateFlow(Constants.ClientStatus.DISCONNECTED)
+    var socketStatus = MutableStateFlow(Constants.SocketStatus.DISCONNECTED)
         private set
 
 
-    var isServiceBound = MutableStateFlow<Boolean?>(false)
+    var isServiceBound = MutableStateFlow<Boolean>(false)
         private set
 
 
     private var socketServerService: SocketServerForegroundService? = null
 
-    val serverConnectionListener = object : SocketConnectionListener {
+    val socketConnectionListener = object : SocketConnectionListener {
         override fun onStart() {
             serverLog("SocketConnectionListener onStart")
             onEvent(ServerEvent.SetLoading(true))
@@ -53,7 +53,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
         override fun onConnected() {
             serverLog("SocketConnectionListener onConnected")
-            clientStatus.value = Constants.ClientStatus.CONNECTED
+            socketStatus.value = Constants.SocketStatus.CONNECTED
         }
 
         override fun onMessage(conn: WebSocket?, message: String?) {
@@ -66,13 +66,16 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
         override fun onDisconnected(code: Int, reason: String?) {
             serverLog("SocketConnectionListener onDisconnected: $reason")
             emitMessageValue(R.string.disconnected_error_message, reason)
-            clientStatus.value = Constants.ClientStatus.DISCONNECTED
+            socketStatus.value = Constants.SocketStatus.DISCONNECTED
 
         }
 
         override fun onError(exception: Exception?) {
             serverLog("SocketConnectionListener onError:  ${exception?.message}")
-            clientStatus.value = Constants.ClientStatus.DISCONNECTED
+
+            /*socketStatus should not changed to disconnected because in some cases such as when creating notification from client
+            *message got error on >=31 ,the socket was connected but onError was called.
+            */
             emitMessageValue(R.string.error_message, exception?.message)
         }
 
@@ -89,7 +92,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             serverLog("serverConnectionListener onServiceConnected")
             val binder = service as SocketServerForegroundService.LocalBinder
             socketServerService = binder.getService()
-            socketServerService?.registerConnectionListener(serverConnectionListener)
+            socketServerService?.registerConnectionListener(socketConnectionListener)
             isServiceBound.value = true
         }
 
@@ -105,37 +108,38 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
 
     fun startServerService(context: Context) {
-        try {
-            serviceConnection?.let { connection ->
-                val serviceIntent = Intent(context, SocketServerForegroundService::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(serviceIntent)
-                    context.bindService(
-                        serviceIntent,
-                        connection,
-                        ComponentActivity.BIND_AUTO_CREATE
-                    )
-                    isServiceBound.value = true
-                } else {
-                    context.startService(serviceIntent)
-                    context.bindService(
-                        serviceIntent,
-                        connection,
-                        ComponentActivity.BIND_AUTO_CREATE
-                    )
-                }
-            } ?: throw Exception()
+        if(!isServiceBound.value){
+            try {
+                serviceConnection?.let { connection ->
+                    val serviceIntent = Intent(context, SocketServerForegroundService::class.java)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent)
+                        context.bindService(
+                            serviceIntent,
+                            connection,
+                            ComponentActivity.BIND_AUTO_CREATE
+                        )
+                        isServiceBound.value = true
+                    } else {
+                        context.startService(serviceIntent)
+                        context.bindService(
+                            serviceIntent,
+                            connection,
+                            ComponentActivity.BIND_AUTO_CREATE
+                        )
+                    }
+                } ?: throw Exception()
 
-        } catch (e: Exception) {
-            serverLog("startSocketService  catch: ${e.message}")
-
+            } catch (e: Exception) {
+                serverLog("startSocketService  catch: ${e.message}")
+            }
         }
     }
 
     fun onEvent(event: ServerEvent) {
         when (event) {
             is ServerEvent.SetLoading -> loading.value = event.value
-            is ServerEvent.SetConnectionStatus -> clientStatus.value = event.status
+            is ServerEvent.SetSocketConnectionStatus -> socketStatus.value = event.status
             is ServerEvent.SetClientMessage -> clientMessage.value = event.message
             is ServerEvent.GetWifiIpAddress -> wifiServerIp.value =
                 IpAddressManager.getLocalIpAddress(event.context).first ?: ""
@@ -153,12 +157,13 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
                 onContentIntent = { context ->
                     //will be triggered when the user taps on the notification
                     if (!MainApplication.isAppInForeground) {
-                        val intent = Intent(Constants.ActionCode.NotificationMessage?.title)
-                        PendingIntent.getBroadcast(
+                        val intent = Intent(context, ServerActivity::class.java)
+                        intent.action = Constants.ActionCode.NotificationMessage.title
+                        PendingIntent.getActivity(
                             context,
                             0,
                             intent,
-                            PendingIntent.FLAG_UPDATE_CURRENT
+                            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                         )
                     } else null
                 }

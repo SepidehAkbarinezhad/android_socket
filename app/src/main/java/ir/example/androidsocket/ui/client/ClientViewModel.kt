@@ -13,7 +13,6 @@ import ir.example.androidsocket.Constants
 import ir.example.androidsocket.socket.SocketClientForegroundService
 import ir.example.androidsocket.socket.SocketConnectionListener
 import ir.example.androidsocket.ui.base.BaseViewModel
-import ir.example.androidsocket.utils.IpAddressManager
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.java_websocket.WebSocket
@@ -23,10 +22,14 @@ import javax.inject.Inject
 @HiltViewModel
 internal class ClientViewModel @Inject constructor() : BaseViewModel() {
 
+
     var clientMessage = MutableStateFlow("")
         private set
 
     var serverMessage = MutableStateFlow("")
+        private set
+
+    var waitingForServerConfirmation = MutableStateFlow<Boolean>(false)
         private set
 
     var serverIp = MutableStateFlow<String>("")
@@ -41,7 +44,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     var serverPortError = MutableStateFlow(false)
         private set
 
-    var clientStatus = MutableStateFlow(Constants.ClientStatus.DISCONNECTED)
+    var socketStatus = MutableStateFlow(Constants.SocketStatus.DISCONNECTED)
         private set
 
     var isServiceBound = MutableStateFlow<Boolean>(false)
@@ -62,7 +65,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 "clientConnectionListener onConnected"
             )
             onEvent(ClientEvent.SetLoading(false))
-            onEvent(ClientEvent.SetConnectionStatus(Constants.ClientStatus.CONNECTED))
+            onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.CONNECTED))
         }
 
         override fun onMessage(conn: WebSocket?, message: String?) {
@@ -76,25 +79,21 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
 
         override fun onDisconnected(code: Int, reason: String?) {
             clientLog(
-                "clientConnectionListener onDisconnected : $reason"
+                "clientConnectionListener onDisconnected : $code $reason"
             )
             emitMessageValue(R.string.disconnected_error_message, reason)
-            onEvent(ClientEvent.SetConnectionStatus(Constants.ClientStatus.DISCONNECTED))
+            onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
             onEvent(ClientEvent.SetLoading(false))
 
-            clientLog(
-                "clientConnectionListener ClientActivity onDisconnected coed: $code  reason: $reason"
-            )
         }
 
         override fun onError(exception: Exception?) {
-            emitMessageValue(R.string.error_message, exception?.message ?: "")
-            onEvent(ClientEvent.SetLoading(false))
-            onEvent(ClientEvent.SetConnectionStatus(Constants.ClientStatus.DISCONNECTED))
-
             clientLog(
                 "clientConnectionListener ClientActivity onError  ${exception?.message}"
             )
+            emitMessageValue(R.string.error_message, exception?.message ?: "")
+            onEvent(ClientEvent.SetLoading(false))
+            onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
         }
 
         override fun onException(exception: Exception?) {
@@ -121,58 +120,53 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
-    fun startClientService(context: Context) {
-        clientLog("startSocketService")
-        try {
-            serviceConnection?.let { connection ->
-                val serviceIntent = Intent(context, SocketClientForegroundService::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(serviceIntent)
-                    context.bindService(
-                        serviceIntent,
-                        connection,
-                        ComponentActivity.BIND_AUTO_CREATE
-                    )
-                    isServiceBound.value = true
-                } else {
-                    context.startService(serviceIntent)
-                    context.bindService(
-                        serviceIntent,
-                        connection,
-                        ComponentActivity.BIND_AUTO_CREATE
-                    )
-                }
-            } ?: throw Exception()
-
-        } catch (e: Exception) {
-            clientLog("startSocketService  catch : ${e.message}")
-
-        }
-
-    }
-
-
     fun onEvent(event: ClientEvent) {
         when (event) {
+            is ClientEvent.StartClientService -> {
+                if (!isServiceBound.value){
+                    try {
+                        serviceConnection?.let { connection ->
+                            val serviceIntent = Intent(event.context, SocketClientForegroundService::class.java)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                event.context.startForegroundService(serviceIntent)
+                                event.context.bindService(
+                                    serviceIntent,
+                                    connection,
+                                    ComponentActivity.BIND_AUTO_CREATE
+                                )
+                                isServiceBound.value = true
+                            } else {
+                                event.context.startService(serviceIntent)
+                                event.context.bindService(
+                                    serviceIntent,
+                                    connection,
+                                    ComponentActivity.BIND_AUTO_CREATE
+                                )
+                            }
+                        } ?: throw Exception()
+
+                    } catch (e: Exception) {
+                        clientLog("startSocketService  catch : ${e.message}")
+
+                    }
+                }
+
+            }
             is ClientEvent.SetLoading -> {
-                clientLog("ClientEvent.SetLoading")
                 loading.value = event.value
             }
-
             is ClientEvent.SetServerIp -> {
                 serverIp.value = event.ip
             }
-
             is ClientEvent.SetServerPort -> serverPort.value = event.port
-            is ClientEvent.SetConnectionStatus -> clientStatus.value = event.status
+            is ClientEvent.SetSocketConnectionStatus -> socketStatus.value = event.status
             is ClientEvent.SetClientMessage -> {
                 clientMessage.value = event.message
             }
-
             is ClientEvent.SetServerMessage -> {
                 serverMessage.value = event.message
+                setWaitingForServer(false)
             }
-
             ClientEvent.OnConnectToServer -> {
                 serverIpError.value = serverIp.value.isEmpty()
                 serverPortError.value = serverPort.value.isEmpty()
@@ -187,10 +181,16 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             }
 
             ClientEvent.OnDisconnectFromServer -> clientForegroundService?.disconnect()
-            is ClientEvent.SendMessageToServer -> clientForegroundService?.sendMessageWithTimeout(
-                message = event.message
-            )
+            is ClientEvent.SendMessageToServer -> {
+                if(event.message.isNotEmpty()){
+                setWaitingForServer(true)}
+                clientForegroundService?.sendMessageWithTimeout(message = event.message)}
         }
+    }
+
+
+    private fun setWaitingForServer(waiting : Boolean){
+        waitingForServerConfirmation.value=waiting
     }
 
     fun performCleanup() {

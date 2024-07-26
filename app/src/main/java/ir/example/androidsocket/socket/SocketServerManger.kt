@@ -81,25 +81,15 @@ class SocketServerManger(
     }
 
     suspend fun sendMessageWithTimeout(timeoutMillis: Long = 5000, message: String): Boolean {
-        serverLog("sendMessageWithTimeout 1", "timeOutTag")
         return withContext(Dispatchers.IO) {
-            serverLog("sendMessageWithTimeout 2", "timeOutTag")
             return@withContext try {
                 withTimeout(timeoutMillis) {
                     val result = CoroutineScope(Dispatchers.IO).async {
                         try {
-                            serverLog("sendMessageWithTimeout try : $message", "timeOutTag")
                             if (connection != null && connection!!.isOpen) {
-                                serverLog("sendMessageWithTimeout if", "timeOutTag")
-                                delay(7000)
                                 connection!!.send(message)
-                                serverLog("sendMessageWithTimeout if 2", "timeOutTag")
                                 true
                             } else {
-                                serverLog(
-                                    "sendMessageWithTimeout else  connection : ${connection == null}   isOpen:${connection?.isOpen}",
-                                    "timeOutTag"
-                                )
                                 false
                             }
                         } catch (e: org.java_websocket.exceptions.WebsocketNotConnectedException) {
@@ -112,7 +102,7 @@ class SocketServerManger(
                     result
                 }
             } catch (e: TimeoutCancellationException) {
-                serverLog("send message timeout: ${e.message}", "timeOutTag")
+                serverLog("sendMessageWithTimeout TimeoutCancellationException: ${e.message}", "timeOutTag")
                 socketListener.forEach { it.onException(e) }
                 false
             } catch (e: Exception) {

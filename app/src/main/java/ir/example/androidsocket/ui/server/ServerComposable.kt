@@ -58,13 +58,11 @@ internal fun ServerComposable(
     val wifiIpAddress by viewModel.wifiServerIp.collectAsState()
     val lanIpAddress by viewModel.ethernetServerIp.collectAsState()
     val isServiceBound by viewModel.isServiceBound.collectAsStateWithLifecycle(initialValue = false)
-    val connectionStatus by viewModel.clientStatus.collectAsState()
-    val isConnected = remember(connectionStatus) {
-        connectionStatus == Constants.ClientStatus.CONNECTED
-    }
+    val socketStatus by viewModel.socketStatus.collectAsState()
 
-    LaunchedEffect(key1 = connectionStatus) {
-        if (connectionStatus == Constants.ClientStatus.DISCONNECTED) {
+
+    LaunchedEffect(key1 = socketStatus) {
+        if (!socketStatus.connection) {
             viewModel.onEvent(ServerEvent.SetClientMessage(""))
         }
     }
@@ -76,12 +74,6 @@ internal fun ServerComposable(
         viewModel.onEvent(ServerEvent.GetWifiIpAddress(context))
         viewModel.onEvent(ServerEvent.GetLanIpAddress(context))
     }
-    LaunchedEffect(key1 = isServiceBound) {
-        serverLog("LaunchedEffect isServiceBound $isServiceBound")
-        if (isServiceBound == false) {
-            viewModel.startServerService(context)
-        }
-    }
 
     AndroidSocketTheme(uiEvent = uiEvent) {
         Surface(
@@ -92,8 +84,7 @@ internal fun ServerComposable(
                 connectionType = connectionType,
                 wifiIpAddress = wifiIpAddress,
                 lanIpAddress = lanIpAddress,
-                clientStatus = connectionStatus,
-                isConnected = isConnected,
+                socketStatus = socketStatus,
                 clientMessage = clientMessage
             )
         }
@@ -105,8 +96,7 @@ fun ServerContent(
     connectionType: Constants.ConnectionType,
     wifiIpAddress: String,
     lanIpAddress: String,
-    clientStatus: Constants.ClientStatus,
-    isConnected: Boolean,
+    socketStatus: Constants.SocketStatus,
     clientMessage: String
 ) {
 
@@ -148,9 +138,8 @@ fun ServerContent(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(MaterialTheme.spacing.medium),
+                        .padding(MaterialTheme.spacing.small),
                     verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.SpaceAround
                 ) {
                     Column(
                         modifier = Modifier
@@ -232,8 +221,8 @@ fun ServerContent(
                 title = stringResource(
                     id = R.string.connection_status_title
                 ),
-                value = clientStatus.title,
-                valueColor = if (!isConnected) Color.Red else Green900,
+                value = socketStatus.title,
+                valueColor = if (!socketStatus.connection) Color.Red else Green900,
                 titleTextType = TextType.TEXT,
                 valueTextType = TextType.TEXT
             )

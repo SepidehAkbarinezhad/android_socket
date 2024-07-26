@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
 
     <application
         android:name="ir.example.androidsocket.MainApplication"
@@ -18,7 +19,7 @@
         android:roundIcon="@mipmap/android_socket_icon_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AndroidSocket"
-        tools:targetApi="31">
+        tools:targetApi="35">
         <activity
             android:name="ir.example.androidsocket.ui.server.ServerActivity"
             android:exported="true"
@@ -38,16 +39,14 @@
         </activity>
         <service
             android:name="ir.example.androidsocket.socket.SocketServerForegroundService"
-            android:foregroundServiceType="shortService" />
+            android:foregroundServiceType="remoteMessaging"
+            tools:ignore="ForegroundServicePermission" />
         <service
             android:name="ir.example.androidsocket.socket.SocketClientForegroundService"
-            android:foregroundServiceType="shortService" />
+            android:foregroundServiceType="remoteMessaging"
+            tools:ignore="ForegroundServicePermission" />
         <receiver android:name="ir.example.androidsocket.utils.NotificationMessageBroadcastReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name= "payment" />
-                <action android:name= "print" />
-            </intent-filter>
+            android:exported="false">
         </receiver>
     </application>
 
