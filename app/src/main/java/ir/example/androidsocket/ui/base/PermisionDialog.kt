@@ -48,7 +48,7 @@ fun PermissionDialog(
                 .height(1.dp)
                 .background(Color.Red))
             AppText(
-                text = stringResource(id = R.string.client_permission_dialog_message),
+                text = stringResource(id = R.string.permission_dialog_message),
                 maxLine = 5
             )
             AppButtonsRow(

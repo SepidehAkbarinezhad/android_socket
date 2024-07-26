@@ -53,6 +53,16 @@ android {
         aidl = true
     }
 
+    flavorDimensions += "version"
+    productFlavors {
+        create("server") {
+            dimension = "version"
+        }
+        create("client") {
+            dimension = "version"
+        }
+    }
+
 }
 
 dependencies {
