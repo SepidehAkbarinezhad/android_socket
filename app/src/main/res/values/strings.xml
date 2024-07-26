@@ -25,8 +25,10 @@
     <string name="message"> message </string>
     <string name="message_empty_error"> message is empty </string>
     <string name="server_confirmation_message"> waiting for server confirmation ... </string>
+    <string name="client_permission_dialog_message"> notification permission is mandatory to inform the user about the service which is running</string>
 
 
+    <string name="permission_dialog_title"> permission is required </string>
     <string name="cancel_label">cancel</string>
     <string name="disconnected_error_message">disconnected : %s</string>
     <string name="error_message">error : %s</string>

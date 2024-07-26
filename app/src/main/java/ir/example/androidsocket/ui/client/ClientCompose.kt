@@ -139,7 +139,6 @@ fun ClientContent(
                 Modifier
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceAround
             ) {
 
                 AppOutlinedTextField(

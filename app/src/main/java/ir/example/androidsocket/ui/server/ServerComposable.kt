@@ -144,9 +144,8 @@ fun ServerContent(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(MaterialTheme.spacing.medium),
+                        .padding(MaterialTheme.spacing.small),
                     verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.SpaceAround
                 ) {
                     Column(
                         modifier = Modifier

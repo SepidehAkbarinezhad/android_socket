@@ -11,9 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.androidSocket.R
 import ir.example.androidsocket.ui.theme.spacing
 
 @Composable
@@ -36,16 +38,17 @@ fun PermissionDialog(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             AppText(
-                text = "permission is required",
+                text = stringResource(id = R.string.permission_dialog_title),
                 textColor = Color.Red,
                 textType = TextType.TITLE
             )
-            Box(modifier = Modifier.padding(vertical = MaterialTheme.spacing.small)
+            Box(modifier = Modifier
+                .padding(vertical = MaterialTheme.spacing.small)
                 .fillMaxWidth()
                 .height(1.dp)
                 .background(Color.Red))
             AppText(
-                text = "notification permission is mandatory to inform the user about the service running and about the message received from client when app is in background.",
+                text = stringResource(id = R.string.client_permission_dialog_message),
                 maxLine = 5
             )
             AppButtonsRow(
