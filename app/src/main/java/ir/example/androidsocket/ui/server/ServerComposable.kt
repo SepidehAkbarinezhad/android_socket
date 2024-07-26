@@ -74,12 +74,6 @@ internal fun ServerComposable(
         viewModel.onEvent(ServerEvent.GetWifiIpAddress(context))
         viewModel.onEvent(ServerEvent.GetLanIpAddress(context))
     }
-    LaunchedEffect(key1 = isServiceBound) {
-        serverLog("LaunchedEffect isServiceBound $isServiceBound")
-        if (isServiceBound == false) {
-            viewModel.startServerService(context)
-        }
-    }
 
     AndroidSocketTheme(uiEvent = uiEvent) {
         Surface(

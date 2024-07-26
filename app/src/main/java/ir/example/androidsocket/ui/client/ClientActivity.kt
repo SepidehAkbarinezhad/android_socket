@@ -21,6 +21,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import ir.example.androidsocket.ui.base.BaseUiEvent
 import ir.example.androidsocket.ui.base.PermissionDialog
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.launch
@@ -36,26 +37,28 @@ class ClientActivity : ComponentActivity() {
         clientLog("ClientActivity onCreate()")
         super.onCreate(savedInstanceState)
         val activity = this@ClientActivity
-         var requestPermissionLauncher : ActivityResultLauncher<String> =
-             registerForActivityResult(
-                 ActivityResultContracts.RequestPermission()
-             ) { isGranted: Boolean ->
-                 if (isGranted) {
-                     // Permission is granted. Continue the action or workflow in your app
-                     clientLog("ActivityResult permission isGranted")
-                     viewModel.onEvent(ClientEvent.SetOpenPermissionDialog(false))
-                     viewModel.onEvent(ClientEvent.StartClientService(activity))
+        var requestPermissionLauncher: ActivityResultLauncher<String> =
+            registerForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { isGranted: Boolean ->
+                if (isGranted) {
+                    // Permission is granted. Continue the action or workflow in your app
+                    clientLog("ActivityResult permission isGranted")
+                    viewModel.setOpenPermissionDialog(false)
+                    viewModel.onEvent(ClientEvent.StartClientService(activity))
 
-                 } else {
-                     clientLog("ActivityResult permission isNotGranted")
-                     viewModel.onEvent(ClientEvent.SetOpenPermissionDialog(true))
-                 }
-             }
+                } else {
+                    clientLog("ActivityResult permission isNotGranted")
+                    viewModel.setOpenPermissionDialog(true)
+                }
+            }
 
 
         setContent {
 
-            val openPermissionDialog by viewModel.openPermissionDialog.collectAsStateWithLifecycle(initialValue = false)
+            val openPermissionDialog by viewModel.openPermissionDialog.collectAsStateWithLifecycle(
+                initialValue = false
+            )
 
             LaunchedEffect(Unit) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -75,13 +78,13 @@ class ClientActivity : ComponentActivity() {
                             * explain to the user why your app requires this permission for a specific feature to behave as expected
                             * and what features are disabled if it's declined.
                             * */
-                            viewModel.onEvent(ClientEvent.SetOpenPermissionDialog(true))
+                            viewModel.setOpenPermissionDialog(true)
 
                         }
 
                         else -> {
                             // The registered ActivityResultCallback gets the result of this request.
-                            viewModel.onEvent(ClientEvent.SetOpenPermissionDialog(false))
+                            viewModel.setOpenPermissionDialog(false)
                             requestPermissionLauncher.launch(
                                 Manifest.permission.POST_NOTIFICATIONS
                             )
@@ -98,22 +101,21 @@ class ClientActivity : ComponentActivity() {
                     viewModel = viewModel,
                 ) { event -> viewModel.onEvent(event) }
 
-                if (openPermissionDialog){
+                if (openPermissionDialog) {
                     clientLog("showPermissionDialog")
                     PermissionDialog(
                         modifier = Modifier.align(Alignment.Center),
                         onDismissRequest = {
-                            viewModel.onEvent(ClientEvent.SetOpenPermissionDialog(false))
-                            finish() }
+                            viewModel.setOpenPermissionDialog(false)
+                            finish()
+                        }
                     ) {
                         requestPermissionLauncher.launch(
                             Manifest.permission.POST_NOTIFICATIONS
                         )
                     }
                 }
-
             }
-
         }
     }
 

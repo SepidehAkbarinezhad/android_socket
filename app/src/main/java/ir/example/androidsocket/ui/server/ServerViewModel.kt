@@ -39,7 +39,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
         private set
 
 
-    var isServiceBound = MutableStateFlow<Boolean?>(false)
+    var isServiceBound = MutableStateFlow<Boolean>(false)
         private set
 
 
@@ -108,30 +108,31 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
 
     fun startServerService(context: Context) {
-        try {
-            serviceConnection?.let { connection ->
-                val serviceIntent = Intent(context, SocketServerForegroundService::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(serviceIntent)
-                    context.bindService(
-                        serviceIntent,
-                        connection,
-                        ComponentActivity.BIND_AUTO_CREATE
-                    )
-                    isServiceBound.value = true
-                } else {
-                    context.startService(serviceIntent)
-                    context.bindService(
-                        serviceIntent,
-                        connection,
-                        ComponentActivity.BIND_AUTO_CREATE
-                    )
-                }
-            } ?: throw Exception()
+        if(!isServiceBound.value){
+            try {
+                serviceConnection?.let { connection ->
+                    val serviceIntent = Intent(context, SocketServerForegroundService::class.java)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent)
+                        context.bindService(
+                            serviceIntent,
+                            connection,
+                            ComponentActivity.BIND_AUTO_CREATE
+                        )
+                        isServiceBound.value = true
+                    } else {
+                        context.startService(serviceIntent)
+                        context.bindService(
+                            serviceIntent,
+                            connection,
+                            ComponentActivity.BIND_AUTO_CREATE
+                        )
+                    }
+                } ?: throw Exception()
 
-        } catch (e: Exception) {
-            serverLog("startSocketService  catch: ${e.message}")
-
+            } catch (e: Exception) {
+                serverLog("startSocketService  catch: ${e.message}")
+            }
         }
     }
 

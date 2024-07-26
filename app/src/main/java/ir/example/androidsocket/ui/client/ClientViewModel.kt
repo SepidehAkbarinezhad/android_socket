@@ -22,7 +22,6 @@ import javax.inject.Inject
 @HiltViewModel
 internal class ClientViewModel @Inject constructor() : BaseViewModel() {
 
-    var openPermissionDialog = MutableStateFlow(false)
 
     var clientMessage = MutableStateFlow("")
         private set
@@ -186,9 +185,6 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 if(event.message.isNotEmpty()){
                 setWaitingForServer(true)}
                 clientForegroundService?.sendMessageWithTimeout(message = event.message)}
-            is ClientEvent.SetOpenPermissionDialog -> {
-                openPermissionDialog.value = event.open
-            }
         }
     }
 

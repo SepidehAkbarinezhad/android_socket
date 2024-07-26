@@ -5,38 +5,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 internal abstract class BaseViewModel() : ViewModel() {
 
-    var uiEvent = MutableSharedFlow<BaseUiEvent>()
+    var uiEvent = MutableStateFlow<BaseUiEvent>(BaseUiEvent.None)
         private set
 
     val loading = mutableStateOf(false)
 
-    private fun runOnCoroutineScope(
-        coroutineScope: CoroutineScope = viewModelScope,
-        catchFunction: (e: Exception) -> Unit = { e -> },
-        block: suspend () -> Unit
-    ) {
-        coroutineScope.launch {
-            try {
-                block()
-            } catch (e: Exception) {
-                catchFunction(e)
-            }
-        }
-    }
+    var openPermissionDialog = MutableStateFlow(false)
+
 
     private fun sendUiEvent(event: BaseUiEvent) {
-        runOnCoroutineScope {
-            uiEvent.emit(event)
-        }
+        uiEvent.value = event
     }
 
     fun emitMessageValue(messageId: Int?, vararg parameters: String? = emptyArray()) {
         sendUiEvent(BaseUiEvent.ShowToast(messageId, parameters))
+    }
+
+    fun setOpenPermissionDialog(value : Boolean){
+        openPermissionDialog.value= value
     }
 
 }

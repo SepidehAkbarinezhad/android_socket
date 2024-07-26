@@ -87,6 +87,8 @@ fun AndroidSocketTheme(
                             onResetScreenMessage()
                         }
                     }
+                    else->{}
+
                 }
             }
             Scaffold(
