@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
+
+    <application
+        android:label="@string/app_name"
+        tools:targetApi="35">
+        <activity
+            android:name="ir.example.androidsocket.ui.server.ServerActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.AndroidSocket">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <service
+            android:name="ir.example.androidsocket.SocketServerForegroundService"
+            android:foregroundServiceType="remoteMessaging"
+            tools:ignore="ForegroundServicePermission" />
+
+        <receiver android:name="ir.example.androidsocket.utils.NotificationMessageBroadcastReceiver"
+            android:exported="false">
+        </receiver>
+    </application>
+
+</manifest>

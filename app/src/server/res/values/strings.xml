@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Android Server</string>
+
+    <string name="server_header">Socket Server</string>
+    <string name="connection_type_label">connection type </string>
+    <string name="wifi_label">wifi</string>
+    <string name="ethernet_label">ethernet</string>
+    <string name="message_from_client">client message</string>
+    <string name="ip_address_title">ip address : </string>
+    <string name="port_title">port :</string>
+    <string name="wifi_connection_description">wifi connection</string>
+    <string name="ethernet_connection_description">ethernet connection</string>
+    <string name="permission_dialog_message"> notification permission is mandatory to inform the user about the service which is running and about the received message from client when server is in background</string>
+
+
+</resources>
