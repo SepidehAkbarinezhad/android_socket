@@ -11,7 +11,6 @@ import android.media.RingtoneManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
-import com.example.androidSocket.R
 
 class NotificationHandler(val context: Context, private val channelId: String) {
 
@@ -20,7 +19,7 @@ class NotificationHandler(val context: Context, private val channelId: String) {
             val channel = NotificationChannel(
                 channelId,
                 "SocketChannel",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
             )
             val manager = context.getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
