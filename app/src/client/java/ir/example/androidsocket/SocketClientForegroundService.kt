@@ -92,7 +92,7 @@ class SocketClientForegroundService : Service() {
         CoroutineScope(Dispatchers.IO).launch {
             clientLog("InetAddress.getByName(serverIp)  ${InetAddress.getByName(serverIp)}  ip: ${serverIp}  port: ${serverPort.toInt()}")
 
-            client.connectWithTimeout(5000)
+            client.connectWithTimeout(80000)
 
         }
      /*   CoroutineScope(Dispatchers.Main).launch {
