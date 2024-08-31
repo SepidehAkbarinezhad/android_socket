@@ -10,6 +10,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -96,15 +97,16 @@ internal fun ClientCompose(
                     keyboardController?.hide()
                 },
                 onSendMessageEvent = { message ->
+                    onEvent(ClientEvent.SendMessageToServer(message))
                     clientLog("onSendMessageEvent")
-                    keyboardController?.hide()
+                 /*   keyboardController?.hide()
                     onEvent(ClientEvent.SetServerMessage(""))
                     if (message.isEmpty())
                         viewModel.emitMessageValue(R.string.message_empty_error)
                     else {
                         onEvent(ClientEvent.SetLoading(true))
                         onEvent(ClientEvent.SendMessageToServer(message))
-                    }
+                    }*/
 
                 }
             )
@@ -221,6 +223,7 @@ fun ClientContent(
                 )
             }
 
+
         }
 
     }) {
@@ -234,7 +237,7 @@ fun ClientContent(
                 backgroundColor = Indigo,
             ),
             secondButtonTitle = stringResource(id = R.string.send_message),
-            secondEnable = socketStatus.connection,
+            secondEnable = true,
             secondButtonColor = ButtonDefaults.buttonColors(
                 disabledBackgroundColor = Color.LightGray,
                 backgroundColor = Indigo,

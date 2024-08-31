@@ -23,6 +23,8 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
 
     private val ASC_ENQ: Byte = 0x05
     private val LIB_VER: Byte = 0x02
+    private val ASC_STX: Byte = 0x02
+    private val ASC_ETX: Byte = 0x03;
     private var sendBuf = ByteArray(1024)
 
 
@@ -34,6 +36,15 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
     private var isEnqSent: Boolean = false
     private lateinit var timer: Timer
     private var mTransType: TransTypes = TransTypes.TYPE_TRANSACTION
+
+    private var pSpentAmount = ByteArray(13)
+    private var pInvoiceNumber = ByteArray(16)
+    private var pBranchID = ByteArray(8)
+    private var pDisCountAmount = ByteArray(8)
+    private var pAgentCode = ByteArray(30)
+    private var pAgentPass = ByteArray(30)
+    private var pID1 = ByteArray(13)
+    private val pIsMultiAccount: Byte = 0
 
 
     fun pingServer(ip: String): Boolean {
@@ -59,8 +70,8 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
                 clientLog("connectWithTimeout isConnected ${socket?.isConnected}")
                 if (socket?.isConnected == true) {
                     clientLog("if(socket?.isConnected == true)")
-                  //  receive()
-                     sendData()
+                    //  receive()
+                    sendData()
                 }
 
             } catch (e: IOException) {
@@ -95,34 +106,34 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
         try {
             clientLog("receiveData try  ${socket == null}")
 
-             withContext(Dispatchers.IO) {
+            withContext(Dispatchers.IO) {
                 clientLog("inputStream")
-                val inputStream =  socket?.getInputStream()
-                 while (true) {
-                     clientLog("receiveData inputStream is null  ${inputStream == null}")
+                val inputStream = socket?.getInputStream()
+                while (true) {
+                    clientLog("receiveData inputStream is null  ${inputStream == null}")
                     // socket?.soTimeout = 8000
-                     val bytesRead =
-                         try {
-                             clientLog("receiveData read try")
-                             clientLog("isConnected ${socket?.isConnected}")
-                             clientLog("isClosed ${socket?.isClosed}")
-                             inputStream?.read(ByteArray(StateObject.BUFFER_SIZE))
+                    val bytesRead =
+                        try {
+                            clientLog("receiveData read try")
+                            clientLog("isConnected ${socket?.isConnected}")
+                            clientLog("isClosed ${socket?.isClosed}")
+                            inputStream?.read(ByteArray(StateObject.BUFFER_SIZE))
 
-                         } catch (e: Exception) {
-                             clientLog("Exception during read: ${e.cause}   e is $e")
-                             throw e // Rethrow to be caught in outer catch
-                         }
+                        } catch (e: Exception) {
+                            clientLog("Exception during read: ${e.cause}   e is $e")
+                            throw e // Rethrow to be caught in outer catch
+                        }
 
-                     if (bytesRead != null) {
-                         clientLog("receiveData bytesRead  ${bytesRead > 0}")
-                     }
-                     if (bytesRead!=null && bytesRead > 0) {
-                         clientLog("receiveData bytesRead if")
-                         withContext(Dispatchers.Main) {
-                             receiveCallback(state.buffer, bytesRead, state)
-                         }
-                     }
-                 }
+                    if (bytesRead != null) {
+                        clientLog("receiveData bytesRead  ${bytesRead > 0}")
+                    }
+                    if (bytesRead != null && bytesRead > 0) {
+                        clientLog("receiveData bytesRead if")
+                        withContext(Dispatchers.Main) {
+                            receiveCallback(state.buffer, bytesRead, state)
+                        }
+                    }
+                }
             }
 
         } catch (e: IOException) {
@@ -213,17 +224,32 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
         }
 
         request[i++] = LIB_VER
+        pSpentAmount = setLeftZero("1000", pSpentAmount.size)
+        clientLog("sendRequest pSpentAmount $pSpentAmount")
+        clientLog(
+            "Byte array content: ${
+                pSpentAmount.joinToString(
+                    prefix = "[",
+                    postfix = "]"
+                ) { it.toString() }
+            }"
+        )
 
-        /*  if (mTransType == TransTypes.TYPE_TRANSACTION && pSpentAmount.isNotEmpty() && pInvoiceNumber.isNotEmpty()) {
-              System.arraycopy(pSpentAmount, 0, request, i, 13)
-              i += 13
-              System.arraycopy(pInvoiceNumber, 0, request, i, 40)
-              i += 40
-          }*/
+        pSpentAmount.copyInto(request, destinationOffset = i)
+        i += 13
+        pInvoiceNumber = setLeftZero("2000", pInvoiceNumber.size)
+        pInvoiceNumber.copyInto(request, destinationOffset = i)
+        i += 40
+        clientLog("sendRequest pInvoiceNumber $pInvoiceNumber")
 
         sendBuf = request
         // Assuming you need to return the modified array
         return i
+    }
+
+    fun setAmount() {
+        sendBuf = sendAmount()
+        send(sendBuf, 131)
     }
 
     private fun send(sendBuf: ByteArray, bufLen: Int) {
@@ -236,6 +262,82 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
         } catch (e: Exception) {
             clientLog("send--> catch ${e.message}")
         }
+    }
+
+   private fun sendAmount() : ByteArray{
+        clientLog("sendAmount()")
+
+        val request = ByteArray(1024)
+        var i = 0
+
+        request[i++] = ASC_STX
+
+        request[i++] = 0x01
+        request[i++] = 0x26
+        request[i++] = 0x91.toByte()
+        request[i++] = 0x01
+
+
+        pSpentAmount = setLeftZero("1000", pSpentAmount.size)
+        pSpentAmount.copyInto(request, i)
+        i += 13
+
+        pInvoiceNumber = setLeftZero("2000", pInvoiceNumber.size)
+        pInvoiceNumber.copyInto(request, i)
+        i += 16
+
+        pBranchID = setLeftZero("0", pBranchID.size)
+        pBranchID.copyInto(request, i)
+        i += 8
+
+        pDisCountAmount = setLeftZero("0", pDisCountAmount.size)
+        pDisCountAmount.copyInto(request, i)
+        i += 13
+
+        pAgentCode = setLeftZero("0", pAgentCode.size)
+        pAgentCode.copyInto(request, i)
+        i += 30
+
+
+        pAgentPass = setLeftZero("0", pAgentPass.size)
+        pAgentPass.copyInto(request, i)
+        i += 30
+
+
+        request[i++] = pIsMultiAccount
+
+       pID1 = setLeftZero("0", pID1.size)
+       pID1.copyInto(request, i)
+       i += 13
+
+        request[i++] = ASC_ETX
+        request[i] = lrc(request)
+
+        return request
+    }
+
+
+    private fun lrc(buf: ByteArray): Byte {
+        clientLog("lrc()")
+        var result = 0
+        val strBuffer = buf.sliceArray(1 until buf.size).toString(Charsets.US_ASCII)
+
+        for (c in strBuffer) {
+            result = result xor c.code
+        }
+
+        return result.toByte()
+    }
+
+    private fun setLeftZero(value: String, len: Int): ByteArray {
+        clientLog("setLeftZero $value  $len")
+        val sValue = "0".repeat(len) + value.trim()
+        val substring = sValue.takeLast(len)
+        clientLog("setLeftZero sValue $sValue")
+        clientLog("setLeftZero substring $substring")
+
+        val bytes = substring.toByteArray(Charsets.UTF_8)
+        return bytes
     }
 
     fun closeConnection() {

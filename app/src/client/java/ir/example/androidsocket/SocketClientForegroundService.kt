@@ -115,7 +115,7 @@ class SocketClientForegroundService : Service() {
     fun sendMessageWithTimeout(message: String) {
         CoroutineScope(Dispatchers.IO).launch {
             clientLog("SocketClientForegroundService sendMessageWithTimeout")
-            //client.sendMessageWithTimeout(message = message)
+            client.setAmount()
         }
     }
 
