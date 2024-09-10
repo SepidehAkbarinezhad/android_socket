@@ -128,20 +128,16 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                             val serviceIntent = Intent(event.context, SocketClientForegroundService::class.java)
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                 event.context.startForegroundService(serviceIntent)
-                                event.context.bindService(
-                                    serviceIntent,
-                                    connection,
-                                    ComponentActivity.BIND_AUTO_CREATE
-                                )
-                                isServiceBound.value = true
                             } else {
                                 event.context.startService(serviceIntent)
-                                event.context.bindService(
-                                    serviceIntent,
-                                    connection,
-                                    ComponentActivity.BIND_AUTO_CREATE
-                                )
                             }
+                            event.context.bindService(
+                                serviceIntent,
+                                connection,
+                                ComponentActivity.BIND_AUTO_CREATE
+                            )
+                            isServiceBound.value = true
+
                         } ?: throw Exception()
 
                     } catch (e: Exception) {
