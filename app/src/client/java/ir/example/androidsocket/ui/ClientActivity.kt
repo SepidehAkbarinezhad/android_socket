@@ -60,7 +60,9 @@ class ClientActivity : ComponentActivity() {
             )
 
             LaunchedEffect(Unit) {
+                clientLog("LaunchedEffect  ${Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU}")
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    clientLog("LaunchedEffect TIRAMISU")
                     when {
                         ContextCompat.checkSelfPermission(
                             activity,
@@ -90,6 +92,7 @@ class ClientActivity : ComponentActivity() {
                         }
                     }
                 } else {
+                    clientLog("LaunchedEffect else")
                     viewModel.onEvent(ClientEvent.StartClientService(activity))
                 }
 

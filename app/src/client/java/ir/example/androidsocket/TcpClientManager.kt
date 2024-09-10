@@ -22,7 +22,7 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
     }
 
     private val ASC_ENQ: Byte = 0x05
-    private val LIB_VER: Byte = 0x02
+    private val LIB_VER: Byte = 0x00
     private val ASC_STX: Byte = 0x02
     private val ASC_ETX: Byte = 0x03;
     private var sendBuf = ByteArray(1024)
@@ -70,7 +70,6 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
                 clientLog("connectWithTimeout isConnected ${socket?.isConnected}")
                 if (socket?.isConnected == true) {
                     clientLog("if(socket?.isConnected == true)")
-                    //  receive()
                     sendData()
                 }
 
@@ -102,13 +101,13 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
     }
 
     private suspend fun receiveData(state: StateObject) {
-        clientLog("receiveData()")
         try {
             clientLog("receiveData try  ${socket == null}")
 
             withContext(Dispatchers.IO) {
                 clientLog("inputStream")
                 val inputStream = socket?.getInputStream()
+                val buffer = ByteArray(StateObject.BUFFER_SIZE)
                 while (true) {
                     clientLog("receiveData inputStream is null  ${inputStream == null}")
                     // socket?.soTimeout = 8000
@@ -117,24 +116,24 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
                             clientLog("receiveData read try")
                             clientLog("isConnected ${socket?.isConnected}")
                             clientLog("isClosed ${socket?.isClosed}")
-                            inputStream?.read(ByteArray(StateObject.BUFFER_SIZE))
+                            inputStream?.read(buffer)
 
                         } catch (e: Exception) {
                             clientLog("Exception during read: ${e.cause}   e is $e")
                             throw e // Rethrow to be caught in outer catch
                         }
+                    clientLog("buffer is $buffer")
 
-                    if (bytesRead != null) {
-                        clientLog("receiveData bytesRead  ${bytesRead > 0}")
-                    }
+
                     if (bytesRead != null && bytesRead > 0) {
-                        clientLog("receiveData bytesRead if")
-                        withContext(Dispatchers.Main) {
-                            receiveCallback(state.buffer, bytesRead, state)
-                        }
+                        val hexData = BytesUtils.bytesToHex(buffer)
+                        val stringData = BytesUtils.hexToString(hexData)
+                        clientLog("hex is $hexData")
+                        clientLog("string is $stringData")
                     }
                 }
             }
+
 
         } catch (e: IOException) {
             withContext(Dispatchers.Main) {
@@ -152,14 +151,6 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
                 clientLog("IOException during InputStream close: ${e.message}")
             }
         }
-    }
-
-    private fun receiveCallback(buffer: ByteArray, bytesRead: Int, state: StateObject) {
-        clientLog("receiveCallback")
-        // Process the received data
-        val receivedData = String(buffer, 0, bytesRead)
-        clientLog("receiveCallback data $receivedData")
-        state.stringBuilder.append(receivedData)
     }
 
     private fun sendData(): Boolean {
@@ -223,8 +214,23 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
             TransTypes.TYPE_LASTTRANS -> request[i++] = 2
         }
 
-        request[i++] = LIB_VER
-        pSpentAmount = setLeftZero("1000", pSpentAmount.size)
+        if(LIB_VER<2){
+            if (pSpentAmount.isNotEmpty() && pInvoiceNumber.isNotEmpty())
+            {
+                pSpentAmount.copyInto(request, i);
+                i += 13;
+                pInvoiceNumber.copyInto(request, i);
+                i += 16;
+            }
+        }else{
+            request[i++] = LIB_VER
+            pSpentAmount = setLeftZero("1000", pSpentAmount.size)
+            pSpentAmount.copyInto(request, destinationOffset = i)
+            i += 13
+            pInvoiceNumber = setLeftZero("2000", pInvoiceNumber.size)
+            pInvoiceNumber.copyInto(request, destinationOffset = i)
+            i += 40
+        }
         clientLog("sendRequest pSpentAmount $pSpentAmount")
         clientLog(
             "Byte array content: ${
@@ -235,11 +241,7 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
             }"
         )
 
-        pSpentAmount.copyInto(request, destinationOffset = i)
-        i += 13
-        pInvoiceNumber = setLeftZero("2000", pInvoiceNumber.size)
-        pInvoiceNumber.copyInto(request, destinationOffset = i)
-        i += 40
+
         clientLog("sendRequest pInvoiceNumber $pInvoiceNumber")
 
         sendBuf = request
@@ -250,6 +252,7 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
     fun setAmount() {
         sendBuf = sendAmount()
         send(sendBuf, 131)
+        receive()
     }
 
     private fun send(sendBuf: ByteArray, bufLen: Int) {
@@ -262,6 +265,7 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
         } catch (e: Exception) {
             clientLog("send--> catch ${e.message}")
         }
+        receive()
     }
 
    private fun sendAmount() : ByteArray{
@@ -278,7 +282,7 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
         request[i++] = 0x01
 
 
-        pSpentAmount = setLeftZero("1000", pSpentAmount.size)
+        pSpentAmount = setLeftZero("1", pSpentAmount.size)
         pSpentAmount.copyInto(request, i)
         i += 13
 
@@ -290,23 +294,23 @@ class TcpClientManager(val serverAddress: InetAddress, val serverPort: Int) {
         pBranchID.copyInto(request, i)
         i += 8
 
-        pDisCountAmount = setLeftZero("0", pDisCountAmount.size)
+        pDisCountAmount = setLeftZero("", pDisCountAmount.size)
         pDisCountAmount.copyInto(request, i)
         i += 13
 
-        pAgentCode = setLeftZero("0", pAgentCode.size)
+        pAgentCode = setLeftZero("5678", pAgentCode.size)
         pAgentCode.copyInto(request, i)
         i += 30
 
 
-        pAgentPass = setLeftZero("0", pAgentPass.size)
+        pAgentPass = setLeftZero("9000", pAgentPass.size)
         pAgentPass.copyInto(request, i)
         i += 30
 
 
         request[i++] = pIsMultiAccount
 
-       pID1 = setLeftZero("0", pID1.size)
+       pID1 = setLeftZero("987654321", pID1.size)
        pID1.copyInto(request, i)
        i += 13
 
