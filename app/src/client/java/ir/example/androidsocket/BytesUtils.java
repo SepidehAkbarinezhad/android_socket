@@ -364,7 +364,7 @@ public class BytesUtils
         return sb.toString();
     }
 
-    private static String byteToHex(byte b) {
+     static String byteToHex(byte b) {
         new StringBuilder();
         int high = b >> 4 & 15;
         int low = b & 15;
