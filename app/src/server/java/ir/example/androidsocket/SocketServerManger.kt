@@ -24,9 +24,6 @@ class SocketServerManger(
 
     private var connection: WebSocket? = null
 
-    private val _isConnectionOpen = MutableStateFlow(false)
-    val isConnectionOpen: StateFlow<Boolean> = _isConnectionOpen
-
 
     /**
      * called when the WebSocket server has successfully started and is ready to accept client connections
@@ -45,7 +42,8 @@ class SocketServerManger(
     }
 
     /**
-     * called when a client connection is closed
+     * called when a individual client connection is closed , not when the server itself is stopped
+     * This method is called when a client disconnects from the server or when the server forcefully closes a client connection
      * */
     override fun onClose(conn: WebSocket?, code: Int, reason: String?, remote: Boolean) {
         serverLog(
@@ -113,8 +111,6 @@ class SocketServerManger(
         }
     }
 
-
-    fun isConnectionOpen() = connection?.isOpen ?: false
 
     fun isPortAvailable(port: Int): Boolean {
         return try {

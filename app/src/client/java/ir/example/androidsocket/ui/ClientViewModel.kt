@@ -1,6 +1,7 @@
 package ir.example.androidsocket.ui
 
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Build
@@ -128,20 +129,16 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                             val serviceIntent = Intent(event.context, SocketClientForegroundService::class.java)
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                 event.context.startForegroundService(serviceIntent)
-                                event.context.bindService(
-                                    serviceIntent,
-                                    connection,
-                                    ComponentActivity.BIND_AUTO_CREATE
-                                )
-                                isServiceBound.value = true
                             } else {
                                 event.context.startService(serviceIntent)
-                                event.context.bindService(
-                                    serviceIntent,
-                                    connection,
-                                    ComponentActivity.BIND_AUTO_CREATE
-                                )
                             }
+                            event.context.bindService(
+                                serviceIntent,
+                                connection,
+                                ComponentActivity.BIND_AUTO_CREATE
+                            )
+                            isServiceBound.value = true
+
                         } ?: throw Exception()
 
                     } catch (e: Exception) {
@@ -179,7 +176,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 }
             }
 
-            ClientEvent.OnDisconnectFromServer -> clientForegroundService?.disconnect()
+            ClientEvent.OnDisconnectFromServer -> clientForegroundService?.closeClientSocket()
             is ClientEvent.SendMessageToServer -> {
                 if(event.message.isNotEmpty()){
                 setWaitingForServer(true)}
@@ -193,16 +190,15 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun performCleanup() {
+        clientLog("performCleanup()")
         try {
-            clientLog("performCleanup : try")
-            // Unbind the service
-            clientForegroundService?.let {
+            clientForegroundService?.let {foregroundService->
                 serviceConnection?.let { serviceConnection ->
-                    it.unbindService(serviceConnection)
+                    //stopping the service makes it automatically unbinds all clients that are bound to it
+                    foregroundService.stopSelf()
                     isServiceBound.value = false
                 }
             }
-            // Perform additional cleanup or actions here
 
         } catch (e: Exception) {
             // Handle exceptions

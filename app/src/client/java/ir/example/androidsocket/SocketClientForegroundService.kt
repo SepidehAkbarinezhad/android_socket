@@ -43,6 +43,7 @@ class SocketClientForegroundService : Service() {
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
+        clientLog("SocketClientForegroundService onUnbind")
         closeClientSocket()
         return super.onUnbind(intent)
     }
@@ -95,8 +96,13 @@ class SocketClientForegroundService : Service() {
         }
     }
 
-    fun disconnect() {
-        client.closeConnection()
+    fun closeClientSocket() {
+        try {
+            clientLog("SocketClientForegroundService closeClientSocket")
+            client.close()
+        } catch (e: Exception) {
+            clientLog("closeClientSocket catch exception : ${e.message}")
+        }
     }
 
     fun sendMessageWithTimeout(message: String) {
@@ -106,13 +112,6 @@ class SocketClientForegroundService : Service() {
         }
     }
 
-    private fun closeClientSocket() {
-        try {
-            clientLog("SocketClientForegroundService closeClientSocket")
-            client.close()
-        } catch (e: Exception) {
-            clientLog("closeClientSocket catch exception : ${e.message}")
-        }
-    }
+
 
 }

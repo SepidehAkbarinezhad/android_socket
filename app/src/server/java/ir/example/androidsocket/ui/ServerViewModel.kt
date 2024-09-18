@@ -109,26 +109,25 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
 
     fun startServerService(context: Context) {
+        serverLog("startServerService() ${isServiceBound.value}")
         if(!isServiceBound.value){
             try {
+                serverLog("startServerService() try")
                 serviceConnection?.let { connection ->
                     val serviceIntent = Intent(context, SocketServerForegroundService::class.java)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        serverLog("startServerService() Build.VERSION_CODES.O")
                         context.startForegroundService(serviceIntent)
-                        context.bindService(
-                            serviceIntent,
-                            connection,
-                            ComponentActivity.BIND_AUTO_CREATE
-                        )
-                        isServiceBound.value = true
                     } else {
+                        serverLog("startServerService() Build.VERSION_CODES.O else")
                         context.startService(serviceIntent)
-                        context.bindService(
-                            serviceIntent,
-                            connection,
-                            ComponentActivity.BIND_AUTO_CREATE
-                        )
                     }
+                    context.bindService(
+                        serviceIntent,
+                        connection,
+                        ComponentActivity.BIND_AUTO_CREATE
+                    )
+                    isServiceBound.value = true
                 } ?: throw Exception()
 
             } catch (e: Exception) {
@@ -172,10 +171,12 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun performCleanup() {
+        serverLog("performCleanup()")
         try {
-            socketServerService?.let {
-                serviceConnection?.let { serviceConnection ->
-                    it.unbindService(serviceConnection)
+            socketServerService?.let {foregroundService->
+                serviceConnection?.let {
+                    //stopping the service makes it automatically unbinds all clients that are bound to it
+                    foregroundService.stopSelf()
                     isServiceBound.value = false
                 }
             }

@@ -132,9 +132,7 @@ class ServerActivity : ComponentActivity() {
 
     override fun onDestroy() {
         serverLog("ServerActivity onDestroy ")
-        lifecycleScope.launch {
-            viewModel.performCleanup()
-        }
+        viewModel.performCleanup()
         unregisterReceiver(ConnectivityBroadcastReceiver)
         super.onDestroy()
     }
