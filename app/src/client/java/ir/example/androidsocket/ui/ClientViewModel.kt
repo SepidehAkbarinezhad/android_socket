@@ -189,17 +189,16 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         waitingForServerConfirmation.value=waiting
     }
 
-    fun performCleanup(context: Context) {
+    fun performCleanup() {
         clientLog("performCleanup()")
         try {
-            // Unbind the service
-            clientForegroundService?.let {
+            clientForegroundService?.let {foregroundService->
                 serviceConnection?.let { serviceConnection ->
-                    context.unbindService(serviceConnection)
+                    //stopping the service makes it automatically unbinds all clients that are bound to it
+                    foregroundService.stopSelf()
                     isServiceBound.value = false
                 }
             }
-            // Perform additional cleanup or actions here
 
         } catch (e: Exception) {
             // Handle exceptions

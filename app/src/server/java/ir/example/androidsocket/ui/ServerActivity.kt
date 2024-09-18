@@ -132,7 +132,7 @@ class ServerActivity : ComponentActivity() {
 
     override fun onDestroy() {
         serverLog("ServerActivity onDestroy ")
-        viewModel.performCleanup(this@ServerActivity)
+        viewModel.performCleanup()
         unregisterReceiver(ConnectivityBroadcastReceiver)
         super.onDestroy()
     }

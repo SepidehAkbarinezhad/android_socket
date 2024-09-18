@@ -170,17 +170,14 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             )
     }
 
-    fun performCleanup(context: Context) {
+    fun performCleanup() {
         serverLog("performCleanup()")
         try {
-            serverLog("performCleanup() try")
-            socketServerService?.let {
-                serverLog("performCleanup() let")
-                serviceConnection?.let { serviceConnection ->
-                    serverLog("performCleanup() serviceConnection ->     ${isServiceBound.value}")
-                    context.unbindService(serviceConnection)
+            socketServerService?.let {foregroundService->
+                serviceConnection?.let {
+                    //stopping the service makes it automatically unbinds all clients that are bound to it
+                    foregroundService.stopSelf()
                     isServiceBound.value = false
-                    serverLog("performCleanup() serviceConnection -> ${isServiceBound.value}")
                 }
             }
         } catch (e: Exception) {
