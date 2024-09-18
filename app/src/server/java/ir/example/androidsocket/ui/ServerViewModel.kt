@@ -109,13 +109,17 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
 
     fun startServerService(context: Context) {
+        serverLog("startServerService() ${isServiceBound.value}")
         if(!isServiceBound.value){
             try {
+                serverLog("startServerService() try")
                 serviceConnection?.let { connection ->
                     val serviceIntent = Intent(context, SocketServerForegroundService::class.java)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        serverLog("startServerService() Build.VERSION_CODES.O")
                         context.startForegroundService(serviceIntent)
                     } else {
+                        serverLog("startServerService() Build.VERSION_CODES.O else")
                         context.startService(serviceIntent)
                     }
                     context.bindService(
@@ -166,12 +170,17 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             )
     }
 
-    fun performCleanup() {
+    fun performCleanup(context: Context) {
+        serverLog("performCleanup()")
         try {
+            serverLog("performCleanup() try")
             socketServerService?.let {
+                serverLog("performCleanup() let")
                 serviceConnection?.let { serviceConnection ->
-                    it.unbindService(serviceConnection)
+                    serverLog("performCleanup() serviceConnection ->     ${isServiceBound.value}")
+                    context.unbindService(serviceConnection)
                     isServiceBound.value = false
+                    serverLog("performCleanup() serviceConnection -> ${isServiceBound.value}")
                 }
             }
         } catch (e: Exception) {

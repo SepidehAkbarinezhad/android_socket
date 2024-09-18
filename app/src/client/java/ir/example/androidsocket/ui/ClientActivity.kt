@@ -130,14 +130,10 @@ class ClientActivity : ComponentActivity() {
 
 
     override fun onDestroy() {
-        clientLog("mainActivity onDestroy()")
-        lifecycleScope.launch {
-            viewModel.performCleanup()
-        }
+        clientLog("ClientActivity onDestroy()")
+        viewModel.performCleanup(this@ClientActivity)
         super.onDestroy()
-
     }
-
 
 }
 

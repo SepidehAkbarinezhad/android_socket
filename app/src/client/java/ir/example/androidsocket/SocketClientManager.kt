@@ -87,8 +87,4 @@ class SocketClientManager(uri: URI, val socketListener: List<SocketConnectionLis
         ex?.printStackTrace()
     }
 
-    fun closeConnection() {
-        this.close()
-    }
-
 }

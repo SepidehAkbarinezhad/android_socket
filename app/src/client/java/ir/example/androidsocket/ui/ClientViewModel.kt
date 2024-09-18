@@ -1,6 +1,7 @@
 package ir.example.androidsocket.ui
 
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Build
@@ -175,7 +176,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 }
             }
 
-            ClientEvent.OnDisconnectFromServer -> clientForegroundService?.disconnect()
+            ClientEvent.OnDisconnectFromServer -> clientForegroundService?.closeClientSocket()
             is ClientEvent.SendMessageToServer -> {
                 if(event.message.isNotEmpty()){
                 setWaitingForServer(true)}
@@ -188,13 +189,13 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         waitingForServerConfirmation.value=waiting
     }
 
-    fun performCleanup() {
+    fun performCleanup(context: Context) {
+        clientLog("performCleanup()")
         try {
-            clientLog("performCleanup : try")
             // Unbind the service
             clientForegroundService?.let {
                 serviceConnection?.let { serviceConnection ->
-                    it.unbindService(serviceConnection)
+                    context.unbindService(serviceConnection)
                     isServiceBound.value = false
                 }
             }

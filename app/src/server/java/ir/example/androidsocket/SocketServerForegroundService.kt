@@ -74,15 +74,16 @@ class SocketServerForegroundService() : Service() {
         return binder
     }
 
-    override fun onDestroy() {
-        serverLog("SocketServerForegroundService onDestroy")
-        stopServer()
-        super.onDestroy()
-    }
-
     override fun onUnbind(intent: Intent?): Boolean {
         serverLog("SocketServerForegroundService onUnbind")
+        closeServerSocket()
         return super.onUnbind(intent)
+    }
+
+    override fun onDestroy() {
+        serverLog("SocketServerForegroundService onDestroy")
+        closeServerSocket()
+        super.onDestroy()
     }
 
     override fun onRebind(intent: Intent?) {
@@ -103,7 +104,7 @@ class SocketServerForegroundService() : Service() {
 
         // check to prevent starting a server on a port that is already in use, which would cause a conflict and result in an error.
         if (!server.isPortAvailable(PORT)) {
-            stopServer()
+            closeServerSocket()
         }
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -112,14 +113,9 @@ class SocketServerForegroundService() : Service() {
                 delay(5000)
                 server.start()
             } catch (e: Exception) {
-                serverLog("SocketForegroundService startSocketServer exception: ${e.message}")
+                serverLog("SocketServerForegroundService startSocketServer exception: ${e.message}")
             }
         }
-    }
-
-    private fun stopServer() {
-        serverLog("stopServer ${server.isConnectionOpen()}")
-        server.stop()
     }
 
 
@@ -151,5 +147,15 @@ class SocketServerForegroundService() : Service() {
             server.sendMessagesUntilSuccess(message = message)
         }
     }
+
+    private fun closeServerSocket() {
+        try {
+            serverLog("SocketServerForegroundService closeServerSocket")
+            server.stop()
+        } catch (e: Exception) {
+            serverLog("SocketServerForegroundService catch exception : ${e.message}")
+        }
+    }
+
 
 }
