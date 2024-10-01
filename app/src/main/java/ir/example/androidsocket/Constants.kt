@@ -23,5 +23,9 @@ object Constants {
         ),
     }
 
+    enum class ProtocolType(val title: String){
+        WEBSOCKET("websocket"),TCP("tcp")
+    }
+
 
 }

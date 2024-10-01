@@ -1,6 +1,8 @@
 package ir.example.androidsocket.ui
 
+import android.inputmethodservice.Keyboard.Row
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +13,7 @@ import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.androidSocket.R
@@ -30,6 +34,7 @@ import ir.example.androidsocket.ui.base.AppOutlinedTextField
 import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.AppTitleValueText
 import ir.example.androidsocket.ui.base.BaseUiEvent
+import ir.example.androidsocket.ui.base.ProtocolTypeMenu
 import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
 import ir.example.androidsocket.ui.theme.Green900
@@ -51,7 +56,9 @@ internal fun ClientCompose(
     val keyboardController = LocalSoftwareKeyboardController.current
     val clientMessage by viewModel.clientMessage.collectAsStateWithLifecycle("")
     val serverMessage by viewModel.serverMessage.collectAsStateWithLifecycle("")
-    val waitingForServerConfirmation by viewModel.waitingForServerConfirmation.collectAsStateWithLifecycle(false)
+    val waitingForServerConfirmation by viewModel.waitingForServerConfirmation.collectAsStateWithLifecycle(
+        false
+    )
     val serverIp by viewModel.serverIp.collectAsState()
     val serverIpError by viewModel.serverIpError.collectAsState()
     val serverPort by viewModel.serverPort.collectAsState()
@@ -76,8 +83,8 @@ internal fun ClientCompose(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colors.background
         ) {
-
             ClientContent(
+                protocols = viewModel.protocols,
                 onEvent = onEvent,
                 serverIp = serverIp,
                 serverIpError = serverIpError,
@@ -99,14 +106,14 @@ internal fun ClientCompose(
                 onSendMessageEvent = { message ->
                     onEvent(ClientEvent.SendMessageToServer(message))
                     clientLog("onSendMessageEvent")
-                 /*   keyboardController?.hide()
-                    onEvent(ClientEvent.SetServerMessage(""))
-                    if (message.isEmpty())
-                        viewModel.emitMessageValue(R.string.message_empty_error)
-                    else {
-                        onEvent(ClientEvent.SetLoading(true))
-                        onEvent(ClientEvent.SendMessageToServer(message))
-                    }*/
+                    /*   keyboardController?.hide()
+                       onEvent(ClientEvent.SetServerMessage(""))
+                       if (message.isEmpty())
+                           viewModel.emitMessageValue(R.string.message_empty_error)
+                       else {
+                           onEvent(ClientEvent.SetLoading(true))
+                           onEvent(ClientEvent.SendMessageToServer(message))
+                       }*/
 
                 }
             )
@@ -116,6 +123,7 @@ internal fun ClientCompose(
 
 @Composable
 fun ClientContent(
+    protocols: List<String>,
     onEvent: (ClientEvent) -> Unit,
     serverIp: String,
     serverIpError: Boolean,
@@ -136,6 +144,11 @@ fun ClientContent(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
+            Box(modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.small)) {
+                ProtocolTypeMenu(modifier = Modifier.align(Alignment.TopStart), protocols = protocols)
+            }
+
             Row(
                 Modifier
                     .fillMaxWidth(),
@@ -156,7 +169,7 @@ fun ClientContent(
                     hasError = serverIpError,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
 
-                )
+                    )
 
                 AppOutlinedTextField(
                     modifier = Modifier
@@ -187,7 +200,7 @@ fun ClientContent(
             AppOutlinedTextField(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = MaterialTheme.spacing.small),
+                    .padding(MaterialTheme.spacing.small),
                 value = clientMessage,
                 onValueChange = {
                     onEvent(ClientEvent.SetClientMessage(it))
@@ -206,7 +219,7 @@ fun ClientContent(
                 ),
             )
 
-            if(socketStatus.connection && waitingForServer && serverMessage.isEmpty()){
+            if (socketStatus.connection && waitingForServer && serverMessage.isEmpty()) {
                 AppText(
                     modifier = Modifier.padding(MaterialTheme.spacing.small),
                     text = stringResource(R.string.server_confirmation_message),
@@ -215,7 +228,7 @@ fun ClientContent(
             }
 
 
-            if (serverMessage.isNotEmpty()){
+            if (serverMessage.isNotEmpty()) {
                 AppText(
                     modifier = Modifier.padding(MaterialTheme.spacing.small),
                     text = serverMessage,
@@ -228,6 +241,7 @@ fun ClientContent(
 
     }) {
         AppButtonsRow(
+            modifier = Modifier.padding(MaterialTheme.spacing.small),
             firstButtonTitle = if (!socketStatus.connection) stringResource(id = R.string.connect_to_server) else stringResource(
                 id = R.string.disconnect_from_server
             ),

@@ -7,5 +7,6 @@
     <string name="connection_status_title">connection status:</string>
     <string name="ip_label">ip </string>
     <string name="port_label">port </string>
+    <string name="protocol_type">"protocol type : "</string>
 
 </resources>
