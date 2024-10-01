@@ -1,6 +1,7 @@
 package ir.example.androidsocket.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +30,7 @@ import ir.example.androidsocket.ui.base.AppOutlinedTextField
 import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.AppTitleValueText
 import ir.example.androidsocket.ui.base.BaseUiEvent
+import ir.example.androidsocket.ui.base.ProtocolTypeMenu
 import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
 import ir.example.androidsocket.ui.theme.Green900
@@ -78,6 +80,7 @@ internal fun ClientCompose(
 
             ClientContent(
                 onEvent = onEvent,
+                protocols = viewModel.protocols,
                 serverIp = serverIp,
                 serverIpError = serverIpError,
                 serverPort = serverPort,
@@ -115,6 +118,7 @@ internal fun ClientCompose(
 @Composable
 fun ClientContent(
     onEvent: (ClientEvent) -> Unit,
+    protocols:List<String>,
     serverIp: String,
     serverIpError: Boolean,
     serverPort: String,
@@ -134,12 +138,15 @@ fun ClientContent(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
+            Box(modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.small)) {
+                ProtocolTypeMenu(modifier = Modifier.align(Alignment.TopStart), protocols = protocols)
+            }
             Row(
                 Modifier
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-
                 AppOutlinedTextField(
                     modifier = Modifier
                         .weight(1.5f)

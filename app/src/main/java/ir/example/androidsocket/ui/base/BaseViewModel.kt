@@ -1,12 +1,9 @@
 package ir.example.androidsocket.ui.base
 
-import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CoroutineScope
+import ir.example.androidsocket.Constants
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 
 internal abstract class BaseViewModel() : ViewModel() {
 
@@ -17,6 +14,7 @@ internal abstract class BaseViewModel() : ViewModel() {
 
     var openPermissionDialog = MutableStateFlow(false)
 
+    val protocols = listOf(Constants.ProtocolType.WEBSOCKET.title, Constants.ProtocolType.TCP.title)
 
     private fun sendUiEvent(event: BaseUiEvent) {
         uiEvent.value = event
