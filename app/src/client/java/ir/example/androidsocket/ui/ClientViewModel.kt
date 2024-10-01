@@ -170,8 +170,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 if (!serverIpError.value && !serverPortError.value && isServiceBound.value) {
                     onEvent(ClientEvent.SetLoading(true))
                     clientForegroundService?.let { service ->
-                        service.setServerAddress(ip = serverIp.value, port = serverPort.value)
-                        service.connectWebSocket()
+                        service.connectWebSocket(Constants.ProtocolType.WEBSOCKET,ip = serverIp.value, port = serverPort.value)
                     }
                 }
             }

@@ -9,7 +9,6 @@ import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.net.URI
 
 class SocketClientForegroundService : Service() {
 
@@ -18,7 +17,7 @@ class SocketClientForegroundService : Service() {
         private const val NOTIFICATION_ID = 1
     }
 
-    private lateinit var client: SocketClientManager
+    private lateinit var clientManager: SocketClient
     private val binder = LocalBinder()
     private val connectionListeners = mutableListOf<SocketConnectionListener>()
     private val notificationHandler =
@@ -76,30 +75,21 @@ class SocketClientForegroundService : Service() {
         connectionListeners.remove(listener)
     }
 
-    fun setServerAddress(ip: String, port: String) {
-        serverAddress = "ws://$ip:$port"
-    }
 
-
-    fun connectWebSocket() {
-        client = SocketClientManager(URI(serverAddress), connectionListeners)
+    fun connectWebSocket(protocolType: Constants.ProtocolType, ip: String, port: String) {
+        clientManager = when (protocolType) {
+            Constants.ProtocolType.WEBSOCKET -> WebsocketClientManager(ip,port,connectionListeners)
+            Constants.ProtocolType.TCP -> TcpClientManager(ip, port)
+        }
         CoroutineScope(Dispatchers.Main).launch {
-            val isConnected = client.connectWithTimeout()
-
-            if (isConnected) {
-                // Successfully connected
-                clientLog("connectWebSocket isConnected")
-            } else {
-                // Connection failed or timed out
-                clientLog("connectWebSocket is not Connected")
-            }
+            clientManager.connectWithTimeout()
         }
     }
 
     fun closeClientSocket() {
         try {
             clientLog("SocketClientForegroundService closeClientSocket")
-            client.close()
+            clientManager.disconnect()
         } catch (e: Exception) {
             clientLog("closeClientSocket catch exception : ${e.message}")
         }
@@ -108,10 +98,9 @@ class SocketClientForegroundService : Service() {
     fun sendMessageWithTimeout(message: String) {
         CoroutineScope(Dispatchers.IO).launch {
             clientLog("SocketClientForegroundService sendMessageWithTimeout")
-            client.sendMessageWithTimeout(message = message)
+            clientManager.sendMessage(message = message, timeoutMillis = 50000)
         }
     }
-
 
 
 }
