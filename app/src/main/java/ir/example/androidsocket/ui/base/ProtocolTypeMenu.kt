@@ -36,9 +36,13 @@ import ir.example.androidsocket.ui.theme.Indigo200
 import ir.example.androidsocket.ui.theme.spacing
 
 @Composable
-fun ProtocolTypeMenu(modifier: Modifier = Modifier, protocols: List<String>) {
+fun ProtocolTypeMenu(
+    modifier: Modifier = Modifier,
+    protocols: List<String>,
+    selectedProtocol: Constants.ProtocolType,
+    onProtocolSelected: (String) -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
-    var selectedTitle by remember { mutableStateOf(Constants.ProtocolType.WEBSOCKET.title) }
 
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         AppText(
@@ -65,19 +69,22 @@ fun ProtocolTypeMenu(modifier: Modifier = Modifier, protocols: List<String>) {
                 )
                 Box(Modifier.fillMaxWidth()) {
                     AppText(
-                        text = selectedTitle
+                        text = selectedProtocol.title
                     )
                     DropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false }) {
                         protocols.forEachIndexed { index, s ->
                             DropdownMenuItem(
-                                modifier = Modifier.background(if (selectedTitle == s) Indigo200 else MaterialTheme.colors.surface),
+                                modifier = Modifier.background(if (selectedProtocol.title == s) Indigo200 else MaterialTheme.colors.surface),
                                 onClick = {
-                                    selectedTitle = s
                                     expanded = false
+                                    onProtocolSelected(s)
                                 }) {
-                                AppText(text = s , textColor = if (selectedTitle == s) Color.White else DarkGray)
+                                AppText(
+                                    text = s,
+                                    textColor = if (selectedProtocol.title == s) Color.White else DarkGray
+                                )
                             }
                         }
                     }

@@ -81,6 +81,7 @@ internal fun ClientCompose(
             ClientContent(
                 onEvent = onEvent,
                 protocols = viewModel.protocols,
+                selectedProtocol = viewModel.selectedProtocol,
                 serverIp = serverIp,
                 serverIpError = serverIpError,
                 serverPort = serverPort,
@@ -119,6 +120,7 @@ internal fun ClientCompose(
 fun ClientContent(
     onEvent: (ClientEvent) -> Unit,
     protocols:List<String>,
+    selectedProtocol : Constants.ProtocolType,
     serverIp: String,
     serverIpError: Boolean,
     serverPort: String,
@@ -140,7 +142,9 @@ fun ClientContent(
         ) {
 
             Box(modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.small)) {
-                ProtocolTypeMenu(modifier = Modifier.align(Alignment.TopStart), protocols = protocols)
+                ProtocolTypeMenu(modifier = Modifier.align(Alignment.TopStart), protocols = protocols, selectedProtocol = selectedProtocol , onProtocolSelected = {
+                    onEvent(ClientEvent.SetProtocolType(it))
+                })
             }
             Row(
                 Modifier

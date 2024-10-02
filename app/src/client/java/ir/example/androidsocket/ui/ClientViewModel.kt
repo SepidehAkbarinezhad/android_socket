@@ -170,16 +170,27 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 if (!serverIpError.value && !serverPortError.value && isServiceBound.value) {
                     onEvent(ClientEvent.SetLoading(true))
                     clientForegroundService?.let { service ->
-                        service.connectWebSocket(Constants.ProtocolType.WEBSOCKET,ip = serverIp.value, port = serverPort.value)
+                        service.connectWebSocket(
+                            selectedProtocol,
+                            ip = serverIp.value,
+                            port = serverPort.value
+                        )
                     }
                 }
             }
 
             ClientEvent.OnDisconnectFromServer -> clientForegroundService?.closeClientSocket()
             is ClientEvent.SendMessageToServer -> {
-                if(event.message.isNotEmpty()){
-                setWaitingForServer(true)}
-                clientForegroundService?.sendMessageWithTimeout(message = event.message)}
+                if(event.message.isNotEmpty()) {
+                    setWaitingForServer(true)
+                }
+                clientForegroundService?.sendMessageWithTimeout(message = event.message)
+            }
+
+            is ClientEvent.SetProtocolType -> selectedProtocol = when (event.type) {
+                Constants.ProtocolType.TCP.title -> Constants.ProtocolType.TCP
+                else -> Constants.ProtocolType.WEBSOCKET
+            }
         }
     }
 
