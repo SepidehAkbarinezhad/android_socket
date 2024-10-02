@@ -15,7 +15,7 @@ import java.net.URI
 class WebsocketClientManager(
     override var ip: String,
     override var port: String,
-    val socketListener: List<SocketConnectionListener>
+    override val socketListener: List<SocketConnectionListener>
 ) : SocketClient, WebSocketClient(URI("ws://$ip:$port")) {
 
     override suspend fun connectWithTimeout(timeoutMillis: Long) {
@@ -41,7 +41,7 @@ class WebsocketClientManager(
 
     override fun sendMessage(message: String, timeoutMillis: Long) {
         clientLog("sendMessageWithTimeout")
-        CoroutineScope(Dispatchers.IO).launch{
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 if (connection != null && connection!!.isOpen) {
                     connection!!.send(message)
@@ -55,11 +55,6 @@ class WebsocketClientManager(
             }
         }
 
-    }
-
-
-    override fun receive(): String {
-        TODO("Not yet implemented")
     }
 
 
