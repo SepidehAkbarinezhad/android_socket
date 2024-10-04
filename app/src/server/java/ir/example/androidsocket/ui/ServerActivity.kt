@@ -111,7 +111,8 @@ class ServerActivity : ComponentActivity() {
             Box(Modifier.fillMaxSize()) {
             ServerComposable(
                 viewModel = viewModel,
-                connectionTypeManager = connectionTypeManager
+                connectionTypeManager = connectionTypeManager,
+                onEvent = {viewModel.onEvent(it)}
             )
             if (openPermissionDialog){
                 clientLog("showPermissionDialog")

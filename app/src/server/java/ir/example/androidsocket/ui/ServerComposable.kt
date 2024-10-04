@@ -2,6 +2,7 @@ package ir.example.androidsocket.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,6 +34,7 @@ import ir.example.androidsocket.ui.base.AppIcon
 import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.AppTitleValueText
 import ir.example.androidsocket.ui.base.BaseUiEvent
+import ir.example.androidsocket.ui.base.ProtocolTypeMenu
 import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
 import ir.example.androidsocket.ui.theme.Green900
@@ -44,7 +46,8 @@ import ir.example.androidsocket.utils.ConnectionTypeManager
 @Composable
 internal fun ServerComposable(
     viewModel: ServerViewModel,
-    connectionTypeManager: ConnectionTypeManager
+    connectionTypeManager: ConnectionTypeManager,
+    onEvent:(ServerEvent)->Unit
 ) {
 
     val context = LocalContext.current
@@ -54,6 +57,7 @@ internal fun ServerComposable(
     val connectionType by connectionTypeManager.connectionType.collectAsState()
     val isWifiConnected by connectionTypeManager.isWifiConnected.collectAsState()
     val isEthernetConnected by connectionTypeManager.isEthernetConnected.collectAsState()
+    val selectedProtocol by viewModel.selectedProtocol.collectAsState()
     val wifiIpAddress by viewModel.wifiServerIp.collectAsState()
     val lanIpAddress by viewModel.ethernetServerIp.collectAsState()
     val socketStatus by viewModel.socketStatus.collectAsState()
@@ -79,7 +83,10 @@ internal fun ServerComposable(
             color = MaterialTheme.colors.primary,
         ) {
             ServerContent(
+                onEvent = onEvent,
                 connectionType = connectionType,
+                selectedProtocol = selectedProtocol,
+                protocols = viewModel.protocols,
                 wifiIpAddress = wifiIpAddress,
                 lanIpAddress = lanIpAddress,
                 socketStatus = socketStatus,
@@ -91,6 +98,9 @@ internal fun ServerComposable(
 
 @Composable
 fun ServerContent(
+    onEvent: (ServerEvent) -> Unit,
+    protocols:List<String>,
+    selectedProtocol : Constants.ProtocolType,
     connectionType: Constants.ConnectionType,
     wifiIpAddress: String,
     lanIpAddress: String,
@@ -132,11 +142,15 @@ fun ServerContent(
                 )
             }
 
-            if (hasConnection)
+            if (hasConnection){
+                ProtocolTypeMenu(protocols = protocols, selectedProtocol = selectedProtocol , onProtocolSelected = {
+                        onEvent(ServerEvent.SetProtocolType(it))
+                    })
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .padding(MaterialTheme.spacing.small),
+
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     Column(
@@ -213,7 +227,7 @@ fun ServerContent(
                     }
                 }
 
-
+            }
             AppTitleValueText(
                 modifier = Modifier.padding(MaterialTheme.spacing.small),
                 title = stringResource(

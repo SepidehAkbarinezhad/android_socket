@@ -145,6 +145,13 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
                 IpAddressManager.getLocalIpAddress(event.context).first ?: ""
             is ServerEvent.GetLanIpAddress -> ethernetServerIp.value =
                 IpAddressManager.getLocalIpAddress(event.context).second ?: ""
+            is ServerEvent.SetProtocolType ->{
+                serverLog("SetProtocolType  ${event.type}")
+                selectedProtocol.value = when (event.type) {
+                    Constants.ProtocolType.TCP.title -> Constants.ProtocolType.TCP
+                    else -> Constants.ProtocolType.WEBSOCKET
+                }
+            }
         }
     }
 

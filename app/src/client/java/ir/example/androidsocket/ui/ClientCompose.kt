@@ -140,7 +140,6 @@ fun ClientContent(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Box(modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.small)) {
                 ProtocolTypeMenu(modifier = Modifier.align(Alignment.TopStart), protocols = protocols, selectedProtocol = selectedProtocol , onProtocolSelected = {
                     onEvent(ClientEvent.SetProtocolType(it))

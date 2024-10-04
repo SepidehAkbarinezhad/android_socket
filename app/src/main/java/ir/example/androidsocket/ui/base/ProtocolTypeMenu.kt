@@ -34,6 +34,7 @@ import ir.example.androidsocket.Constants
 import ir.example.androidsocket.ui.theme.Indigo
 import ir.example.androidsocket.ui.theme.Indigo200
 import ir.example.androidsocket.ui.theme.spacing
+import ir.example.androidsocket.utils.serverLog
 
 @Composable
 fun ProtocolTypeMenu(
@@ -43,7 +44,7 @@ fun ProtocolTypeMenu(
     onProtocolSelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-
+serverLog("ProtocolTypeMenu   ${selectedProtocol.title}")
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         AppText(
             textType = TextType.SUBTITLE,

@@ -2,6 +2,8 @@ package ir.example.androidsocket
 
 object Constants {
 
+    const val CLIENT_MESSAGE_NOTIFICATION_ID = 10
+
     enum class SocketStatus(
         val title: String,
         val connection : Boolean
