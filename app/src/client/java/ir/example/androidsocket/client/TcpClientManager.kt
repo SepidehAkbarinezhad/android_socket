@@ -1,6 +1,7 @@
-package ir.example.androidsocket
+package ir.example.androidsocket.client
 
 
+import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.utils.BytesUtils
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.CoroutineScope

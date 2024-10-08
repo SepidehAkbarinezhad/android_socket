@@ -22,7 +22,7 @@ class SocketServerForegroundService() : Service() {
         private const val NOTIFICATION_ID = 1
     }
 
-    private lateinit var server: SocketServerManger
+    private lateinit var server: WebsocketServerManger
     private val binder = LocalBinder()
     private val connectionListeners = mutableListOf<SocketConnectionListener>()
     private val notificationHandler = NotificationHandler(this, CHANNEL_ID)
@@ -100,7 +100,7 @@ class SocketServerForegroundService() : Service() {
 
     private fun startSocketServer() {
         serverLog("SocketServerForegroundService startSocketServer")
-        server = SocketServerManger(PORT, connectionListeners)
+        server = WebsocketServerManger(PORT, connectionListeners)
 
         // check to prevent starting a server on a port that is already in use, which would cause a conflict and result in an error.
         if (!server.isPortAvailable(PORT)) {

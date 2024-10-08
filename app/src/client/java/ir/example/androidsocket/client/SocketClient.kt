@@ -1,4 +1,6 @@
-package ir.example.androidsocket
+package ir.example.androidsocket.client
+
+import ir.example.androidsocket.SocketConnectionListener
 
 interface SocketClient {
 

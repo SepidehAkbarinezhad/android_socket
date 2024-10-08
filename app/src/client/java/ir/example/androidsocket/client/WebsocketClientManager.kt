@@ -1,10 +1,10 @@
-package ir.example.androidsocket
+package ir.example.androidsocket.client
 
+import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout

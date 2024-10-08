@@ -1,9 +1,11 @@
-package ir.example.androidsocket
+package ir.example.androidsocket.client
 
 import android.app.Service
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
+import ir.example.androidsocket.Constants
+import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.utils.NotificationHandler
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.CoroutineScope

@@ -6,8 +6,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.java_websocket.WebSocket
@@ -17,7 +15,7 @@ import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 
-class SocketServerManger(
+class WebsocketServerManger(
     port: Int,
     val socketListener: List<SocketConnectionListener>,
 ) : WebSocketServer(InetSocketAddress(port)) {

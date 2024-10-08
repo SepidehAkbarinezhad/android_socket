@@ -1,7 +1,6 @@
 package ir.example.androidsocket.ui
 
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Build
@@ -10,7 +9,7 @@ import androidx.activity.ComponentActivity
 import com.example.androidSocket.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import ir.example.androidsocket.Constants
-import ir.example.androidsocket.SocketClientForegroundService
+import ir.example.androidsocket.client.SocketClientForegroundService
 import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.ui.base.BaseViewModel
 import ir.example.androidsocket.utils.clientLog
