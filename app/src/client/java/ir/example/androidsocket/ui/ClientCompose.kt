@@ -50,6 +50,7 @@ internal fun ClientCompose(
 ) {
 
     val keyboardController = LocalSoftwareKeyboardController.current
+    val selectedProtocol by viewModel.selectedProtocol.collectAsState()
     val clientMessage by viewModel.clientMessage.collectAsStateWithLifecycle("")
     val serverMessage by viewModel.serverMessage.collectAsStateWithLifecycle("")
     val waitingForServerConfirmation by viewModel.waitingForServerConfirmation.collectAsStateWithLifecycle(false)
@@ -81,7 +82,7 @@ internal fun ClientCompose(
             ClientContent(
                 onEvent = onEvent,
                 protocols = viewModel.protocols,
-                selectedProtocol = viewModel.selectedProtocol,
+                selectedProtocol = selectedProtocol,
                 serverIp = serverIp,
                 serverIpError = serverIpError,
                 serverPort = serverPort,

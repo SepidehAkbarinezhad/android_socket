@@ -171,7 +171,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                     onEvent(ClientEvent.SetLoading(true))
                     clientForegroundService?.let { service ->
                         service.connectWebSocket(
-                            selectedProtocol,
+                            selectedProtocol.value,
                             ip = serverIp.value,
                             port = serverPort.value
                         )
@@ -187,7 +187,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 clientForegroundService?.sendMessageWithTimeout(message = event.message)
             }
 
-            is ClientEvent.SetProtocolType -> selectedProtocol = when (event.type) {
+            is ClientEvent.SetProtocolType -> selectedProtocol.value = when (event.type) {
                 Constants.ProtocolType.TCP.title -> Constants.ProtocolType.TCP
                 else -> Constants.ProtocolType.WEBSOCKET
             }
