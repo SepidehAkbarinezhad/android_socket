@@ -83,7 +83,7 @@ class SocketClientForegroundService : Service() {
             Constants.ProtocolType.WEBSOCKET -> WebsocketClientManager(ip,port,connectionListeners)
             Constants.ProtocolType.TCP -> TcpClientManager(ip, port , connectionListeners)
         }
-        CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Dispatchers.Io).launch {
             clientManager.connectWithTimeout()
         }
     }

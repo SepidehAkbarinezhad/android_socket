@@ -14,8 +14,7 @@ import ir.example.androidsocket.Constants
 import ir.example.androidsocket.Constants.CLIENT_MESSAGE_NOTIFICATION_ID
 import ir.example.androidsocket.MainApplication
 import ir.example.androidsocket.SocketConnectionListener
-import ir.example.androidsocket.SocketServerForegroundService
-import ir.example.androidsocket.ui.ServerEvent
+import ir.example.androidsocket.socket.SocketServerForegroundService
 import ir.example.androidsocket.ui.base.BaseViewModel
 import ir.example.androidsocket.utils.IpAddressManager
 import ir.example.androidsocket.utils.serverLog
@@ -57,7 +56,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             socketStatus.value = Constants.SocketStatus.CONNECTED
         }
 
-        override fun onMessage(conn: WebSocket?, message: String?) {
+        override fun onMessage( message: String?) {
             serverLog("SocketConnectionListener onMessage:  $message")
             socketServerService?.sendMessageWithTimeout("message is received by server")
             onEvent(ServerEvent.SetClientMessage(message ?: ""))

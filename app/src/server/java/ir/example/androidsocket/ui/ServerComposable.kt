@@ -2,7 +2,6 @@ package ir.example.androidsocket.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,8 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.androidSocket.R
 import ir.example.androidsocket.Constants
-import ir.example.androidsocket.SocketServerForegroundService
-import ir.example.androidsocket.ui.ServerEvent
+import ir.example.androidsocket.socket.SocketServerForegroundService
 import ir.example.androidsocket.ui.base.AppIcon
 import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.AppTitleValueText

@@ -1,5 +1,6 @@
-package ir.example.androidsocket
+package ir.example.androidsocket.socket
 
+import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.utils.serverLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,9 +17,9 @@ import java.net.InetSocketAddress
 import java.net.ServerSocket
 
 class WebsocketServerManger(
-    port: Int,
-    val socketListener: List<SocketConnectionListener>,
-) : WebSocketServer(InetSocketAddress(port)) {
+    override var serverPort: Int,
+    override val socketListener: List<SocketConnectionListener>,
+) : SocketServer,WebSocketServer(InetSocketAddress(serverPort)) {
 
     private var connection: WebSocket? = null
 
@@ -54,7 +55,7 @@ class WebsocketServerManger(
         serverLog(
             "SocketServerManger onMessage $message"
         )
-        socketListener.forEach { it.onMessage(conn, message) }
+        socketListener.forEach { it.onMessage( message) }
     }
 
     override fun onError(conn: WebSocket?, ex: Exception?) {
@@ -76,7 +77,7 @@ class WebsocketServerManger(
 
     }
 
-    suspend fun sendMessageWithTimeout(timeoutMillis: Long = 5000, message: String): Boolean {
+    private suspend fun sendMessageWithTimeout(timeoutMillis: Long = 5000, message: String): Boolean {
         return withContext(Dispatchers.IO) {
             return@withContext try {
                 withTimeout(timeoutMillis) {
@@ -110,13 +111,21 @@ class WebsocketServerManger(
     }
 
 
-    fun isPortAvailable(port: Int): Boolean {
+    override fun isPortAvailable(): Boolean {
         return try {
-            ServerSocket(port).close()
+            ServerSocket(serverPort).close()
             true
         } catch (e: IOException) {
             false
         }
+    }
+
+    override fun startServer() {
+       this.start()
+    }
+
+    override fun stopServer() {
+        TODO("Not yet implemented")
     }
 
 }

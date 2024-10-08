@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name="ir.example.androidsocket.SocketClientForegroundService"
+            android:name="ir.example.androidsocket.client.SocketClientForegroundService"
             android:foregroundServiceType="remoteMessaging"
             tools:ignore="ForegroundServicePermission" />
     </application>

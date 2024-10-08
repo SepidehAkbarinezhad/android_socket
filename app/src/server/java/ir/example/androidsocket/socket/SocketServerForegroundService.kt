@@ -1,4 +1,4 @@
-package ir.example.androidsocket
+package ir.example.androidsocket.socket
 
 import android.app.PendingIntent
 import android.app.Service
@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
+import ir.example.androidsocket.Constants
+import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.utils.NotificationHandler
 import ir.example.androidsocket.utils.serverLog
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +24,7 @@ class SocketServerForegroundService() : Service() {
         private const val NOTIFICATION_ID = 1
     }
 
-    private lateinit var server: WebsocketServerManger
+    private lateinit var serverManager: ServerManager
     private val binder = LocalBinder()
     private val connectionListeners = mutableListOf<SocketConnectionListener>()
     private val notificationHandler = NotificationHandler(this, CHANNEL_ID)
@@ -98,24 +100,15 @@ class SocketServerForegroundService() : Service() {
     }
 
 
-    private fun startSocketServer() {
+    fun startSocketServer(protocolType: Constants.ProtocolType = Constants.ProtocolType.WEBSOCKET) {
         serverLog("SocketServerForegroundService startSocketServer")
-        server = WebsocketServerManger(PORT, connectionListeners)
+        serverManager = ServerManager(
+            protocolType,
+            WebsocketServerManger(PORT, connectionListeners),
+            TcpServerManager(PORT, connectionListeners)
+        )
+        serverManager.startServer()
 
-        // check to prevent starting a server on a port that is already in use, which would cause a conflict and result in an error.
-        if (!server.isPortAvailable(PORT)) {
-            closeServerSocket()
-        }
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                //some times it gets time to release the port
-                delay(5000)
-                server.start()
-            } catch (e: Exception) {
-                serverLog("SocketServerForegroundService startSocketServer exception: ${e.message}")
-            }
-        }
     }
 
 
@@ -137,21 +130,21 @@ class SocketServerForegroundService() : Service() {
     fun sendMessageWithTimeout(message: String, timeoutMillis: Long = 20000) {
         serverLog("SocketForegroundService sendMessageWithTimeout")
         CoroutineScope(Dispatchers.IO).launch {
-            server.sendMessageWithTimeout(timeoutMillis = timeoutMillis, message = message)
+            // server.sendMessageWithTimeout(timeoutMillis = timeoutMillis, message = message)
         }
     }
 
     fun sendMessagesUntilSuccess(message: String) {
         serverLog("SocketForegroundService sendMessagesUntilSuccess")
         CoroutineScope(Dispatchers.IO).launch {
-            server.sendMessagesUntilSuccess(message = message)
+            //  server.sendMessagesUntilSuccess(message = message)
         }
     }
 
     private fun closeServerSocket() {
         try {
             serverLog("SocketServerForegroundService closeServerSocket")
-            server.stop()
+            //  server.stop()
         } catch (e: Exception) {
             serverLog("SocketServerForegroundService catch exception : ${e.message}")
         }
