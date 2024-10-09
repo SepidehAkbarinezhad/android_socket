@@ -102,15 +102,18 @@ class SocketServerForegroundService() : Service() {
 
     fun startSocketServer(protocolType: Constants.ProtocolType = Constants.ProtocolType.WEBSOCKET) {
         serverLog("SocketServerForegroundService startSocketServer")
+        setServerManager(protocolType)
+        serverManager.startServer()
+
+    }
+
+    private fun setServerManager(protocolType: Constants.ProtocolType = Constants.ProtocolType.WEBSOCKET) {
         serverManager = ServerManager(
             protocolType,
             WebsocketServerManger(PORT, connectionListeners),
             TcpServerManager(PORT, connectionListeners)
         )
-        serverManager.startServer()
-
     }
-
 
     fun displayNotification(
         notificationId: Int,
@@ -134,17 +137,10 @@ class SocketServerForegroundService() : Service() {
         }
     }
 
-    fun sendMessagesUntilSuccess(message: String) {
-        serverLog("SocketForegroundService sendMessagesUntilSuccess")
-        CoroutineScope(Dispatchers.IO).launch {
-            //  server.sendMessagesUntilSuccess(message = message)
-        }
-    }
-
-    private fun closeServerSocket() {
+    fun closeServerSocket() {
         try {
             serverLog("SocketServerForegroundService closeServerSocket")
-              serverManager.stopServer()
+            serverManager.stopServer()
         } catch (e: Exception) {
             serverLog("SocketServerForegroundService catch exception : ${e.message}")
         }

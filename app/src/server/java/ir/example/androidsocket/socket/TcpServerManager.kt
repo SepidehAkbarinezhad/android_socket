@@ -16,7 +16,7 @@ import java.net.Socket
 class TcpServerManager(
     override var serverPort: Int,
     override val socketListener: List<SocketConnectionListener>,
-) : SocketServer{
+) : SocketServer {
 
     private var serverSocket: ServerSocket? = null
     private val clientSockets = mutableListOf<Socket>()
@@ -24,13 +24,15 @@ class TcpServerManager(
     private var outputStream: OutputStream? = null
     private var inputStream: InputStream? = null
 
-    override fun startServer(){
+    override fun startServer() {
         try {
             serverSocket = ServerSocket(serverPort)
+            serverLog("TcpServerManager startServer: ${serverSocket?.isClosed}")
+            socketListener.forEach { it.onStart() }
             while (!serverSocket!!.isClosed) {
                 // is a blocking call. It waits until a client makes a connection request to the server.
                 val clientSocket = serverSocket!!.accept()
-                serverLog("server connected: ${clientSocket.inetAddress.hostAddress}")
+                serverLog("TcpServerManager server connected: ${clientSocket.inetAddress.hostAddress}")
                 clientSockets.add(clientSocket)
 
                 // Handle each client in a separate coroutine
@@ -38,8 +40,8 @@ class TcpServerManager(
                     handleClient(clientSocket)
                 }
             }
-        }catch (e:Exception){
-
+        } catch (e: Exception) {
+            serverLog("TcpServerManager startServer catch: ${e.message}")
         }
     }
 
@@ -52,7 +54,9 @@ class TcpServerManager(
                 val buffer = ByteArray(BUFFER_SIZE)
                 var bytesRead: Int = 0
                 // Read data into the buffer and assign the number of bytes read
-                while (clientSocket.isConnected && inputStream.read(buffer).also { bytesRead = it } != -1) {
+                while (clientSocket.isConnected && inputStream.read(buffer)
+                        .also { bytesRead = it } != -1
+                ) {
                     if (bytesRead > 0) {
                         val hexMessage = BytesUtils.bytesToHex(buffer.copyOf(bytesRead))
                         val stringMessage = BytesUtils.hexToString(hexMessage)

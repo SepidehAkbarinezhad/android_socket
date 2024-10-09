@@ -47,7 +47,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
     val socketConnectionListener = object : SocketConnectionListener {
         override fun onStart() {
             serverLog("SocketConnectionListener onStart")
-            onEvent(ServerEvent.SetLoading(true))
+            onEvent(ServerEvent.SetLoading(false))
         }
 
         override fun onConnected() {
@@ -148,6 +148,12 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
             is ServerEvent.SetProtocolType -> {
                 serverLog("SetProtocolType  ${event.type}")
+                //if the selected protocol doesn't differ from previous one, return
+                if (selectedProtocol.value.title == event.type)
+                    return
+                serverLog("SetProtocolType 1")
+                // before running socket on new selected protocol type , close the previous
+                serverForgroundService?.closeServerSocket()
                 selectedProtocol.value = when (event.type) {
                     Constants.ProtocolType.TCP.title -> Constants.ProtocolType.TCP
                     else -> Constants.ProtocolType.WEBSOCKET

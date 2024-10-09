@@ -121,11 +121,13 @@ class WebsocketServerManger(
     }
 
     override fun startServer() {
-       this.start()
+        serverLog("WebsocketServerManger startServer")
+        this.start()
     }
 
     override fun stopServer() {
-        TODO("Not yet implemented")
+        serverLog("WebsocketServerManger stopServer")
+        this.stop()
     }
 
 }
