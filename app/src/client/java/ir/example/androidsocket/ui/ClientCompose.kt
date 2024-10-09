@@ -185,7 +185,7 @@ fun ClientContent(
             AppTitleValueText(
                 modifier = Modifier.padding(MaterialTheme.spacing.small),
                 title = stringResource(
-                    id = R.string.connection_status_title
+                    id = R.string.socket_status_title
                 ),
                 value = socketStatus.title,
                 valueColor = if (!socketStatus.connection) Color.Red else Green900,

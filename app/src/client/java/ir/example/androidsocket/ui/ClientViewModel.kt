@@ -67,7 +67,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.CONNECTED))
         }
 
-        override fun onMessage(conn: WebSocket?, message: String?) {
+        override fun onMessage(message: String?) {
             clientLog(
                 "clientConnectionListener onMessage : $message"
             )
@@ -76,7 +76,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
 
         }
 
-        override fun onDisconnected(code: Int, reason: String?) {
+        override fun onDisconnected(code: Int?, reason: String?) {
             clientLog(
                 "clientConnectionListener onDisconnected : $code $reason"
             )

@@ -1,7 +1,9 @@
 package ir.example.androidsocket.client
 
 
+import ir.example.androidsocket.Constants
 import ir.example.androidsocket.SocketConnectionListener
+import ir.example.androidsocket.client.TcpSocketClient.socket
 import ir.example.androidsocket.utils.BytesUtils
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.CoroutineScope
@@ -33,21 +35,21 @@ class TcpClientManager(
             //to show message properly
             delay(1000)
             try {
-                clientLog("connectWithTimeout  $serverAddress  ${socket == null}")
+                clientLog("TcpClientManager connectWithTimeout  $serverAddress  ${socket == null}")
                 socket = Socket()
                 socket?.connect(
                     InetSocketAddress(serverAddress, port.toInt()),
                     timeoutMillis.toInt()
                 )
-                clientLog("connectWithTimeout isConnected ${socket?.isConnected}")
-                if (socket?.isConnected == true) {
-                    clientLog("if(socket?.isConnected == true)")
+                clientLog("TcpClientManager connectWithTimeout isConnected ${socket?.isConnected}")
+                if (socket?.isConnected == true){
+                    socketListener.forEach { it.onConnected() }
                 }
 
             } catch (e: IOException) {
-                clientLog("IOException--> ${e.message}")
+                clientLog("TcpClientManager IOException--> ${e.message}")
             } catch (e: Exception) {
-                clientLog("connectWithTimeout Exception-->  $serverAddress")
+                clientLog("TcpClientManager connectWithTimeout Exception-->  $serverAddress")
             }
         }
 
@@ -55,6 +57,7 @@ class TcpClientManager(
         inputStream?.close()
         outputStream?.close()
         socket?.close()
+        socketListener.forEach { it.onDisconnected(code = null , reason = "socked is closed") }
     }
 
     override fun sendMessage(message: String, timeoutMillis: Long) {
@@ -82,7 +85,7 @@ class TcpClientManager(
                 if (bytesRead != null && bytesRead > 0) {
                     val hexMessage = BytesUtils.bytesToHex(buffer)
                     val stringMessage = BytesUtils.hexToString(hexMessage)
-                    socketListener.forEach { it.onMessage(conn = null, message = stringMessage) }
+                    socketListener.forEach { it.onMessage(message = stringMessage) }
                 }
             } catch (e: Exception) {
                 clientLog("send--> catch ${e.message}")

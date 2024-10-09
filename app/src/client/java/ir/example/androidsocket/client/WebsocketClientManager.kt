@@ -70,7 +70,7 @@ class WebsocketClientManager(
 
     override fun onMessage(message: String?) {
         clientLog("SocketClientManager onMessage  $message")
-        socketListener.forEach { it.onMessage(conn = null, message = message) }
+        socketListener.forEach { it.onMessage(message = message) }
     }
 
     override fun onError(ex: Exception?) {

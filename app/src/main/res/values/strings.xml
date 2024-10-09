@@ -4,7 +4,7 @@
     <string name="cancel_label">cancel</string>
     <string name="disconnected_error_message">disconnected : %s</string>
     <string name="error_message">error : %s</string>
-    <string name="connection_status_title">connection status:</string>
+    <string name="socket_status_title">connection status:</string>
     <string name="ip_label">ip </string>
     <string name="port_label">port </string>
     <string name="protocol_type">"protocol type : "</string>

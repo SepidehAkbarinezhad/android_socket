@@ -79,11 +79,12 @@ class SocketClientForegroundService : Service() {
 
 
     fun connectWebSocket(protocolType: Constants.ProtocolType, ip: String, port: String) {
+        clientLog("connectWebSocket : ${protocolType.title}")
         clientManager = when (protocolType) {
             Constants.ProtocolType.WEBSOCKET -> WebsocketClientManager(ip,port,connectionListeners)
             Constants.ProtocolType.TCP -> TcpClientManager(ip, port , connectionListeners)
         }
-        CoroutineScope(Dispatchers.Io).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             clientManager.connectWithTimeout()
         }
     }
