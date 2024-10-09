@@ -56,14 +56,14 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             socketStatus.value = Constants.SocketStatus.CONNECTED
         }
 
-        override fun onMessage( message: String?) {
+        override fun onMessage(message: String?) {
             serverLog("SocketConnectionListener onMessage:  $message")
             socketServerService?.sendMessageWithTimeout("message is received by server")
             onEvent(ServerEvent.SetClientMessage(message ?: ""))
             createNotificationFromClientMessage(message = message)
         }
 
-        override fun onDisconnected(code: Int, reason: String?) {
+        override fun onDisconnected(code: Int?, reason: String?) {
             serverLog("SocketConnectionListener onDisconnected: $reason")
             emitMessageValue(R.string.disconnected_error_message, reason)
             socketStatus.value = Constants.SocketStatus.DISCONNECTED
@@ -109,7 +109,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
     fun startServerService(context: Context) {
         serverLog("startServerService() ${isServiceBound.value}")
-        if(!isServiceBound.value){
+        if (!isServiceBound.value) {
             try {
                 serverLog("startServerService() try")
                 serviceConnection?.let { connection ->
@@ -144,7 +144,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
                 IpAddressManager.getLocalIpAddress(event.context).first ?: ""
             is ServerEvent.GetLanIpAddress -> ethernetServerIp.value =
                 IpAddressManager.getLocalIpAddress(event.context).second ?: ""
-            is ServerEvent.SetProtocolType ->{
+            is ServerEvent.SetProtocolType -> {
                 serverLog("SetProtocolType  ${event.type}")
                 selectedProtocol.value = when (event.type) {
                     Constants.ProtocolType.TCP.title -> Constants.ProtocolType.TCP
@@ -179,7 +179,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
     fun performCleanup() {
         serverLog("performCleanup()")
         try {
-            socketServerService?.let {foregroundService->
+            socketServerService?.let { foregroundService ->
                 serviceConnection?.let {
                     //stopping the service makes it automatically unbinds all clients that are bound to it
                     foregroundService.stopSelf()
