@@ -144,7 +144,7 @@ class SocketServerForegroundService() : Service() {
     private fun closeServerSocket() {
         try {
             serverLog("SocketServerForegroundService closeServerSocket")
-            //  server.stop()
+              serverManager.stopServer()
         } catch (e: Exception) {
             serverLog("SocketServerForegroundService catch exception : ${e.message}")
         }

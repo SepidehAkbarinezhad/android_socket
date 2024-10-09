@@ -19,7 +19,6 @@ import ir.example.androidsocket.ui.base.BaseViewModel
 import ir.example.androidsocket.utils.IpAddressManager
 import ir.example.androidsocket.utils.serverLog
 import kotlinx.coroutines.flow.MutableStateFlow
-import org.java_websocket.WebSocket
 import javax.inject.Inject
 
 
@@ -43,7 +42,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
         private set
 
 
-    private var socketServerService: SocketServerForegroundService? = null
+    private var serverForgroundService: SocketServerForegroundService? = null
 
     val socketConnectionListener = object : SocketConnectionListener {
         override fun onStart() {
@@ -54,11 +53,12 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
         override fun onConnected() {
             serverLog("SocketConnectionListener onConnected")
             socketStatus.value = Constants.SocketStatus.CONNECTED
+            onEvent(ServerEvent.SetLoading(false))
         }
 
         override fun onMessage(message: String?) {
             serverLog("SocketConnectionListener onMessage:  $message")
-            socketServerService?.sendMessageWithTimeout("message is received by server")
+            serverForgroundService?.sendMessageWithTimeout("message is received by server")
             onEvent(ServerEvent.SetClientMessage(message ?: ""))
             createNotificationFromClientMessage(message = message)
         }
@@ -91,8 +91,8 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             serverLog("serverConnectionListener onServiceConnected")
             val binder = service as SocketServerForegroundService.LocalBinder
-            socketServerService = binder.getService()
-            socketServerService?.registerConnectionListener(socketConnectionListener)
+            serverForgroundService = binder.getService()
+            serverForgroundService?.registerConnectionListener(socketConnectionListener)
             isServiceBound.value = true
         }
 
@@ -142,21 +142,24 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             is ServerEvent.SetClientMessage -> clientMessage.value = event.message
             is ServerEvent.GetWifiIpAddress -> wifiServerIp.value =
                 IpAddressManager.getLocalIpAddress(event.context).first ?: ""
+
             is ServerEvent.GetLanIpAddress -> ethernetServerIp.value =
                 IpAddressManager.getLocalIpAddress(event.context).second ?: ""
+
             is ServerEvent.SetProtocolType -> {
                 serverLog("SetProtocolType  ${event.type}")
                 selectedProtocol.value = when (event.type) {
                     Constants.ProtocolType.TCP.title -> Constants.ProtocolType.TCP
                     else -> Constants.ProtocolType.WEBSOCKET
                 }
+                serverForgroundService?.startSocketServer(selectedProtocol.value)
             }
         }
     }
 
     private fun createNotificationFromClientMessage(message: String?) {
         if (!message.isNullOrEmpty())
-            socketServerService?.displayNotification(
+            serverForgroundService?.displayNotification(
                 notificationId = CLIENT_MESSAGE_NOTIFICATION_ID,
                 title = Constants.ActionCode.NotificationMessage.title,
                 message = message,
@@ -179,7 +182,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
     fun performCleanup() {
         serverLog("performCleanup()")
         try {
-            socketServerService?.let { foregroundService ->
+            serverForgroundService?.let { foregroundService ->
                 serviceConnection?.let {
                     //stopping the service makes it automatically unbinds all clients that are bound to it
                     foregroundService.stopSelf()

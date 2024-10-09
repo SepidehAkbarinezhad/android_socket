@@ -7,6 +7,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.ServerSocket
 import java.net.Socket
 
@@ -18,6 +21,8 @@ class TcpServerManager(
     private var serverSocket: ServerSocket? = null
     private val clientSockets = mutableListOf<Socket>()
     val BUFFER_SIZE = 1024
+    private var outputStream: OutputStream? = null
+    private var inputStream: InputStream? = null
 
     override fun startServer(){
         try {
@@ -69,10 +74,22 @@ class TcpServerManager(
     }
 
     override fun stopServer() {
-        TODO("Not yet implemented")
+        try {
+            serverLog("stopServer()")
+            inputStream?.close()
+            outputStream?.close()
+            serverSocket?.close()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
     }
 
     override fun isPortAvailable(): Boolean {
-        TODO("Not yet implemented")
+        return try {
+            ServerSocket(serverPort).close()
+            true
+        } catch (e: IOException) {
+            false
+        }
     }
 }

@@ -31,13 +31,14 @@ class ServerManager(
                 delay(5000)
                 serverManager.startServer()
             } catch (e: Exception) {
-                serverLog("SocketServerForegroundService startSocketServer exception: ${e.message}")
+                serverLog("ServerManager startServer exception: ${e.message}")
             }
         }
     }
 
     fun stopServer() {
-        TODO("Not yet implemented")
+        serverLog("ServerManager stopServer")
+        serverManager.stopServer()
     }
 
 
