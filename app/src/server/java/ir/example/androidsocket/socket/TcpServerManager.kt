@@ -21,8 +21,8 @@ class TcpServerManager(
     private var serverSocket: ServerSocket? = null
     private val clientSockets = mutableListOf<Socket>()
     val BUFFER_SIZE = 1024
-    private var outputStream: OutputStream? = null
     private var inputStream: InputStream? = null
+    private var outputStream: OutputStream? = null
 
     override fun startServer() {
         try {
@@ -33,6 +33,7 @@ class TcpServerManager(
                 // is a blocking call. It waits until a client makes a connection request to the server.
                 val clientSocket = serverSocket!!.accept()
                 serverLog("TcpServerManager server connected: ${clientSocket.inetAddress.hostAddress}")
+                socketListener.forEach { it.onConnected() }
                 clientSockets.add(clientSocket)
 
                 // Handle each client in a separate coroutine
@@ -46,16 +47,16 @@ class TcpServerManager(
     }
 
     private suspend fun handleClient(clientSocket: Socket) {
+        serverLog("TcpServerManager handleClient")
         withContext(Dispatchers.IO) {
-            val inputStream = clientSocket.getInputStream()
-            val outputStream = clientSocket.getOutputStream()
-
+             inputStream = clientSocket.getInputStream()
+             outputStream = clientSocket.getOutputStream()
             try {
                 val buffer = ByteArray(BUFFER_SIZE)
                 var bytesRead: Int = 0
                 // Read data into the buffer and assign the number of bytes read
-                while (clientSocket.isConnected && inputStream.read(buffer)
-                        .also { bytesRead = it } != -1
+                while (clientSocket.isConnected && inputStream?.read(buffer)
+                        .also { bytesRead = it?:0 } != -1
                 ) {
                     if (bytesRead > 0) {
                         val hexMessage = BytesUtils.bytesToHex(buffer.copyOf(bytesRead))
