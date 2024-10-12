@@ -33,7 +33,7 @@ class TcpClientManager(
             //to show message properly
             delay(1000)
             try {
-                clientLog("TcpClientManager connectWithTimeout  $serverAddress $port")
+                clientLog("TcpClientManager connectWithTimeout  $timeoutMillis $serverAddress $port")
                 socket = Socket()
                 socket?.let { socket->
 
@@ -42,16 +42,18 @@ class TcpClientManager(
                         timeoutMillis.toInt()
                     )
 
-                    clientLog("TcpClientManager connectWithTimeout isConnected ${socket?.isConnected}")
+                    clientLog("TcpClientManager connectWithTimeout isConnected ${socket.isConnected}")
                     if (socket.isConnected){
                         socketListener.forEach { it.onConnected() }
-                        handleClient(socket)
+                        inputStream = socket.getInputStream()
+                        outputStream = socket.getOutputStream()
+                        listenToServer(socket)
                     }
                 }
 
 
             } catch (e: IOException) {
-                clientLog("IOException--> ${e.message}")
+                clientLog("connectWithTimeout IOException--> ${e.message}")
                 socketListener.forEach { it.onException(e) }
             } catch (e: Exception) {
                 clientLog("connectWithTimeout Exception-->  $serverAddress")
@@ -59,19 +61,21 @@ class TcpClientManager(
             }
         }
 
-    private suspend fun handleClient(clientSocket: Socket) {
-        clientLog("handleClient")
+
+    /**
+     *  listen to stream came from server
+     *  **/
+    private suspend fun listenToServer(clientSocket: Socket) {
         withContext(Dispatchers.IO) {
-            inputStream = clientSocket.getInputStream()
-            outputStream = clientSocket.getOutputStream()
             try {
-                clientLog("handleClient try")
                 val buffer = ByteArray(BUFFER_SIZE)
+                clientLog("listenToServer try ${clientSocket.isConnected} ${inputStream?.read(buffer)}")
                 var bytesRead: Int = 0
                 // Read data into the buffer and assign the number of bytes read
                 while (clientSocket.isConnected && inputStream?.read(buffer)
                         .also { bytesRead = it?:0 } != -1
                 ) {
+                    clientLog("listenToServer while: ${clientSocket.isConnected} ${inputStream?.read(buffer)}")
                     if (bytesRead > 0) {
                         clientLog("handleClient try bytesRead > 0")
                         val hexMessage = BytesUtils.bytesToHex(buffer.copyOf(bytesRead))
@@ -81,22 +85,40 @@ class TcpClientManager(
                 }
 
             } catch (e: Exception) {
-                clientLog("Error handling client: ${e.message}")
+                clientLog("listenToServer catch: ${e.message}")
                 socketListener.forEach { it.onError(e) }
             } finally {
-                clientLog("Client disconnected: ${clientSocket.inetAddress.hostAddress}")
-                clientSocket.close()
+                /**
+                 * this block is executed whenever the while become false (client becomes disconnected or inputStream?.read(buffer)==-1 which means server is disconnected) or
+                 * the block throws an exception
+                 * **/
+                clientLog("listenToServer finally: ${clientSocket.isConnected}")
+                closeClient()
             }
         }
+    }
 
+    /**
+     * close the client whenever it become disconnected
+     * **/
+    private fun closeClient() {
+        clientLog("closeClient")
+        socket?.let { client->
+            socketListener.forEach {
+                it.onDisconnected(
+                    code = null,
+                    reason = "client : ${client.inetAddress?.hostAddress} is disconnected"
+                )
+            }
+            inputStream?.close()
+            outputStream?.close()
+            client.close()
+        }
 
     }
 
     override fun disconnect() {
-        inputStream?.close()
-        outputStream?.close()
-        socket?.close()
-        socketListener.forEach { it.onDisconnected(code = null , reason = "socked is closed") }
+        closeClient()
     }
 
     override fun sendMessage(message: String, timeoutMillis: Long) {

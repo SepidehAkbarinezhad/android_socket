@@ -20,7 +20,9 @@ class TcpServerManager(
 ) : SocketServer {
 
     private var serverSocket: ServerSocket? = null
-    private val clientSockets = mutableListOf<Socket>()
+
+    // private val clientSockets = mutableListOf<Socket>()
+    private var clientSocket: Socket? = null
     val BUFFER_SIZE = 1024
     private var inputStream: InputStream? = null
     private var outputStream: OutputStream? = null
@@ -31,15 +33,23 @@ class TcpServerManager(
             serverLog("startServer: ${serverSocket?.isClosed}")
             socketListener.forEach { it.onStart() }
             while (!serverSocket!!.isClosed) {
-                // is a blocking call. It waits until a client makes a connection request to the server.
-                val clientSocket = serverSocket!!.accept()
-                serverLog("server connected: ${clientSocket.inetAddress.hostAddress}")
+                /**
+                 * accept is a blocking call. It waits until a client makes a connection request to the server.
+                 **/
+                clientSocket = serverSocket!!.accept()
+                serverLog("server connected: ${clientSocket?.inetAddress?.hostAddress}")
                 socketListener.forEach { it.onConnected() }
-                clientSockets.add(clientSocket)
+                //clientSockets.add(clientSocket)
 
-                // Handle each client in a separate coroutine
+                /*
+                * Handle each client in a separate coroutine
+                */
                 CoroutineScope(Dispatchers.IO).launch {
-                    handleClient(clientSocket)
+                    clientSocket?.let {
+                        inputStream = clientSocket.getInputStream()
+                        outputStream = clientSocket.getOutputStream()
+                        listenToClient(it)
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -47,11 +57,9 @@ class TcpServerManager(
         }
     }
 
-    private suspend fun handleClient(clientSocket: Socket) {
+    private suspend fun listenToClient(clientSocket: Socket) {
         serverLog("handleClient")
         withContext(Dispatchers.IO) {
-             inputStream = clientSocket.getInputStream()
-             outputStream = clientSocket.getOutputStream()
             try {
                 serverLog("handleClient try")
                 val buffer = ByteArray(BUFFER_SIZE)
@@ -76,36 +84,38 @@ class TcpServerManager(
                  * this block is executed whenever the while become false or throw an exception
                  * **/
                 serverLog("handleClient finally ${clientSocket.isConnected}")
-                closeClient(clientSocket)
+                closeClient()
 
             }
-        }
-
-
-    }
-
-    override fun stopServer() {
-        try {
-            serverLog("stopServer()")
-            inputStream?.close()
-            outputStream?.close()
-            serverSocket?.close()
-            for (client in clientSockets) {
-                closeClient(client)
-            }
-
-        } catch (e: IOException) {
-            e.printStackTrace()
         }
     }
 
     /**
      * close the client whenever it become disconnected
      * **/
-    private fun closeClient(clientSocket: Socket) {
-        socketListener.forEach { it.onDisconnected(code = null, reason = "client : ${clientSocket.inetAddress.hostAddress} is disconnected") }
-        clientSocket.close()
-        clientSockets.remove(clientSocket)
+    private fun closeClient() {
+        clientSocket?.let { client->
+            socketListener.forEach {
+                it.onDisconnected(
+                    code = null,
+                    reason = "client : ${client.inetAddress?.hostAddress} is disconnected"
+                )
+            }
+            inputStream?.close()
+            outputStream?.close()
+            client.close()
+        }
+
+    }
+
+    override fun stopServer() {
+        try {
+            serverLog("stopServer()")
+            serverSocket?.close()
+            closeClient()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
     }
 
     override fun isPortAvailable(): Boolean {
