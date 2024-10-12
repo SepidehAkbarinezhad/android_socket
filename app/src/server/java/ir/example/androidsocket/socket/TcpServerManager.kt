@@ -72,9 +72,12 @@ class TcpServerManager(
                 serverLog("Error handling client: ${e.message}")
                 socketListener.forEach { it.onError(e) }
             } finally {
-                serverLog("Client disconnected: ${clientSocket.inetAddress.hostAddress}")
-                clientSocket.close()
-                clientSockets.remove(clientSocket)
+                /**
+                 * this block is executed whenever the while become false or throw an exception
+                 * **/
+                serverLog("handleClient finally ${clientSocket.isConnected}")
+                closeClient(clientSocket)
+
             }
         }
 
@@ -87,9 +90,22 @@ class TcpServerManager(
             inputStream?.close()
             outputStream?.close()
             serverSocket?.close()
+            for (client in clientSockets) {
+                closeClient(client)
+            }
+
         } catch (e: IOException) {
             e.printStackTrace()
         }
+    }
+
+    /**
+     * close the client whenever it become disconnected
+     * **/
+    private fun closeClient(clientSocket: Socket) {
+        socketListener.forEach { it.onDisconnected(code = null, reason = "client : ${clientSocket.inetAddress.hostAddress} is disconnected") }
+        clientSocket.close()
+        clientSockets.remove(clientSocket)
     }
 
     override fun isPortAvailable(): Boolean {
