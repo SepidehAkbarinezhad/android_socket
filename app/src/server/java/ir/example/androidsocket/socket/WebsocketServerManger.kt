@@ -64,48 +64,32 @@ class WebsocketServerManger(
         ex?.printStackTrace()
     }
 
-    suspend fun sendMessagesUntilSuccess(timeoutMillis: Long = 50000, message: String) {
-        serverLog("SocketServerManger sendMessagesUntilSuccess")
-        var success = false
-        while (!success) {
-            success = sendMessageWithTimeout(timeoutMillis, message)
-            if (!success) {
-                // Add a delay before retrying to avoid continuous retries and potential rate limiting
-                delay(1000)
-            }
-        }
 
-    }
 
-    private suspend fun sendMessageWithTimeout(timeoutMillis: Long = 5000, message: String): Boolean {
+    override suspend fun sendMessageWithTimeout(message: String,timeoutMillis: Long) {
         return withContext(Dispatchers.IO) {
             return@withContext try {
                 withTimeout(timeoutMillis) {
-                    val result = CoroutineScope(Dispatchers.IO).async {
+                     CoroutineScope(Dispatchers.IO).async {
                         try {
                             if (connection != null && connection!!.isOpen) {
                                 connection!!.send(message)
-                                true
-                            } else {
-                                false
+
                             }
                         } catch (e: org.java_websocket.exceptions.WebsocketNotConnectedException) {
                             serverLog("sendMessageWithTimeout catch  ${e.message}", "timeOutTag")
                             socketListener.forEach { it.onException(e) }
-                            false
+
                         }
                     }.await()
 
-                    result
                 }
             } catch (e: TimeoutCancellationException) {
                 serverLog("sendMessageWithTimeout TimeoutCancellationException: ${e.message}", "timeOutTag")
                 socketListener.forEach { it.onException(e) }
-                false
             } catch (e: Exception) {
                 serverLog("sendMessageWithTimeout e: ${e.message}", "timeOutTag")
                 socketListener.forEach { it.onException(e) }
-                false
             }
         }
     }

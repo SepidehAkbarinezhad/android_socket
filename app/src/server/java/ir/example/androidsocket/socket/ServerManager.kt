@@ -6,6 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import okio.Timeout
 
 class ServerManager(
     val socketProtocol: Constants.ProtocolType,
@@ -34,6 +35,13 @@ class ServerManager(
                 serverLog("ServerManager startServer exception: ${e.message}")
             }
         }
+    }
+
+    /**
+     * when client message is received by server , server send a confirmation message to client
+     * **/
+    suspend fun sendMessageWithTimeout(message: String, timeoutMillis: Long = 20000) {
+        serverManager.sendMessageWithTimeout(message,timeoutMillis)
     }
 
     fun stopServer() {

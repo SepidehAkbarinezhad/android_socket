@@ -9,4 +9,5 @@ interface SocketServer {
     fun startServer()
     fun stopServer()
     fun isPortAvailable(): Boolean
+    suspend fun sendMessageWithTimeout(message : String,timeoutMillis : Long)
 }

@@ -2,6 +2,7 @@ package ir.example.androidsocket.socket
 
 import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.utils.BytesUtils
+import ir.example.androidsocket.utils.clientLog
 import ir.example.androidsocket.utils.serverLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,12 +28,12 @@ class TcpServerManager(
     override fun startServer() {
         try {
             serverSocket = ServerSocket(serverPort)
-            serverLog("TcpServerManager startServer: ${serverSocket?.isClosed}")
+            serverLog("startServer: ${serverSocket?.isClosed}")
             socketListener.forEach { it.onStart() }
             while (!serverSocket!!.isClosed) {
                 // is a blocking call. It waits until a client makes a connection request to the server.
                 val clientSocket = serverSocket!!.accept()
-                serverLog("TcpServerManager server connected: ${clientSocket.inetAddress.hostAddress}")
+                serverLog("server connected: ${clientSocket.inetAddress.hostAddress}")
                 socketListener.forEach { it.onConnected() }
                 clientSockets.add(clientSocket)
 
@@ -42,16 +43,17 @@ class TcpServerManager(
                 }
             }
         } catch (e: Exception) {
-            serverLog("TcpServerManager startServer catch: ${e.message}")
+            serverLog("startServer catch: ${e.message}")
         }
     }
 
     private suspend fun handleClient(clientSocket: Socket) {
-        serverLog("TcpServerManager handleClient")
+        serverLog("handleClient")
         withContext(Dispatchers.IO) {
              inputStream = clientSocket.getInputStream()
              outputStream = clientSocket.getOutputStream()
             try {
+                serverLog("handleClient try")
                 val buffer = ByteArray(BUFFER_SIZE)
                 var bytesRead: Int = 0
                 // Read data into the buffer and assign the number of bytes read
@@ -59,6 +61,7 @@ class TcpServerManager(
                         .also { bytesRead = it?:0 } != -1
                 ) {
                     if (bytesRead > 0) {
+                        serverLog("handleClient try bytesRead > 0")
                         val hexMessage = BytesUtils.bytesToHex(buffer.copyOf(bytesRead))
                         val stringMessage = BytesUtils.hexToString(hexMessage)
                         socketListener.forEach { it.onMessage(stringMessage) }
@@ -95,6 +98,19 @@ class TcpServerManager(
             true
         } catch (e: IOException) {
             false
+        }
+    }
+
+    override suspend fun sendMessageWithTimeout(message: String, timeoutMillis: Long) {
+        serverLog("sendMessageWithTimeout")
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                clientLog("send-->try")
+                outputStream?.write(message.toByteArray())
+                outputStream?.flush()
+            } catch (e: Exception) {
+                clientLog("send--> catch ${e.message}")
+            }
         }
     }
 }

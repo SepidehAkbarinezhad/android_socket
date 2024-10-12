@@ -133,7 +133,7 @@ class SocketServerForegroundService() : Service() {
     fun sendMessageWithTimeout(message: String, timeoutMillis: Long = 20000) {
         serverLog("SocketForegroundService sendMessageWithTimeout")
         CoroutineScope(Dispatchers.IO).launch {
-            // server.sendMessageWithTimeout(timeoutMillis = timeoutMillis, message = message)
+             serverManager.sendMessageWithTimeout(timeoutMillis = timeoutMillis, message = message)
         }
     }
 
