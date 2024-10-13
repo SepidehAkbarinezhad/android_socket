@@ -1,14 +1,20 @@
 package ir.example.androidsocket.ui
 
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.Surface
@@ -16,19 +22,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.androidSocket.R
 import ir.example.androidsocket.Constants
-import ir.example.androidsocket.Constants.PROTOCOLS
 import ir.example.androidsocket.ui.base.AppButtonsRow
 import ir.example.androidsocket.ui.base.AppOutlinedTextField
 import ir.example.androidsocket.ui.base.AppText
@@ -138,10 +142,23 @@ fun ClientContent(
     onSendMessageEvent: (String) -> Unit
 ) {
 
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // Get the URI of the selected file (result.data?.data)
+            val uri = result.data?.data
+            if (uri != null) {
+                // Handle the file URI (upload, display, etc.)
+                println("File selected: $uri")
+            }
+        }
+    }
+
     AppBaseScreen(
         headerTitle = stringResource(id = R.string.client_header, selectedProtocol.title),
         headerBackGround = Indigo,
-        onProtocolSelected = {onEvent(ClientEvent.SetProtocolType(it))},
+        onProtocolSelected = { onEvent(ClientEvent.SetProtocolType(it)) },
         bodyContent = {
             Column(
                 Modifier.padding(MaterialTheme.spacing.small),
@@ -197,8 +214,7 @@ fun ClientContent(
 
                 AppOutlinedTextField(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = MaterialTheme.spacing.small),
+                        .fillMaxWidth(),
                     value = clientMessage,
                     onValueChange = {
                         onEvent(ClientEvent.SetClientMessage(it))
@@ -215,7 +231,25 @@ fun ClientContent(
                         cursorColor = Indigo,
                         backgroundColor = Color.White,
                     ),
-                )
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                                    type = "*/*" // You can specify file types, e.g., "image/*", "application/pdf"
+                                    addCategory(Intent.CATEGORY_OPENABLE)
+                                }
+                                launcher.launch(intent)
+                            }
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(24.dp),
+                                painter = painterResource(id = R.drawable.attach_icon),
+                                tint = Indigo,
+                                contentDescription = "Attach File"
+                            )
+                        }
+                    })
+
 
                 if (socketStatus.connection && waitingForServer && serverMessage.isEmpty()) {
                     AppText(
@@ -224,7 +258,6 @@ fun ClientContent(
                         textColor = Color.Red
                     )
                 }
-
 
                 if (serverMessage.isNotEmpty()) {
                     AppText(

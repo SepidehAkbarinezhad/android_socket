@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ir.example.androidsocket.ui.theme.Indigo
+import ir.example.androidsocket.ui.theme.Indigo200
 import ir.example.androidsocket.ui.theme.Indigo400
 import ir.example.androidsocket.ui.theme.spacing
 
@@ -38,11 +39,12 @@ fun AppOutlinedTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     leadingIcon: @Composable (() -> Unit)? = {},
+    trailingIcon : @Composable (() -> Unit)? = {},
     colors: TextFieldColors = TextFieldDefaults.outlinedTextFieldColors(
         textColor = Color.DarkGray,
         focusedBorderColor = Indigo,
-        unfocusedBorderColor = Indigo400,
-        disabledBorderColor = Indigo400,
+        unfocusedBorderColor = Indigo200,
+        disabledBorderColor = Indigo200,
         disabledTextColor = Color.LightGray,
         cursorColor = Indigo,
         backgroundColor = Color.White,
@@ -90,6 +92,7 @@ fun AppOutlinedTextField(
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
         keyboardActions = keyboardActions,
     )
 }
