@@ -16,6 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,12 +28,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.androidSocket.R
 import ir.example.androidsocket.Constants
+import ir.example.androidsocket.Constants.PROTOCOLS
 import ir.example.androidsocket.ui.base.AppButtonsRow
 import ir.example.androidsocket.ui.base.AppOutlinedTextField
 import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.AppTitleValueText
 import ir.example.androidsocket.ui.base.BaseUiEvent
-import ir.example.androidsocket.ui.base.ProtocolTypeMenu
 import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
 import ir.example.androidsocket.ui.theme.Green900
@@ -53,7 +56,9 @@ internal fun ClientCompose(
     val selectedProtocol by viewModel.selectedProtocol.collectAsState()
     val clientMessage by viewModel.clientMessage.collectAsStateWithLifecycle("")
     val serverMessage by viewModel.serverMessage.collectAsStateWithLifecycle("")
-    val waitingForServerConfirmation by viewModel.waitingForServerConfirmation.collectAsStateWithLifecycle(false)
+    val waitingForServerConfirmation by viewModel.waitingForServerConfirmation.collectAsStateWithLifecycle(
+        false
+    )
     val serverIp by viewModel.serverIp.collectAsState()
     val serverIpError by viewModel.serverIpError.collectAsState()
     val serverPort by viewModel.serverPort.collectAsState()
@@ -81,7 +86,6 @@ internal fun ClientCompose(
 
             ClientContent(
                 onEvent = onEvent,
-                protocols = viewModel.protocols,
                 selectedProtocol = selectedProtocol,
                 serverIp = serverIp,
                 serverIpError = serverIpError,
@@ -120,8 +124,7 @@ internal fun ClientCompose(
 @Composable
 fun ClientContent(
     onEvent: (ClientEvent) -> Unit,
-    protocols:List<String>,
-    selectedProtocol : Constants.ProtocolType,
+    selectedProtocol: Constants.ProtocolType,
     serverIp: String,
     serverIpError: Boolean,
     serverPort: String,
@@ -135,106 +138,105 @@ fun ClientContent(
     onSendMessageEvent: (String) -> Unit
 ) {
 
-    AppBaseScreen(headerTitle = R.string.client_header, headerBackGround = Indigo, bodyContent = {
-
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.small)) {
-                ProtocolTypeMenu(modifier = Modifier.align(Alignment.TopStart), protocols = protocols, selectedProtocol = selectedProtocol , onProtocolSelected = {
-                    onEvent(ClientEvent.SetProtocolType(it))
-                })
-            }
-            Row(
-                Modifier
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+    AppBaseScreen(
+        headerTitle = stringResource(id = R.string.client_header, selectedProtocol.title),
+        headerBackGround = Indigo,
+        onProtocolSelected = {onEvent(ClientEvent.SetProtocolType(it))},
+        bodyContent = {
+            Column(
+                Modifier.padding(MaterialTheme.spacing.extraMedium),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Row(
+                    Modifier
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AppOutlinedTextField(
+                        modifier = Modifier
+                            .weight(1.5f)
+                            .padding(MaterialTheme.spacing.small),
+                        value = serverIp,
+                        onValueChange = { ip ->
+                            if (isIpValid(ip)) {
+                                onEvent(ClientEvent.SetServerIp(ip))
+                            }
+                        },
+                        label = stringResource(id = R.string.ip_label),
+                        hasError = serverIpError,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+
+                        )
+
+                    AppOutlinedTextField(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(MaterialTheme.spacing.small),
+                        value = serverPort,
+                        onValueChange = { port ->
+                            if (isPortValid(port))
+                                onEvent(ClientEvent.SetServerPort(port))
+                        },
+                        label = stringResource(id = R.string.port_label),
+                        hasError = serverPortError,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    )
+                }
+
+                AppTitleValueText(
+                    modifier = Modifier.padding(MaterialTheme.spacing.small),
+                    title = stringResource(
+                        id = R.string.socket_status_title
+                    ),
+                    value = socketStatus.title,
+                    valueColor = if (!socketStatus.connection) Color.Red else Green900,
+                    titleTextType = TextType.TEXT,
+                    valueTextType = TextType.TEXT
+                )
+
                 AppOutlinedTextField(
                     modifier = Modifier
-                        .weight(1.5f)
-                        .padding(MaterialTheme.spacing.small),
-                    value = serverIp,
-                    onValueChange = { ip ->
-                        if (isIpValid(ip)) {
-                            onEvent(ClientEvent.SetServerIp(ip))
-                        }
+                        .fillMaxWidth()
+                        .padding(vertical = MaterialTheme.spacing.small),
+                    value = clientMessage,
+                    onValueChange = {
+                        onEvent(ClientEvent.SetClientMessage(it))
                     },
-                    label = stringResource(id = R.string.ip_label),
-                    hasError = serverIpError,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-
+                    enabled = socketStatus.connection,
+                    singleLine = true,
+                    label = stringResource(id = R.string.message),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        textColor = Color.DarkGray,
+                        focusedBorderColor = Indigo,
+                        unfocusedBorderColor = Indigo400,
+                        disabledBorderColor = Color.Gray,
+                        disabledTextColor = Color.LightGray,
+                        cursorColor = Indigo,
+                        backgroundColor = Color.White,
+                    ),
                 )
 
-                AppOutlinedTextField(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(MaterialTheme.spacing.small),
-                    value = serverPort,
-                    onValueChange = { port ->
-                        if (isPortValid(port))
-                            onEvent(ClientEvent.SetServerPort(port))
-                    },
-                    label = stringResource(id = R.string.port_label),
-                    hasError = serverPortError,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                )
+                if (socketStatus.connection && waitingForServer && serverMessage.isEmpty()) {
+                    AppText(
+                        modifier = Modifier.padding(MaterialTheme.spacing.small),
+                        text = stringResource(R.string.server_confirmation_message),
+                        textColor = Color.Red
+                    )
+                }
+
+
+                if (serverMessage.isNotEmpty()) {
+                    AppText(
+                        modifier = Modifier.padding(MaterialTheme.spacing.small),
+                        text = serverMessage,
+                        textColor = Orange700
+                    )
+                }
+
             }
 
-            AppTitleValueText(
-                modifier = Modifier.padding(MaterialTheme.spacing.small),
-                title = stringResource(
-                    id = R.string.socket_status_title
-                ),
-                value = socketStatus.title,
-                valueColor = if (!socketStatus.connection) Color.Red else Green900,
-                titleTextType = TextType.TEXT,
-                valueTextType = TextType.TEXT
-            )
-
-            AppOutlinedTextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = MaterialTheme.spacing.small),
-                value = clientMessage,
-                onValueChange = {
-                    onEvent(ClientEvent.SetClientMessage(it))
-                },
-                enabled = socketStatus.connection,
-                singleLine = true,
-                label = stringResource(id = R.string.message),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    textColor = Color.DarkGray,
-                    focusedBorderColor = Indigo,
-                    unfocusedBorderColor = Indigo400,
-                    disabledBorderColor = Color.Gray,
-                    disabledTextColor = Color.LightGray,
-                    cursorColor = Indigo,
-                    backgroundColor = Color.White,
-                ),
-            )
-
-            if(socketStatus.connection && waitingForServer && serverMessage.isEmpty()){
-                AppText(
-                    modifier = Modifier.padding(MaterialTheme.spacing.small),
-                    text = stringResource(R.string.server_confirmation_message),
-                    textColor = Color.Red
-                )
-            }
-
-
-            if (serverMessage.isNotEmpty()){
-                AppText(
-                    modifier = Modifier.padding(MaterialTheme.spacing.small),
-                    text = serverMessage,
-                    textColor = Orange700
-                )
-            }
-
-        }
-
-    }) {
+        }) {
         AppButtonsRow(
             firstButtonTitle = if (!socketStatus.connection) stringResource(id = R.string.connect_to_server) else stringResource(
                 id = R.string.disconnect_from_server

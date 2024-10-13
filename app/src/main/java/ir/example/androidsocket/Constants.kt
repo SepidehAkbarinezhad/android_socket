@@ -6,9 +6,9 @@ object Constants {
 
     enum class SocketStatus(
         val title: String,
-        val connection : Boolean
+        val connection: Boolean
     ) {
-        CONNECTED("connected",connection = true), DISCONNECTED("Disconnected",connection = false)
+        CONNECTED("connected", connection = true), DISCONNECTED("Disconnected", connection = false)
     }
 
     enum class ConnectionType(
@@ -17,15 +17,17 @@ object Constants {
         NONE("none"), WIFI("wifi"), ETHERNET("ethernet")
     }
 
-    enum class ActionCode(val title: String ) {
+    enum class ActionCode(val title: String) {
         NotificationMessage(
             title = "client message"
         ),
     }
 
-    enum class ProtocolType(val title: String){
-        WEBSOCKET("websocket"),TCP("tcp")
+    enum class ProtocolType(val title: String) {
+        WEBSOCKET("websocket"), TCP("tcp")
     }
+
+    val PROTOCOLS = listOf(ProtocolType.WEBSOCKET.title, ProtocolType.TCP.title)
 
 
 }

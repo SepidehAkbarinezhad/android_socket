@@ -39,55 +39,37 @@ import ir.example.androidsocket.utils.serverLog
 @Composable
 fun ProtocolTypeMenu(
     modifier: Modifier = Modifier,
+    expanded: Boolean,
     protocols: List<String>,
     selectedProtocol: Constants.ProtocolType,
-    onProtocolSelected: (String) -> Unit
+    onProtocolSelected: (String) -> Unit,
+    onDismissClicked: () -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-serverLog("ProtocolTypeMenu   ${selectedProtocol.title}")
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        AppText(
-            textType = TextType.SUBTITLE,
-            text = stringResource(R.string.protocol_type),
-            textColor = Indigo,
-            fontWeight = FontWeight.Bold
-        )
-        Card(
-            modifier = Modifier
-                .width(150.dp)
-                .padding(MaterialTheme.spacing.small),
-            border = BorderStroke(1.dp, color = Indigo),
-            shape = RoundedCornerShape(MaterialTheme.spacing.small),
-            backgroundColor = Color.White
-        ) {
-            Row(
-                modifier = Modifier
-                    .padding(MaterialTheme.spacing.small)
-                    .clickable { expanded = true }) {
-                Icon(
-                    imageVector = if (!expanded) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowUp,
-                    contentDescription = "protocol type"
-                )
-                Box(Modifier.fillMaxWidth()) {
-                    AppText(
-                        text = selectedProtocol.title
-                    )
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }) {
-                        protocols.forEachIndexed { index, s ->
-                            DropdownMenuItem(
-                                modifier = Modifier.background(if (selectedProtocol.title == s) Indigo200 else MaterialTheme.colors.surface),
-                                onClick = {
-                                    expanded = false
-                                    onProtocolSelected(s)
-                                }) {
-                                AppText(
-                                    text = s,
-                                    textColor = if (selectedProtocol.title == s) Color.White else DarkGray
-                                )
-                            }
-                        }
+
+
+    Card(
+        modifier = modifier
+            .width(150.dp)
+            .padding(MaterialTheme.spacing.small),
+        border = BorderStroke(1.dp, color = Indigo),
+        shape = RoundedCornerShape(MaterialTheme.spacing.small),
+        backgroundColor = Color.White
+    ) {
+
+        Box(Modifier.fillMaxWidth()) {
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { onDismissClicked() }) {
+                protocols.forEachIndexed { index, s ->
+                    DropdownMenuItem(
+                        modifier = Modifier.background(if (selectedProtocol.title == s) Indigo200 else MaterialTheme.colors.surface),
+                        onClick = {
+                            onProtocolSelected(s)
+                        }) {
+                        AppText(
+                            text = s,
+                            textColor = if (selectedProtocol.title == s) Color.White else DarkGray
+                        )
                     }
                 }
             }

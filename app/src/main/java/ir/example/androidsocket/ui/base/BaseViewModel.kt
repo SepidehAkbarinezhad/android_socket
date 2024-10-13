@@ -14,7 +14,6 @@ internal abstract class BaseViewModel() : ViewModel() {
 
     var openPermissionDialog = MutableStateFlow(false)
 
-    val protocols = listOf(Constants.ProtocolType.WEBSOCKET.title, Constants.ProtocolType.TCP.title)
     var selectedProtocol = MutableStateFlow(Constants.ProtocolType.WEBSOCKET)
 
     private fun sendUiEvent(event: BaseUiEvent) {
@@ -28,5 +27,6 @@ internal abstract class BaseViewModel() : ViewModel() {
     fun setOpenPermissionDialog(value : Boolean){
         openPermissionDialog.value= value
     }
+
 
 }

@@ -19,11 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import ir.example.androidsocket.ui.base.PermissionDialog
 import ir.example.androidsocket.utils.clientLog
-import kotlinx.coroutines.launch
 
 
 @AndroidEntryPoint
