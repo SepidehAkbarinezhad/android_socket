@@ -24,7 +24,7 @@ object Constants {
     }
 
     enum class ProtocolType(val title: String) {
-        WEBSOCKET("websocket"), TCP("tcp")
+        WEBSOCKET("Websocket"), TCP("Tcp")
     }
 
     val PROTOCOLS = listOf(ProtocolType.WEBSOCKET.title, ProtocolType.TCP.title)

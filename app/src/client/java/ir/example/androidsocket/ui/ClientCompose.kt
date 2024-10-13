@@ -144,7 +144,7 @@ fun ClientContent(
         onProtocolSelected = {onEvent(ClientEvent.SetProtocolType(it))},
         bodyContent = {
             Column(
-                Modifier.padding(MaterialTheme.spacing.extraMedium),
+                Modifier.padding(MaterialTheme.spacing.small),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {

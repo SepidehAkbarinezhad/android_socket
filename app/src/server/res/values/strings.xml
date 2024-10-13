@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Android Server</string>
 
-    <string name="server_header">Socket Server</string>
+    <string name="server_header">%s Server</string>
     <string name="connection_type_label">connection type </string>
     <string name="wifi_label">wifi</string>
     <string name="ethernet_label">ethernet</string>

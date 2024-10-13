@@ -46,8 +46,8 @@ class TcpServerManager(
                 */
                 CoroutineScope(Dispatchers.IO).launch {
                     clientSocket?.let {
-                        inputStream = clientSocket.getInputStream()
-                        outputStream = clientSocket.getOutputStream()
+                        inputStream = clientSocket?.getInputStream()
+                        outputStream = clientSocket?.getOutputStream()
                         listenToClient(it)
                     }
                 }
