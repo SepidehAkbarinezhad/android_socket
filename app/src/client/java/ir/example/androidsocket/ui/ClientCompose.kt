@@ -21,9 +21,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -40,6 +43,7 @@ import ir.example.androidsocket.ui.base.AppTitleValueText
 import ir.example.androidsocket.ui.base.BaseUiEvent
 import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
+import ir.example.androidsocket.ui.theme.Gray200
 import ir.example.androidsocket.ui.theme.Green900
 import ir.example.androidsocket.ui.theme.Indigo
 import ir.example.androidsocket.ui.theme.Indigo400
@@ -59,6 +63,7 @@ internal fun ClientCompose(
     val keyboardController = LocalSoftwareKeyboardController.current
     val selectedProtocol by viewModel.selectedProtocol.collectAsState()
     val clientMessage by viewModel.clientMessage.collectAsStateWithLifecycle("")
+    val fileUrl by viewModel.fileUrl.collectAsStateWithLifecycle("")
     val serverMessage by viewModel.serverMessage.collectAsStateWithLifecycle("")
     val waitingForServerConfirmation by viewModel.waitingForServerConfirmation.collectAsStateWithLifecycle(
         false
@@ -69,6 +74,29 @@ internal fun ClientCompose(
     val serverPortError by viewModel.serverPortError.collectAsState()
     val socketStatus by viewModel.socketStatus.collectAsState()
     val uiEvent by viewModel.uiEvent.collectAsStateWithLifecycle(initialValue = BaseUiEvent.None)
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // Get the URI of the selected file (result.data?.data)
+            val uri = result.data?.data
+            if (uri != null) {
+                onEvent(ClientEvent.SetClientMessage(uri.toString()))
+                onEvent(ClientEvent.SetFileUrl(uri.toString()))
+                println("File selected: $uri")
+            }
+        }
+    }
+
+    val onAttachFile = {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "*/*" // You can specify file types, e.g., "image/*", "application/pdf"
+            addCategory(Intent.CATEGORY_OPENABLE)
+        }
+        launcher.launch(intent)
+    }
+
 
     LaunchedEffect(key1 = socketStatus) {
         if (!socketStatus.connection) {
@@ -96,6 +124,7 @@ internal fun ClientCompose(
                 serverPort = serverPort,
                 serverPortError = serverPortError,
                 clientMessage = clientMessage,
+                fileUrl = fileUrl,
                 serverMessage = serverMessage,
                 waitingForServer = waitingForServerConfirmation,
                 socketStatus = socketStatus,
@@ -118,8 +147,8 @@ internal fun ClientCompose(
                         onEvent(ClientEvent.SetLoading(true))
                         onEvent(ClientEvent.SendMessageToServer(message))
                     }
-
-                }
+                },
+                onAttachFileEvent = { onAttachFile() }
             )
         }
     }
@@ -134,25 +163,19 @@ fun ClientContent(
     serverPort: String,
     serverPortError: Boolean,
     clientMessage: String,
+    fileUrl: String,
     serverMessage: String,
     waitingForServer: Boolean,
     socketStatus: Constants.SocketStatus,
     onConnectToServer: () -> Unit,
     onDisconnectFromServer: () -> Unit,
-    onSendMessageEvent: (String) -> Unit
-) {
+    onSendMessageEvent: (String) -> Unit,
+    onAttachFileEvent: () -> Unit,
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            // Get the URI of the selected file (result.data?.data)
-            val uri = result.data?.data
-            if (uri != null) {
-                // Handle the file URI (upload, display, etc.)
-                println("File selected: $uri")
-            }
-        }
+    ) {
+
+    val attachVisibility by remember(clientMessage) {
+        derivedStateOf { clientMessage.isEmpty() || fileUrl.isNotEmpty() }
     }
 
     AppBaseScreen(
@@ -226,28 +249,41 @@ fun ClientContent(
                         textColor = Color.DarkGray,
                         focusedBorderColor = Indigo,
                         unfocusedBorderColor = Indigo400,
-                        disabledBorderColor = Color.Gray,
+                        disabledBorderColor = Gray200,
                         disabledTextColor = Color.LightGray,
                         cursorColor = Indigo,
                         backgroundColor = Color.White,
                     ),
                     trailingIcon = {
-                        IconButton(
-                            onClick = {
-                                val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-                                    type = "*/*" // You can specify file types, e.g., "image/*", "application/pdf"
-                                    addCategory(Intent.CATEGORY_OPENABLE)
+                        if (!socketStatus.connection) {
+                            IconButton(
+                                onClick = {
+
                                 }
-                                launcher.launch(intent)
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(24.dp),
+                                    painter = painterResource(id = R.drawable.attach_file_icon),
+                                    tint = Gray200,
+                                    contentDescription = "Attach File"
+                                )
                             }
-                        ) {
-                            Icon(
-                                modifier = Modifier.size(24.dp),
-                                painter = painterResource(id = R.drawable.attach_icon),
-                                tint = Indigo,
-                                contentDescription = "Attach File"
-                            )
+                        } else {
+                            IconButton(
+                                modifier = Modifier.alpha(if (attachVisibility) 1f else 0f),
+                                onClick = {
+                                    onAttachFileEvent()
+                                }
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(24.dp),
+                                    painter = painterResource(id = R.drawable.attach_file_icon),
+                                    tint = Indigo,
+                                    contentDescription = "Attach File"
+                                )
+                            }
                         }
+
                     })
 
 

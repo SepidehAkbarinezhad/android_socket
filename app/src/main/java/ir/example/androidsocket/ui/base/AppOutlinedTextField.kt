@@ -2,7 +2,6 @@ package ir.example.androidsocket.ui.base
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.MaterialTheme
@@ -15,16 +14,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import ir.example.androidsocket.ui.theme.Gray200
 import ir.example.androidsocket.ui.theme.Indigo
 import ir.example.androidsocket.ui.theme.Indigo200
-import ir.example.androidsocket.ui.theme.Indigo400
-import ir.example.androidsocket.ui.theme.spacing
 
 
 @Composable
@@ -74,7 +71,7 @@ fun AppOutlinedTextField(
                 } else {
                     label
                 } ?: "",
-                textColor = if (hasError) MaterialTheme.colors.error else if (enabled) Indigo else Color.Gray,
+                textColor = if (hasError) MaterialTheme.colors.error else if (enabled) Indigo else Gray200,
                 fontWeight = FontWeight.Bold,
             )
         },

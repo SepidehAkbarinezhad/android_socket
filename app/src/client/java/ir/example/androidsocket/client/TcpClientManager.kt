@@ -1,6 +1,8 @@
 package ir.example.androidsocket.client
 
 
+import android.content.ContentResolver
+import android.net.Uri
 import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.utils.BytesUtils
 import ir.example.androidsocket.utils.clientLog
@@ -19,7 +21,8 @@ import java.net.Socket
 class TcpClientManager(
     override var ip: String,
     override var port: String,
-    override val socketListener: List<SocketConnectionListener>
+    override val socketListener: List<SocketConnectionListener>,
+    private val contentResolver: ContentResolver
 ) : SocketClient {
 
     var socket: Socket? = null
@@ -61,6 +64,39 @@ class TcpClientManager(
             }
         }
 
+
+    override fun attachFile(uri: Uri) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                clientLog("sendFile--> try")
+                val outputStream = socket?.getOutputStream()
+
+               /**
+                * The ContentResolver is used to access content from Uri (files, media, etc.)
+                * **/
+                val fileInputStream = contentResolver.openInputStream(uri)
+                if (fileInputStream == null) {
+                    clientLog("sendFile--> InputStream is null for Uri: $uri")
+                    return@launch
+                }
+
+                // Send the file in chunks
+                val buffer = ByteArray(BUFFER_SIZE)
+                var bytesRead: Int
+                while (fileInputStream.read(buffer).also { bytesRead = it } != -1) {
+                    outputStream?.write(buffer, 0, bytesRead)
+                    outputStream?.flush()
+                }
+
+                fileInputStream.close()
+                clientLog("sendFile--> File transfer complete")
+
+            } catch (e: Exception) {
+                clientLog("sendFile--> catch ${e.message}")
+                socketListener.forEach { it.onError(e) }
+            }
+        }
+    }
 
     /**
      *  listen to stream came from server

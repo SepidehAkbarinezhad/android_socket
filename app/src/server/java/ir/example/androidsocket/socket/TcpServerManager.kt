@@ -8,6 +8,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -86,6 +88,57 @@ class TcpServerManager(
                 serverLog("handleClient finally ${clientSocket.isConnected}")
                 closeClient()
 
+            }
+        }
+    }
+
+    private suspend fun listenToClientFile(clientSocket: Socket) {
+        serverLog("handleClient")
+        withContext(Dispatchers.IO) {
+            try {
+                serverLog("handleClient try")
+
+                // Prepare to receive a file (or message) from the client
+                val buffer = ByteArray(BUFFER_SIZE)
+
+                //indicates how many bytes were actually read from the input stream in the current read operation
+                var bytesRead: Int = 0
+                var totalBytesRead: Long = 0
+
+                // File to save the incoming data, you may want to adjust the path
+                val fileOutput = FileOutputStream(File("/path/to/save/received_file"))
+
+                // Read data into the buffer and assign the number of bytes read
+                while (clientSocket.isConnected && inputStream?.read(buffer)
+                        .also { bytesRead = it ?: 0 } != -1
+                ) {
+                    if (bytesRead > 0) {
+                        serverLog("handleClient bytesRead > 0")
+
+                        // Write the received data to a file
+                        fileOutput.write(buffer, 0, bytesRead)
+
+                        // Update the total bytes read so far
+                        totalBytesRead += bytesRead
+
+                        // Calculate the progress percentage
+                       /* val progress = (totalBytesRead.toDouble() / totalFileSize) * 100
+                        serverLog("Progress: $progress%")
+
+                        // Notify listeners with the progress if needed
+                        socketListener.forEach { it.onProgress(progress.toInt()) }*/
+                    }
+                }
+
+                // Close the file output stream after receiving all the data
+                fileOutput.close()
+
+            } catch (e: Exception) {
+                serverLog("Error handling client: ${e.message}")
+                socketListener.forEach { it.onError(e) }
+            } finally {
+                serverLog("handleClient finally ${clientSocket.isConnected}")
+                closeClient()
             }
         }
     }

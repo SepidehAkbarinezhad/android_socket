@@ -25,6 +25,9 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     var clientMessage = MutableStateFlow("")
         private set
 
+    var fileUrl = MutableStateFlow("")
+        private set
+
     var serverMessage = MutableStateFlow("")
         private set
 
@@ -157,6 +160,9 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             is ClientEvent.SetSocketConnectionStatus -> socketStatus.value = event.status
             is ClientEvent.SetClientMessage -> {
                 clientMessage.value = event.message
+            }
+            is ClientEvent.SetFileUrl -> {
+                fileUrl.value = event.url
             }
             is ClientEvent.SetServerMessage -> {
                 serverMessage.value = event.message

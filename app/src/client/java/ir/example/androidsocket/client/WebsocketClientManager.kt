@@ -1,5 +1,6 @@
 package ir.example.androidsocket.client
 
+import android.net.Uri
 import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.CoroutineScope
@@ -55,6 +56,10 @@ class WebsocketClientManager(
             }
         }
 
+    }
+
+    override fun attachFile(uri: Uri) {
+        TODO("Not yet implemented")
     }
 
 

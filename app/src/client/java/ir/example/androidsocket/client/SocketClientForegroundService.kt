@@ -2,6 +2,7 @@ package ir.example.androidsocket.client
 
 import android.app.Service
 import android.content.Intent
+import android.net.Uri
 import android.os.Binder
 import android.os.IBinder
 import ir.example.androidsocket.Constants
@@ -82,7 +83,7 @@ class SocketClientForegroundService : Service() {
         clientLog("connectWebSocket : ${protocolType.title}")
         clientManager = when (protocolType) {
             Constants.ProtocolType.WEBSOCKET -> WebsocketClientManager(ip,port,connectionListeners)
-            Constants.ProtocolType.TCP -> TcpClientManager(ip, port , connectionListeners)
+            Constants.ProtocolType.TCP -> TcpClientManager(ip, port , connectionListeners,this.contentResolver)
         }
         CoroutineScope(Dispatchers.IO).launch {
             clientManager.connectWithTimeout()
@@ -103,6 +104,10 @@ class SocketClientForegroundService : Service() {
             clientLog("SocketClientForegroundService sendMessageWithTimeout")
             clientManager.sendMessage(message = message, timeoutMillis = 50000)
         }
+    }
+
+    fun attachFile(uri : Uri){
+        clientManager.attachFile(uri)
     }
 
 
