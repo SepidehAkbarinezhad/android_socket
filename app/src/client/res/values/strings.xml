@@ -5,6 +5,7 @@
     <string name="connect_to_server">connect to server</string>
     <string name="disconnect_from_server">disconnect</string>
     <string name="send_message">send message</string>
+    <string name="send_file">send file</string>
     <string name="message_from_server">server message :</string>
     <string name="message"> message </string>
     <string name="message_empty_error"> message is empty </string>

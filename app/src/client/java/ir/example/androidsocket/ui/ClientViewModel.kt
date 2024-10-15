@@ -3,6 +3,7 @@ package ir.example.androidsocket.ui
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import androidx.activity.ComponentActivity
@@ -14,7 +15,6 @@ import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.ui.base.BaseViewModel
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.flow.MutableStateFlow
-import org.java_websocket.WebSocket
 import javax.inject.Inject
 
 
@@ -25,7 +25,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     var clientMessage = MutableStateFlow("")
         private set
 
-    var fileUrl = MutableStateFlow("")
+    var fileUrl: MutableStateFlow<Uri?> = MutableStateFlow(null)
         private set
 
     var serverMessage = MutableStateFlow("")
@@ -125,10 +125,11 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     fun onEvent(event: ClientEvent) {
         when (event) {
             is ClientEvent.StartClientService -> {
-                if (!isServiceBound.value){
+                if (!isServiceBound.value) {
                     try {
                         serviceConnection?.let { connection ->
-                            val serviceIntent = Intent(event.context, SocketClientForegroundService::class.java)
+                            val serviceIntent =
+                                Intent(event.context, SocketClientForegroundService::class.java)
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                 event.context.startForegroundService(serviceIntent)
                             } else {
@@ -150,24 +151,30 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 }
 
             }
+
             is ClientEvent.SetLoading -> {
                 loading.value = event.value
             }
+
             is ClientEvent.SetServerIp -> {
                 serverIp.value = event.ip
             }
+
             is ClientEvent.SetServerPort -> serverPort.value = event.port
             is ClientEvent.SetSocketConnectionStatus -> socketStatus.value = event.status
             is ClientEvent.SetClientMessage -> {
                 clientMessage.value = event.message
             }
+
             is ClientEvent.SetFileUrl -> {
-                fileUrl.value = event.url
+                fileUrl.value = event.uri
             }
+
             is ClientEvent.SetServerMessage -> {
                 serverMessage.value = event.message
                 setWaitingForServer(false)
             }
+
             ClientEvent.OnConnectToServer -> {
                 serverIpError.value = serverIp.value.isEmpty()
                 serverPortError.value = serverPort.value.isEmpty()
@@ -183,15 +190,17 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                     }
                 }
             }
-
             ClientEvent.OnDisconnectFromServer -> clientForegroundService?.closeClientSocket()
             is ClientEvent.SendMessageToServer -> {
-                if(event.message.isNotEmpty()) {
-                    setWaitingForServer(true)
-                }
-                clientForegroundService?.sendMessageWithTimeout(message = event.message)
-            }
+                clientLog("SocketClientForegroundService SendMessageToServer")
 
+                setWaitingForServer(true)
+                fileUrl.value?.let {
+                    clientLog("SocketClientForegroundService SendMessageToServer 1")
+
+                    clientForegroundService?.sendFile(it)
+                } ?: clientForegroundService?.sendMessageWithTimeout(message = event.message)
+            }
             is ClientEvent.SetProtocolType -> selectedProtocol.value = when (event.type) {
                 Constants.ProtocolType.TCP.title -> Constants.ProtocolType.TCP
                 else -> Constants.ProtocolType.WEBSOCKET
@@ -200,14 +209,14 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     }
 
 
-    private fun setWaitingForServer(waiting : Boolean){
-        waitingForServerConfirmation.value=waiting
+    private fun setWaitingForServer(waiting: Boolean) {
+        waitingForServerConfirmation.value = waiting
     }
 
     fun performCleanup() {
         clientLog("performCleanup()")
         try {
-            clientForegroundService?.let {foregroundService->
+            clientForegroundService?.let { foregroundService ->
                 serviceConnection?.let { serviceConnection ->
                     //stopping the service makes it automatically unbinds all clients that are bound to it
                     foregroundService.stopSelf()

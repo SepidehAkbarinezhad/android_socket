@@ -63,7 +63,7 @@ internal fun ClientCompose(
     val keyboardController = LocalSoftwareKeyboardController.current
     val selectedProtocol by viewModel.selectedProtocol.collectAsState()
     val clientMessage by viewModel.clientMessage.collectAsStateWithLifecycle("")
-    val fileUrl by viewModel.fileUrl.collectAsStateWithLifecycle("")
+    val fileUrl by viewModel.fileUrl.collectAsStateWithLifecycle()
     val serverMessage by viewModel.serverMessage.collectAsStateWithLifecycle("")
     val waitingForServerConfirmation by viewModel.waitingForServerConfirmation.collectAsStateWithLifecycle(
         false
@@ -83,7 +83,7 @@ internal fun ClientCompose(
             val uri = result.data?.data
             if (uri != null) {
                 onEvent(ClientEvent.SetClientMessage(uri.toString()))
-                onEvent(ClientEvent.SetFileUrl(uri.toString()))
+                onEvent(ClientEvent.SetFileUrl(uri))
                 println("File selected: $uri")
             }
         }
@@ -124,7 +124,7 @@ internal fun ClientCompose(
                 serverPort = serverPort,
                 serverPortError = serverPortError,
                 clientMessage = clientMessage,
-                fileUrl = fileUrl,
+                fileUrl = fileUrl?.toString() ?: "",
                 serverMessage = serverMessage,
                 waitingForServer = waitingForServerConfirmation,
                 socketStatus = socketStatus,
@@ -141,12 +141,9 @@ internal fun ClientCompose(
                     clientLog("onSendMessageEvent")
                     keyboardController?.hide()
                     onEvent(ClientEvent.SetServerMessage(""))
-                    if (message.isEmpty())
-                        viewModel.emitMessageValue(R.string.message_empty_error)
-                    else {
-                        onEvent(ClientEvent.SetLoading(true))
-                        onEvent(ClientEvent.SendMessageToServer(message))
-                    }
+                    onEvent(ClientEvent.SetLoading(true))
+                    onEvent(ClientEvent.SendMessageToServer(message))
+
                 },
                 onAttachFileEvent = { onAttachFile() }
             )
@@ -302,7 +299,6 @@ fun ClientContent(
                         textColor = Orange700
                     )
                 }
-
             }
 
         }) {
@@ -315,8 +311,10 @@ fun ClientContent(
                 disabledBackgroundColor = Color.LightGray,
                 backgroundColor = Indigo,
             ),
-            secondButtonTitle = stringResource(id = R.string.send_message),
-            secondEnable = socketStatus.connection,
+            secondButtonTitle = if (fileUrl.isNotEmpty()) stringResource(id = R.string.send_message) else stringResource(
+                id = R.string.send_file
+            ),
+            secondEnable = socketStatus.connection && clientMessage.isNotEmpty(),
             secondButtonColor = ButtonDefaults.buttonColors(
                 disabledBackgroundColor = Color.LightGray,
                 backgroundColor = Indigo,

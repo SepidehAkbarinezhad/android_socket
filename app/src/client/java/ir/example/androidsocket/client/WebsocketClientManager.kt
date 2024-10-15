@@ -58,7 +58,7 @@ class WebsocketClientManager(
 
     }
 
-    override fun attachFile(uri: Uri) {
+    override fun sendFile(uri: Uri) {
         TODO("Not yet implemented")
     }
 

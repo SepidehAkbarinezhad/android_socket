@@ -48,8 +48,11 @@ class TcpClientManager(
                     clientLog("TcpClientManager connectWithTimeout isConnected ${socket.isConnected}")
                     if (socket.isConnected){
                         socketListener.forEach { it.onConnected() }
+                        clientLog("TcpClientManager connectWithTimeout isConnected if1")
                         inputStream = socket.getInputStream()
                         outputStream = socket.getOutputStream()
+                        clientLog("TcpClientManager connectWithTimeout isConnected if2")
+
                         listenToServer(socket)
                     }
                 }
@@ -65,7 +68,7 @@ class TcpClientManager(
         }
 
 
-    override fun attachFile(uri: Uri) {
+    override fun sendFile(uri: Uri) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 clientLog("sendFile--> try")
@@ -102,16 +105,20 @@ class TcpClientManager(
      *  listen to stream came from server
      *  **/
     private suspend fun listenToServer(clientSocket: Socket) {
+        clientLog("listenToServer")
+
         withContext(Dispatchers.IO) {
+
             try {
+                clientLog("listenToServer try")
                 val buffer = ByteArray(BUFFER_SIZE)
-                clientLog("listenToServer try ${clientSocket.isConnected} ${inputStream?.read(buffer)}")
+                clientLog("listenToServer try ${clientSocket.isConnected}")
                 var bytesRead: Int = 0
                 // Read data into the buffer and assign the number of bytes read
                 while (clientSocket.isConnected && inputStream?.read(buffer)
                         .also { bytesRead = it?:0 } != -1
                 ) {
-                    clientLog("listenToServer while: ${clientSocket.isConnected} ${inputStream?.read(buffer)}")
+                    clientLog("listenToServer while: ${clientSocket.isConnected}")
                     if (bytesRead > 0) {
                         clientLog("handleClient try bytesRead > 0")
                         val hexMessage = BytesUtils.bytesToHex(buffer.copyOf(bytesRead))

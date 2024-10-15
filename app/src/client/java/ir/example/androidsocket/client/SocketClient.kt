@@ -12,6 +12,6 @@ interface SocketClient {
     suspend fun connectWithTimeout(timeoutMillis: Long = 35000)
     fun disconnect()
     fun sendMessage(message: String,timeoutMillis : Long)
-    fun attachFile(uri: Uri)
+    fun sendFile(uri: Uri)
     fun onMessage(message: String?)
 }

@@ -106,8 +106,9 @@ class SocketClientForegroundService : Service() {
         }
     }
 
-    fun attachFile(uri : Uri){
-        clientManager.attachFile(uri)
+    fun sendFile(uri : Uri){
+        clientLog("SocketClientForegroundService sendFile")
+        clientManager.sendFile(uri)
     }
 
 
