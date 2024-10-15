@@ -12,12 +12,14 @@ import kotlinx.coroutines.withTimeout
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
 import org.java_websocket.server.WebSocketServer
+import java.io.File
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 
 class WebsocketServerManger(
     override var serverPort: Int,
+    override var path: File,
     override val socketListener: List<SocketConnectionListener>,
 ) : SocketServer,WebSocketServer(InetSocketAddress(serverPort)) {
 

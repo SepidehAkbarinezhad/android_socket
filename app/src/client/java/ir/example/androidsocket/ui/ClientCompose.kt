@@ -311,8 +311,8 @@ fun ClientContent(
                 disabledBackgroundColor = Color.LightGray,
                 backgroundColor = Indigo,
             ),
-            secondButtonTitle = if (fileUrl.isNotEmpty()) stringResource(id = R.string.send_message) else stringResource(
-                id = R.string.send_file
+            secondButtonTitle = if (fileUrl.isNotEmpty()) stringResource(id = R.string.send_file) else stringResource(
+                id = R.string.send_message
             ),
             secondEnable = socketStatus.connection && clientMessage.isNotEmpty(),
             secondButtonColor = ButtonDefaults.buttonColors(

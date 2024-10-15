@@ -10,8 +10,8 @@ interface SocketClient {
     val socketListener: List<SocketConnectionListener>
 
     suspend fun connectWithTimeout(timeoutMillis: Long = 35000)
-    fun disconnect()
     fun sendMessage(message: String,timeoutMillis : Long)
     fun sendFile(uri: Uri)
     fun onMessage(message: String?)
+    fun disconnect()
 }

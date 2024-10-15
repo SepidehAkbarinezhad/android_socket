@@ -15,9 +15,11 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.ServerSocket
 import java.net.Socket
+import java.nio.ByteBuffer
 
 class TcpServerManager(
     override var serverPort: Int,
+    override var path: File,
     override val socketListener: List<SocketConnectionListener>,
 ) : SocketServer {
 
@@ -59,82 +61,78 @@ class TcpServerManager(
         }
     }
 
+    /**
+     * inputStream?.read() : reads one byte from the stream and put it as message type
+     * if it is 0x02 it is file type o inputStream.read(ByteArray(4)) read the next 4 bytes to determine the file size
+     * **/
     private suspend fun listenToClient(clientSocket: Socket) {
-        serverLog("handleClient")
+        serverLog("listenToClient")
         withContext(Dispatchers.IO) {
             try {
-                serverLog("handleClient try")
+                serverLog("listenToClient try")
                 val buffer = ByteArray(BUFFER_SIZE)
                 var bytesRead: Int = 0
-                // Read data into the buffer and assign the number of bytes read
-                while (clientSocket.isConnected && inputStream?.read(buffer)
-                        .also { bytesRead = it?:0 } != -1
-                ) {
-                    if (bytesRead > 0) {
-                        serverLog("handleClient try bytesRead > 0")
-                        val hexMessage = BytesUtils.bytesToHex(buffer.copyOf(bytesRead))
-                        val stringMessage = BytesUtils.hexToString(hexMessage)
-                        socketListener.forEach { it.onMessage(stringMessage) }
+
+                while (clientSocket.isConnected) {
+                    // Read the first byte to determine the message type
+                    val messageType = inputStream?.read()?.toByte() ?: break
+
+                    when (messageType) {
+                        0x01.toByte() -> {
+                            // Read text message
+                            bytesRead = inputStream?.read(buffer) ?: break
+                            if (bytesRead > 0) {
+                                val stringMessage = String(buffer, 0, bytesRead)
+                                serverLog("Received text message: $stringMessage")
+                                socketListener.forEach { it.onMessage(stringMessage) }
+                            }
+                        }
+
+                        0x02.toByte() -> {
+                            // Read file size (4 bytes for a 32-bit integer)
+                            val fileSizeBuffer = ByteArray(4)
+                            bytesRead = inputStream?.read(fileSizeBuffer) ?: break
+                            if (bytesRead == 4) {
+                                val fileSize = ByteBuffer.wrap(fileSizeBuffer).int
+                                serverLog("Receiving file of size: $fileSize bytes")
+
+                                // Define folder and file paths
+                                val folderName = "received_files"
+                                val directoryPath = File(path, folderName) // Create a directory path in internal storage
+
+                                // Create directory if it doesn't exist
+                                if (!directoryPath.exists()) {
+                                    directoryPath.mkdirs() // Create directory
+                                    serverLog("Directory created: ${directoryPath.absolutePath}")
+                                }
+
+                                val filePath = File(directoryPath, "fileName") // Update with a unique name or timestamp if needed
+
+                                // Prepare to receive the file data
+                                FileOutputStream(filePath).use { fileOutput ->
+                                    var totalBytesRead = 0
+
+                                    // Read the file data in chunks
+                                    while (totalBytesRead < fileSize) {
+                                        bytesRead = inputStream?.read(buffer) ?: break
+                                        if (bytesRead > 0) {
+                                            fileOutput.write(buffer, 0, bytesRead)
+                                            totalBytesRead += bytesRead
+                                            serverLog("Received $totalBytesRead / $fileSize bytes")
+                                        }
+                                    }
+
+                                    serverLog("File transfer complete: ${filePath.absolutePath}")
+                                }
+                            } else {
+                                serverLog("Failed to read the file size correctly.")
+                            }
+                        }
                     }
                 }
 
             } catch (e: Exception) {
-                serverLog("Error handling client: ${e.message}")
-                socketListener.forEach { it.onError(e) }
-            } finally {
-                /**
-                 * this block is executed whenever the while become false or throw an exception
-                 * **/
-                serverLog("handleClient finally ${clientSocket.isConnected}")
-                closeClient()
-
-            }
-        }
-    }
-
-    private suspend fun listenToClientFile(clientSocket: Socket) {
-        serverLog("handleClient")
-        withContext(Dispatchers.IO) {
-            try {
-                serverLog("handleClient try")
-
-                // Prepare to receive a file (or message) from the client
-                val buffer = ByteArray(BUFFER_SIZE)
-
-                //indicates how many bytes were actually read from the input stream in the current read operation
-                var bytesRead: Int = 0
-                var totalBytesRead: Long = 0
-
-                // File to save the incoming data, you may want to adjust the path
-                val fileOutput = FileOutputStream(File("/path/to/save/received_file"))
-
-                // Read data into the buffer and assign the number of bytes read
-                while (clientSocket.isConnected && inputStream?.read(buffer)
-                        .also { bytesRead = it ?: 0 } != -1
-                ) {
-                    if (bytesRead > 0) {
-                        serverLog("handleClient bytesRead > 0")
-
-                        // Write the received data to a file
-                        fileOutput.write(buffer, 0, bytesRead)
-
-                        // Update the total bytes read so far
-                        totalBytesRead += bytesRead
-
-                        // Calculate the progress percentage
-                       /* val progress = (totalBytesRead.toDouble() / totalFileSize) * 100
-                        serverLog("Progress: $progress%")
-
-                        // Notify listeners with the progress if needed
-                        socketListener.forEach { it.onProgress(progress.toInt()) }*/
-                    }
-                }
-
-                // Close the file output stream after receiving all the data
-                fileOutput.close()
-
-            } catch (e: Exception) {
-                serverLog("Error handling client: ${e.message}")
+                serverLog("Error handling listenToClient: ${e.message}")
                 socketListener.forEach { it.onError(e) }
             } finally {
                 serverLog("handleClient finally ${clientSocket.isConnected}")
@@ -142,12 +140,14 @@ class TcpServerManager(
             }
         }
     }
+
+
 
     /**
      * close the client whenever it become disconnected
      * **/
     private fun closeClient() {
-        clientSocket?.let { client->
+        clientSocket?.let { client ->
             socketListener.forEach {
                 it.onDisconnected(
                     code = null,

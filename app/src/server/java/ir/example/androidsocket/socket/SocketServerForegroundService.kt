@@ -110,8 +110,8 @@ class SocketServerForegroundService() : Service() {
     private fun setServerManager(protocolType: Constants.ProtocolType = Constants.ProtocolType.WEBSOCKET) {
         serverManager = ServerManager(
             protocolType,
-            WebsocketServerManger(PORT, connectionListeners),
-            TcpServerManager(PORT, connectionListeners)
+            WebsocketServerManger(PORT, this.filesDir, connectionListeners),
+            TcpServerManager(PORT, this.filesDir, connectionListeners)
         )
     }
 
@@ -133,7 +133,7 @@ class SocketServerForegroundService() : Service() {
     fun sendMessageWithTimeout(message: String, timeoutMillis: Long = 20000) {
         serverLog("SocketForegroundService sendMessageWithTimeout")
         CoroutineScope(Dispatchers.IO).launch {
-             serverManager.sendMessageWithTimeout(timeoutMillis = timeoutMillis, message = message)
+            serverManager.sendMessageWithTimeout(timeoutMillis = timeoutMillis, message = message)
         }
     }
 
