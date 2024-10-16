@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.viewModelScope
 import com.example.androidSocket.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import ir.example.androidsocket.Constants
@@ -14,7 +15,9 @@ import ir.example.androidsocket.client.SocketClientForegroundService
 import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.ui.base.BaseViewModel
 import ir.example.androidsocket.utils.clientLog
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
@@ -31,7 +34,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     var serverMessage = MutableStateFlow("")
         private set
 
-    var waitingForServerConfirmation = MutableStateFlow<Boolean>(false)
+    var waitingForServerConfirmation = MutableStateFlow<Boolean?>(null)
         private set
 
     var serverIp = MutableStateFlow<String>("")
@@ -75,6 +78,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 "clientConnectionListener onMessage : $message"
             )
             onEvent(ClientEvent.SetLoading(false))
+            setWaitingForServer(false)
             onEvent(ClientEvent.SetServerMessage(message ?: ""))
 
         }
@@ -164,6 +168,9 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             is ClientEvent.SetSocketConnectionStatus -> socketStatus.value = event.status
             is ClientEvent.SetClientMessage -> {
                 clientMessage.value = event.message
+                if(clientMessage.value.isEmpty()){
+                    setWaitingForServer(null)
+                }
             }
 
             is ClientEvent.SetFileUrl -> {
@@ -171,8 +178,8 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             }
 
             is ClientEvent.SetServerMessage -> {
+                clientLog("ClientEvent.SetServerMessage ${waitingForServerConfirmation.value}")
                 serverMessage.value = event.message
-                setWaitingForServer(false)
             }
 
             ClientEvent.OnConnectToServer -> {
@@ -195,11 +202,14 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 clientLog("SocketClientForegroundService SendMessageToServer")
 
                 setWaitingForServer(true)
-                fileUrl.value?.let {
-                    clientLog("SocketClientForegroundService SendMessageToServer 1")
+                viewModelScope.launch {
+                    delay(1000)
+                    fileUrl.value?.let {
+                        clientLog("SocketClientForegroundService SendMessageToServer 1")
+                        clientForegroundService?.sendFile(it)
+                    } ?: clientForegroundService?.sendMessageWithTimeout(message = event.message)
+                }
 
-                    clientForegroundService?.sendFile(it)
-                } ?: clientForegroundService?.sendMessageWithTimeout(message = event.message)
             }
             is ClientEvent.SetProtocolType -> selectedProtocol.value = when (event.type) {
                 Constants.ProtocolType.TCP.title -> Constants.ProtocolType.TCP
@@ -209,7 +219,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     }
 
 
-    private fun setWaitingForServer(waiting: Boolean) {
+    private fun setWaitingForServer(waiting: Boolean?) {
         waitingForServerConfirmation.value = waiting
     }
 
