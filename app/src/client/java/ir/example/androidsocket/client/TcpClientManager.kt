@@ -12,7 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -71,16 +70,29 @@ class TcpClientManager(
         }
 
     override fun sendMessage(message: String, timeoutMillis: Long) {
-        clientLog("sendMessage")
+        clientLog("sendMessage()")
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 clientLog("send-->try")
                 val outputStream = socket?.getOutputStream()
-                outputStream?.write(0x01)
+
+                // Convert message to byte array
                 val messageBytes = message.toByteArray()
-                val messageSize = ByteBuffer.allocate(4).putInt(messageBytes.size).array()
-                outputStream?.write(messageSize)
-                outputStream?.write(messageBytes)
+
+                // Convert message size to 4-byte array (integer)
+                val messageSizeBytes = ByteBuffer.allocate(4).putInt(messageBytes.size).array()
+
+                // Message type as a single byte (for example, 0x01 for text message)
+                val messageType = 0x01.toByte()
+
+                // Combine everything into one array
+                val dataToSend = ByteArray(1 + 4 + messageBytes.size)
+                dataToSend[0] = messageType // First byte is message type
+                System.arraycopy(messageSizeBytes, 0, dataToSend, 1, 4) // Next 4 bytes are the message size
+                System.arraycopy(messageBytes, 0, dataToSend, 5, messageBytes.size) // Rest is the message
+
+                // Write the combined array to the output stream
+                outputStream?.write(dataToSend)
                 outputStream?.flush()
 
             } catch (e: Exception) {
@@ -105,12 +117,15 @@ class TcpClientManager(
                         fileDescriptor.statSize // Get the file size directly from the file descriptor
                     outputStream?.write(0x02)
 
+                    clientLog("sendFile--> write1")
+
                     // Send the file size to the server first
                     clientLog("sendFile--> Sending file size: $fileSize bytes")
                     val fileSizeBytes = ByteBuffer.allocate(8).putLong(fileSize)
                         .array() // Convert long to byte array
                     outputStream?.write(fileSizeBytes)
                     outputStream?.flush()
+                    clientLog("sendFile--> write2")
 
                     // Prepare to read the file
                     val fileInputStream = contentResolver.openInputStream(uri)
@@ -126,6 +141,7 @@ class TcpClientManager(
                         outputStream?.write(buffer, 0, bytesRead)
                         outputStream?.flush()
                     }
+                    clientLog("sendFile--> write3")
 
                     fileInputStream.close()
                     clientLog("sendFile--> File transfer complete")

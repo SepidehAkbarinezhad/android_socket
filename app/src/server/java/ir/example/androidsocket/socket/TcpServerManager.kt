@@ -1,7 +1,6 @@
 package ir.example.androidsocket.socket
 
 import ir.example.androidsocket.SocketConnectionListener
-import ir.example.androidsocket.utils.BytesUtils
 import ir.example.androidsocket.utils.clientLog
 import ir.example.androidsocket.utils.serverLog
 import kotlinx.coroutines.CoroutineScope
@@ -58,6 +57,7 @@ class TcpServerManager(
             }
         } catch (e: Exception) {
             serverLog("startServer catch: ${e.message}")
+            socketListener.forEach { it.onException(e) }
         }
     }
 
@@ -70,63 +70,17 @@ class TcpServerManager(
         withContext(Dispatchers.IO) {
             try {
                 serverLog("listenToClient try")
-                val buffer = ByteArray(BUFFER_SIZE)
-                var bytesRead: Int = 0
 
                 while (clientSocket.isConnected) {
                     // Read the first byte to determine the message type
                     val messageType = inputStream?.read()?.toByte() ?: break
-
+                    serverLog("listenToClient messageType : $messageType")
                     when (messageType) {
                         0x01.toByte() -> {
-                            // Read text message
-                            bytesRead = inputStream?.read(buffer) ?: break
-                            if (bytesRead > 0) {
-                                val stringMessage = String(buffer, 0, bytesRead)
-                                serverLog("Received text message: $stringMessage")
-                                socketListener.forEach { it.onMessage(stringMessage) }
-                            }
+                            handleTextMessage()
                         }
-
                         0x02.toByte() -> {
-                            // Read file size (4 bytes for a 32-bit integer)
-                            val fileSizeBuffer = ByteArray(4)
-                            bytesRead = inputStream?.read(fileSizeBuffer) ?: break
-                            if (bytesRead == 4) {
-                                val fileSize = ByteBuffer.wrap(fileSizeBuffer).int
-                                serverLog("Receiving file of size: $fileSize bytes")
-
-                                // Define folder and file paths
-                                val folderName = "received_files"
-                                val directoryPath = File(path, folderName) // Create a directory path in internal storage
-
-                                // Create directory if it doesn't exist
-                                if (!directoryPath.exists()) {
-                                    directoryPath.mkdirs() // Create directory
-                                    serverLog("Directory created: ${directoryPath.absolutePath}")
-                                }
-
-                                val filePath = File(directoryPath, "fileName") // Update with a unique name or timestamp if needed
-
-                                // Prepare to receive the file data
-                                FileOutputStream(filePath).use { fileOutput ->
-                                    var totalBytesRead = 0
-
-                                    // Read the file data in chunks
-                                    while (totalBytesRead < fileSize) {
-                                        bytesRead = inputStream?.read(buffer) ?: break
-                                        if (bytesRead > 0) {
-                                            fileOutput.write(buffer, 0, bytesRead)
-                                            totalBytesRead += bytesRead
-                                            serverLog("Received $totalBytesRead / $fileSize bytes")
-                                        }
-                                    }
-
-                                    serverLog("File transfer complete: ${filePath.absolutePath}")
-                                }
-                            } else {
-                                serverLog("Failed to read the file size correctly.")
-                            }
+                            handleFileMessage()
                         }
                     }
                 }
@@ -141,7 +95,93 @@ class TcpServerManager(
         }
     }
 
+    private suspend fun handleTextMessage() {
+        // Read message size (4 bytes for a 32-bit integer)
+        val messageSize = readMessageSizeFromStream() ?: return
+        serverLog("handleTextMessage messageSize: $messageSize ")
 
+        // Read the entire message based on the size
+        val messageBuffer = ByteArray(messageSize)
+        val totalMessageBytesRead = readFully(messageBuffer, messageSize)
+
+        if (totalMessageBytesRead == messageSize) {
+            val stringMessage = String(messageBuffer, 0, messageSize)
+            serverLog("Received complete text message: $stringMessage")
+            socketListener.forEach { it.onMessage(stringMessage) }
+        } else {
+            serverLog("Failed to read the entire message. Only $totalMessageBytesRead bytes read.")
+        }
+    }
+
+    private suspend fun handleFileMessage() {
+        serverLog("handleFileMessage()")
+        // Read file size (4 bytes)
+        val fileSize = readMessageSizeFromStream() ?: return
+        serverLog("handleFileMessage: Receiving file of size: $fileSize bytes")
+
+        val filePath = prepareFileForReception("received_folder", "received_file")
+        receiveFile(filePath, fileSize)
+    }
+
+    private fun receiveFile(filePath: File, fileSize: Int) {
+        FileOutputStream(filePath).use { fileOutput ->
+            var totalBytesRead = 0
+            var bytesRead: Int
+            val buffer = ByteArray(BUFFER_SIZE)
+
+            // Read the file data in chunks
+            while (totalBytesRead < fileSize) {
+                bytesRead = inputStream?.read(buffer) ?: break
+                if (bytesRead > 0) {
+                    fileOutput.write(buffer, 0, bytesRead)
+                    totalBytesRead += bytesRead
+                    serverLog("Received $totalBytesRead / $fileSize bytes")
+                }
+            }
+            serverLog("File transfer complete: ${filePath.absolutePath}")
+        }
+    }
+
+    private fun prepareFileForReception(folderName: String, fileName: String): File {
+        val directoryPath = File(path, folderName)
+
+        // Create directory if it doesn't exist
+        if (!directoryPath.exists()) {
+            directoryPath.mkdirs()
+            serverLog("Directory created: ${directoryPath.absolutePath}")
+        }
+
+        return File(directoryPath, fileName) // Return the file path
+    }
+
+    private suspend fun readMessageSizeFromStream(): Int? {
+        serverLog("readMessageSizeFromStream()")
+        return withContext(Dispatchers.IO){
+            val sizeBuffer = ByteArray(4)
+            val bytesRead = inputStream?.read(sizeBuffer) ?: return@withContext -1
+            if (bytesRead == 4) {
+                ByteBuffer.wrap(sizeBuffer).int
+            } else {
+                null // Indicates failure to read size
+            }
+        }
+    }
+
+    private fun readFully(buffer: ByteArray, expectedSize: Int): Int {
+        var totalBytesRead = 0
+        var bytesRead: Int
+
+        while (totalBytesRead < expectedSize) {
+            bytesRead =
+                inputStream?.read(buffer, totalBytesRead, expectedSize - totalBytesRead) ?: break
+            if (bytesRead > 0) {
+                totalBytesRead += bytesRead
+            } else {
+                break
+            }
+        }
+        return totalBytesRead
+    }
 
     /**
      * close the client whenever it become disconnected

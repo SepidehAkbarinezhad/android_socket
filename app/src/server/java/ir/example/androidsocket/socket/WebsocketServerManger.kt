@@ -66,8 +66,6 @@ class WebsocketServerManger(
         ex?.printStackTrace()
     }
 
-
-
     override suspend fun sendMessageWithTimeout(message: String,timeoutMillis: Long) {
         return withContext(Dispatchers.IO) {
             return@withContext try {
@@ -81,7 +79,6 @@ class WebsocketServerManger(
                         } catch (e: org.java_websocket.exceptions.WebsocketNotConnectedException) {
                             serverLog("sendMessageWithTimeout catch  ${e.message}", "timeOutTag")
                             socketListener.forEach { it.onException(e) }
-
                         }
                     }.await()
 
