@@ -66,7 +66,7 @@ internal fun ClientCompose(
     val fileUrl by viewModel.fileUrl.collectAsStateWithLifecycle()
     val serverMessage by viewModel.serverMessage.collectAsStateWithLifecycle("")
     val waitingForServerConfirmation by viewModel.waitingForServerConfirmation.collectAsStateWithLifecycle(
-        false
+        null
     )
     val serverIp by viewModel.serverIp.collectAsState()
     val serverIpError by viewModel.serverIpError.collectAsState()
@@ -162,7 +162,7 @@ fun ClientContent(
     clientMessage: String,
     fileUrl: String,
     serverMessage: String,
-    waitingForServer: Boolean,
+    waitingForServer: Boolean?,
     socketStatus: Constants.SocketStatus,
     onConnectToServer: () -> Unit,
     onDisconnectFromServer: () -> Unit,
@@ -255,36 +255,50 @@ fun ClientContent(
                         if (!socketStatus.connection) {
                             IconButton(
                                 onClick = {
-
                                 }
                             ) {
                                 Icon(
-                                    modifier = Modifier.size(24.dp),
+                                    modifier = Modifier.size(28.dp),
                                     painter = painterResource(id = R.drawable.attach_file_icon),
                                     tint = Gray200,
                                     contentDescription = "Attach File"
                                 )
                             }
                         } else {
-                            IconButton(
-                                modifier = Modifier.alpha(if (attachVisibility) 1f else 0f),
-                                onClick = {
-                                    onAttachFileEvent()
+                            if (attachVisibility) {
+                                IconButton(
+                                    onClick = {
+                                        onAttachFileEvent()
+                                    }
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.size(28.dp),
+                                        painter = painterResource(id = R.drawable.attach_file_icon),
+                                        tint = Indigo,
+                                        contentDescription = "Attach File"
+                                    )
                                 }
-                            ) {
-                                Icon(
-                                    modifier = Modifier.size(24.dp),
-                                    painter = painterResource(id = R.drawable.attach_file_icon),
-                                    tint = Indigo,
-                                    contentDescription = "Attach File"
-                                )
+                            } else if (waitingForServer != null) {
+                                IconButton(
+                                    modifier = Modifier,
+                                    onClick = {
+                                        onAttachFileEvent()
+                                    }
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.size(28.dp),
+                                        painter = painterResource(id = R.drawable.seen_icon),
+                                        tint = if (waitingForServer == true) Gray200 else Color.Green,
+                                        contentDescription = "send check"
+                                    )
+                                }
                             }
                         }
 
                     })
 
 
-                if (socketStatus.connection && waitingForServer && serverMessage.isEmpty()) {
+              /*  if (socketStatus.connection && waitingForServer == true && serverMessage.isEmpty()) {
                     AppText(
                         modifier = Modifier.padding(MaterialTheme.spacing.small),
                         text = stringResource(R.string.server_confirmation_message),
@@ -298,7 +312,7 @@ fun ClientContent(
                         text = serverMessage,
                         textColor = Orange700
                     )
-                }
+                }*/
             }
 
         }) {

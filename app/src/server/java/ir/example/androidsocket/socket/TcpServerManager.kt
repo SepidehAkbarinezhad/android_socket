@@ -15,6 +15,7 @@ import java.io.OutputStream
 import java.net.ServerSocket
 import java.net.Socket
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 class TcpServerManager(
     override var serverPort: Int,
@@ -66,7 +67,7 @@ class TcpServerManager(
      * if it is 0x02 it is file type o inputStream.read(ByteArray(4)) read the next 4 bytes to determine the file size
      * **/
     private suspend fun listenToClient(clientSocket: Socket) {
-        serverLog("listenToClient")
+        serverLog("listenToClient()")
         withContext(Dispatchers.IO) {
             try {
                 serverLog("listenToClient try")
@@ -102,7 +103,7 @@ class TcpServerManager(
 
         // Read the entire message based on the size
         val messageBuffer = ByteArray(messageSize)
-        val totalMessageBytesRead = readFully(messageBuffer, messageSize)
+       /* val totalMessageBytesRead = readFully(messageBuffer, messageSize)
 
         if (totalMessageBytesRead == messageSize) {
             val stringMessage = String(messageBuffer, 0, messageSize)
@@ -110,7 +111,7 @@ class TcpServerManager(
             socketListener.forEach { it.onMessage(stringMessage) }
         } else {
             serverLog("Failed to read the entire message. Only $totalMessageBytesRead bytes read.")
-        }
+        }*/
     }
 
     private suspend fun handleFileMessage() {
@@ -160,7 +161,7 @@ class TcpServerManager(
             val sizeBuffer = ByteArray(4)
             val bytesRead = inputStream?.read(sizeBuffer) ?: return@withContext -1
             if (bytesRead == 4) {
-                ByteBuffer.wrap(sizeBuffer).int
+                ByteBuffer.wrap(sizeBuffer).order(ByteOrder.BIG_ENDIAN).int
             } else {
                 null // Indicates failure to read size
             }

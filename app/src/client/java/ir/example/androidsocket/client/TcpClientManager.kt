@@ -115,35 +115,42 @@ class TcpClientManager(
                 if (fileDescriptor != null) {
                     val fileSize =
                         fileDescriptor.statSize // Get the file size directly from the file descriptor
-                    outputStream?.write(0x02)
+
+                    val messageType = 0x02.toByte()
 
                     clientLog("sendFile--> write1")
 
                     // Send the file size to the server first
                     clientLog("sendFile--> Sending file size: $fileSize bytes")
-                    val fileSizeBytes = ByteBuffer.allocate(8).putLong(fileSize)
-                        .array() // Convert long to byte array
-                    outputStream?.write(fileSizeBytes)
+                    val messageSizeBytes = ByteBuffer.allocate(4).putInt(fileSize.toInt()).array()
+
+                    // Send message type and file size in a single array
+                    val header = ByteArray(1 + 4) // 1 byte for message type + 4 bytes for file size
+                    header[0] = messageType // Set the message type
+                    System.arraycopy(messageSizeBytes, 0, header, 1, 4) // Copy the file size after the message type
+
+                    // Write the header (message type + file size)
+                    outputStream?.write(header)
                     outputStream?.flush()
-                    clientLog("sendFile--> write2")
 
                     // Prepare to read the file
-                    val fileInputStream = contentResolver.openInputStream(uri)
+                 /*   val fileInputStream = contentResolver.openInputStream(uri)
                     if (fileInputStream == null) {
                         clientLog("sendFile--> InputStream is null for Uri: $uri")
                         return@launch
-                    }
+                    }*/
 
                     // Send the file in chunks
                     val buffer = ByteArray(BUFFER_SIZE)
                     var bytesRead: Int
-                    while (fileInputStream.read(buffer).also { bytesRead = it } != -1) {
+                  /*  while (fileInputStream.read(buffer).also { bytesRead = it } != -1) {
+                        clientLog("sendFile-->sendFile while")
                         outputStream?.write(buffer, 0, bytesRead)
                         outputStream?.flush()
                     }
-                    clientLog("sendFile--> write3")
+               */
 
-                    fileInputStream.close()
+                    //fileInputStream.close()
                     clientLog("sendFile--> File transfer complete")
                 } else {
                     clientLog("sendFile--> Could not open file descriptor for Uri: $uri")
