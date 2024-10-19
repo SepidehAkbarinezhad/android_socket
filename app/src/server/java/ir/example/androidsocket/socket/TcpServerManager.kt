@@ -103,7 +103,7 @@ class TcpServerManager(
 
         // Read the entire message based on the size
         val messageBuffer = ByteArray(messageSize)
-       /* val totalMessageBytesRead = readFully(messageBuffer, messageSize)
+        val totalMessageBytesRead = readFully(messageBuffer, messageSize)
 
         if (totalMessageBytesRead == messageSize) {
             val stringMessage = String(messageBuffer, 0, messageSize)
@@ -111,7 +111,7 @@ class TcpServerManager(
             socketListener.forEach { it.onMessage(stringMessage) }
         } else {
             serverLog("Failed to read the entire message. Only $totalMessageBytesRead bytes read.")
-        }*/
+        }
     }
 
     private suspend fun handleFileMessage() {
@@ -160,6 +160,7 @@ class TcpServerManager(
         return withContext(Dispatchers.IO){
             val sizeBuffer = ByteArray(4)
             val bytesRead = inputStream?.read(sizeBuffer) ?: return@withContext -1
+            serverLog("readMessageSizeFromStream() bytesRead $bytesRead")
             if (bytesRead == 4) {
                 ByteBuffer.wrap(sizeBuffer).order(ByteOrder.BIG_ENDIAN).int
             } else {

@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import ir.example.androidsocket.Constants
 import ir.example.androidsocket.MainApplication
@@ -33,14 +32,13 @@ import ir.example.androidsocket.utils.ConnectionTypeManager
 import ir.example.androidsocket.utils.NotificationMessageBroadcastReceiver
 import ir.example.androidsocket.utils.clientLog
 import ir.example.androidsocket.utils.serverLog
-import kotlinx.coroutines.launch
 
 
 @AndroidEntryPoint
 class ServerActivity : ComponentActivity() {
 
     private val viewModel: ServerViewModel by viewModels()
-    private lateinit var ConnectivityBroadcastReceiver: BroadcastReceiver
+    private lateinit var connectivityBroadcastReceiver: BroadcastReceiver
     private lateinit var notificationMessageReceiver: NotificationMessageBroadcastReceiver
 
 
@@ -134,7 +132,8 @@ class ServerActivity : ComponentActivity() {
     override fun onDestroy() {
         serverLog("ServerActivity onDestroy ")
         viewModel.performCleanup()
-        unregisterReceiver(ConnectivityBroadcastReceiver)
+        unregisterReceiver(connectivityBroadcastReceiver)
+        unregisterReceiver(notificationMessageReceiver)
         super.onDestroy()
     }
 
@@ -181,14 +180,14 @@ class ServerActivity : ComponentActivity() {
      * set a broadcastReceiver to react to the connection type changes
      * */
     private fun setConnectivityBroadcastReceiver(connectionTypeManager: ConnectionTypeManager) {
-        ConnectivityBroadcastReceiver = object : BroadcastReceiver() {
+        connectivityBroadcastReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 connectionTypeManager.checkConnectionStatus()
             }
         }
 
         val intentFilter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        registerReceiver(ConnectivityBroadcastReceiver, intentFilter)
+        registerReceiver(connectivityBroadcastReceiver, intentFilter)
 
     }
 }

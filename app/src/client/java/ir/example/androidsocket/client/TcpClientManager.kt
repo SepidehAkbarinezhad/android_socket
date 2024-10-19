@@ -113,7 +113,7 @@ class TcpClientManager(
                  * **/
                 val fileDescriptor: ParcelFileDescriptor? = contentResolver.openFileDescriptor(uri, "r")
                 if (fileDescriptor != null) {
-                    val fileSize =
+                    val fileSize : Long =
                         fileDescriptor.statSize // Get the file size directly from the file descriptor
 
                     val messageType = 0x02.toByte()
@@ -123,6 +123,7 @@ class TcpClientManager(
                     // Send the file size to the server first
                     clientLog("sendFile--> Sending file size: $fileSize bytes")
                     val messageSizeBytes = ByteBuffer.allocate(4).putInt(fileSize.toInt()).array()
+
 
                     // Send message type and file size in a single array
                     val header = ByteArray(1 + 4) // 1 byte for message type + 4 bytes for file size
@@ -134,23 +135,23 @@ class TcpClientManager(
                     outputStream?.flush()
 
                     // Prepare to read the file
-                 /*   val fileInputStream = contentResolver.openInputStream(uri)
+                    val fileInputStream = contentResolver.openInputStream(uri)
                     if (fileInputStream == null) {
                         clientLog("sendFile--> InputStream is null for Uri: $uri")
                         return@launch
-                    }*/
+                    }
 
                     // Send the file in chunks
                     val buffer = ByteArray(BUFFER_SIZE)
                     var bytesRead: Int
-                  /*  while (fileInputStream.read(buffer).also { bytesRead = it } != -1) {
-                        clientLog("sendFile-->sendFile while")
+                   while (fileInputStream.read(buffer).also { bytesRead = it } != -1) {
+                        clientLog("sendFile-->sendFile while $bytesRead")
                         outputStream?.write(buffer, 0, bytesRead)
                         outputStream?.flush()
                     }
-               */
 
-                    //fileInputStream.close()
+
+                    fileInputStream.close()
                     clientLog("sendFile--> File transfer complete")
                 } else {
                     clientLog("sendFile--> Could not open file descriptor for Uri: $uri")

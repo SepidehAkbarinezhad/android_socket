@@ -21,7 +21,7 @@ class WebsocketServerManger(
     override var serverPort: Int,
     override var path: File,
     override val socketListener: List<SocketConnectionListener>,
-) : SocketServer,WebSocketServer(InetSocketAddress(serverPort)) {
+) : SocketServer, WebSocketServer(InetSocketAddress(serverPort)) {
 
     private var connection: WebSocket? = null
 
@@ -53,11 +53,14 @@ class WebsocketServerManger(
         socketListener.forEach { it.onDisconnected(code, reason) }
     }
 
+    /**
+     * on receiving message by server
+     **/
     override fun onMessage(conn: WebSocket?, message: String?) {
         serverLog(
             "SocketServerManger onMessage $message"
         )
-        socketListener.forEach { it.onMessage( message) }
+        socketListener.forEach { it.onMessage(message) }
     }
 
     override fun onError(conn: WebSocket?, ex: Exception?) {
@@ -66,11 +69,11 @@ class WebsocketServerManger(
         ex?.printStackTrace()
     }
 
-    override suspend fun sendMessageWithTimeout(message: String,timeoutMillis: Long) {
+    override suspend fun sendMessageWithTimeout(message: String, timeoutMillis: Long) {
         return withContext(Dispatchers.IO) {
             return@withContext try {
                 withTimeout(timeoutMillis) {
-                     CoroutineScope(Dispatchers.IO).async {
+                    CoroutineScope(Dispatchers.IO).async {
                         try {
                             if (connection != null && connection!!.isOpen) {
                                 connection!!.send(message)
@@ -84,7 +87,10 @@ class WebsocketServerManger(
 
                 }
             } catch (e: TimeoutCancellationException) {
-                serverLog("sendMessageWithTimeout TimeoutCancellationException: ${e.message}", "timeOutTag")
+                serverLog(
+                    "sendMessageWithTimeout TimeoutCancellationException: ${e.message}",
+                    "timeOutTag"
+                )
                 socketListener.forEach { it.onException(e) }
             } catch (e: Exception) {
                 serverLog("sendMessageWithTimeout e: ${e.message}", "timeOutTag")
