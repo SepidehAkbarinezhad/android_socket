@@ -1,5 +1,10 @@
 package ir.example.androidsocket.socket
 
+import android.content.ContentResolver
+import android.content.ContentValues
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.utils.clientLog
 import ir.example.androidsocket.utils.serverLog
@@ -19,8 +24,9 @@ import java.nio.ByteOrder
 
 class TcpServerManager(
     override var serverPort: Int,
-    override var path: File,
+    override var path: File?,
     override val socketListener: List<SocketConnectionListener>,
+    private val contentResolver: ContentResolver
 ) : SocketServer {
 
     private var serverSocket: ServerSocket? = null
@@ -80,6 +86,7 @@ class TcpServerManager(
                         0x01.toByte() -> {
                             handleTextMessage()
                         }
+
                         0x02.toByte() -> {
                             handleFileMessage()
                         }
@@ -120,32 +127,61 @@ class TcpServerManager(
         val fileSize = readMessageSizeFromStream() ?: return
         serverLog("handleFileMessage: Receiving file of size: $fileSize bytes")
 
-        val filePath = prepareFileForReception("received_folder", "received_file")
-        receiveFile(filePath, fileSize)
+        val fileName = "received_file_${System.currentTimeMillis()}"
+        val fileContent = receiveFileContent(fileSize)
+        fileContent?.let {
+            saveFileBasedOnVersion(fileName, fileContent)
+        }
+
     }
 
-    private fun receiveFile(filePath: File, fileSize: Int) {
-        FileOutputStream(filePath).use { fileOutput ->
+    private suspend fun receiveFileContent(fileSize: Int): ByteArray? {
+        try {
+            val fileContent = ByteArray(fileSize)
             var totalBytesRead = 0
-            var bytesRead: Int
-            val buffer = ByteArray(BUFFER_SIZE)
 
-            // Read the file data in chunks
             while (totalBytesRead < fileSize) {
-                bytesRead = inputStream?.read(buffer) ?: break
+                val bytesRead = inputStream?.read(fileContent, totalBytesRead, fileSize - totalBytesRead) ?: break
                 if (bytesRead > 0) {
-                    fileOutput.write(buffer, 0, bytesRead)
                     totalBytesRead += bytesRead
-                    serverLog("Received $totalBytesRead / $fileSize bytes")
+                } else {
+                    break
                 }
             }
-            serverLog("File transfer complete: ${filePath.absolutePath}")
+
+            return if (totalBytesRead == fileSize) {
+                serverLog("Received full file content: $totalBytesRead bytes.")
+                fileContent
+            } else {
+                serverLog("Failed to receive full file content. Only $totalBytesRead bytes read.")
+                null
+            }
+
+        } catch (e: Exception) {
+            serverLog("Error receiving file content: ${e.message}")
+            return null
         }
     }
 
+    private fun saveFileBasedOnVersion(fileName: String, fileContent: ByteArray) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Use MediaStore for Android 10+ (Scoped Storage)
+            saveFileToDownloads(fileName, fileContent)
+        } else {
+            // Use external storage for Android 9 and below
+            val file = prepareFileForReceptionInDownloads(fileName)
+            if (file != null) {
+                file.writeBytes(fileContent) // Write file content to the prepared file
+                serverLog("File saved to Downloads: ${file.absolutePath}")
+            } else {
+                serverLog("Failed to save the file on Android 9 and below.")
+            }
+        }
+    }
     private fun prepareFileForReception(folderName: String, fileName: String): File {
-        val directoryPath = File(path, folderName)
+        serverLog("prepareFileForReception()")
 
+        val directoryPath = File(path, folderName)
         // Create directory if it doesn't exist
         if (!directoryPath.exists()) {
             directoryPath.mkdirs()
@@ -157,7 +193,7 @@ class TcpServerManager(
 
     private suspend fun readMessageSizeFromStream(): Int? {
         serverLog("readMessageSizeFromStream()")
-        return withContext(Dispatchers.IO){
+        return withContext(Dispatchers.IO) {
             val sizeBuffer = ByteArray(4)
             val bytesRead = inputStream?.read(sizeBuffer) ?: return@withContext -1
             serverLog("readMessageSizeFromStream() bytesRead $bytesRead")
@@ -184,6 +220,43 @@ class TcpServerManager(
         }
         return totalBytesRead
     }
+
+    private fun saveFileToDownloads(fileName: String, fileContent: ByteArray) {
+
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+            put(MediaStore.Downloads.MIME_TYPE, "application/octet-stream")
+            put(
+                MediaStore.Downloads.RELATIVE_PATH,
+                Environment.DIRECTORY_DOWNLOADS
+            ) // Save in Downloads folder
+        }
+
+        val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+        } else {
+            TODO("VERSION.SDK_INT < Q")
+        }
+
+        uri?.let {
+            contentResolver.openOutputStream(it)?.use { outputStream ->
+                outputStream.write(fileContent)
+                serverLog("File saved to Downloads: $fileName")
+            }
+        } ?: serverLog("Failed to save file.")
+    }
+
+    private fun prepareFileForReceptionInDownloads(fileName: String): File? {
+        val downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        if (!downloadsFolder.exists()) {
+            downloadsFolder.mkdirs() // Create the directory if it doesn't exist
+        }
+
+        val filePath = File(downloadsFolder, fileName)
+        serverLog("File path prepared for Android 9 and below: ${filePath.absolutePath}")
+        return filePath
+    }
+
 
     /**
      * close the client whenever it become disconnected

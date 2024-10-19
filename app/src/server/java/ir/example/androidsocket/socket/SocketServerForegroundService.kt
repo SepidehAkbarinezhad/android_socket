@@ -111,7 +111,7 @@ class SocketServerForegroundService() : Service() {
         serverManager = ServerManager(
             protocolType,
             WebsocketServerManger(PORT, this.filesDir, connectionListeners),
-            TcpServerManager(PORT, this.filesDir, connectionListeners)
+            TcpServerManager(PORT, this.getExternalFilesDir(null), connectionListeners,this.contentResolver)
         )
     }
 
