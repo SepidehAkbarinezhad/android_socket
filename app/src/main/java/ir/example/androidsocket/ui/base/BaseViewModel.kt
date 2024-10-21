@@ -1,5 +1,6 @@
 package ir.example.androidsocket.ui.base
 
+import android.os.Build
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import ir.example.androidsocket.Constants
@@ -12,7 +13,9 @@ internal abstract class BaseViewModel() : ViewModel() {
 
     val loading = mutableStateOf(false)
 
-    var openPermissionDialog = MutableStateFlow(false)
+    var openNotificationPermissionDialog = MutableStateFlow(false)
+
+    var notificationPermissionGranted = MutableStateFlow(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU)
 
     var selectedProtocol = MutableStateFlow(Constants.ProtocolType.WEBSOCKET)
 
@@ -24,9 +27,12 @@ internal abstract class BaseViewModel() : ViewModel() {
         sendUiEvent(BaseUiEvent.ShowToast(messageId, parameters))
     }
 
-    fun setOpenPermissionDialog(value : Boolean){
-        openPermissionDialog.value= value
+    fun setOpenNotificationPermissionDialog(value : Boolean){
+        openNotificationPermissionDialog.value= value
     }
 
+    fun setNotificationGranted(value : Boolean){
+        notificationPermissionGranted.value= value
+    }
 
 }

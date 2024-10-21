@@ -25,6 +25,8 @@ import javax.inject.Inject
 @HiltViewModel
 internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
+    var openStoragePermissionDialog = MutableStateFlow(false)
+
     var clientMessage = MutableStateFlow("")
         private set
 
@@ -61,6 +63,10 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             serverForgroundService?.sendMessageWithTimeout("message is received by server")
             onEvent(ServerEvent.SetClientMessage(message ?: ""))
             createNotificationFromClientMessage(message = message)
+        }
+
+        override fun onProgressUpdate(progress: Int) {
+            serverLog("SocketConnectionListener onProgressUpdate:  $progress")
         }
 
         override fun onDisconnected(code: Int?, reason: String?) {
@@ -106,6 +112,9 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
+    fun setOpenStoragePermissionDialog(value : Boolean){
+        openStoragePermissionDialog.value= value
+    }
 
     fun startServerService(context: Context) {
         serverLog("startServerService() ${isServiceBound.value}")

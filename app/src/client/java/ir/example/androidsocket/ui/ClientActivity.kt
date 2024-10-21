@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.androidSocket.R
 import dagger.hilt.android.AndroidEntryPoint
 import ir.example.androidsocket.ui.base.PermissionDialog
 import ir.example.androidsocket.utils.clientLog
@@ -41,19 +42,19 @@ class ClientActivity : ComponentActivity() {
                 if (isGranted) {
                     // Permission is granted. Continue the action or workflow in your app
                     clientLog("ActivityResult permission isGranted")
-                    viewModel.setOpenPermissionDialog(false)
+                    viewModel.setOpenNotificationPermissionDialog(false)
                     viewModel.onEvent(ClientEvent.StartClientService(activity))
 
                 } else {
                     clientLog("ActivityResult permission isNotGranted")
-                    viewModel.setOpenPermissionDialog(true)
+                    viewModel.setOpenNotificationPermissionDialog(true)
                 }
             }
 
 
         setContent {
 
-            val openPermissionDialog by viewModel.openPermissionDialog.collectAsStateWithLifecycle(
+            val openPermissionDialog by viewModel.openNotificationPermissionDialog.collectAsStateWithLifecycle(
                 initialValue = false
             )
 
@@ -75,13 +76,13 @@ class ClientActivity : ComponentActivity() {
                             * explain to the user why your app requires this permission for a specific feature to behave as expected
                             * and what features are disabled if it's declined.
                             * */
-                            viewModel.setOpenPermissionDialog(true)
+                            viewModel.setOpenNotificationPermissionDialog(true)
 
                         }
 
                         else -> {
                             // The registered ActivityResultCallback gets the result of this request.
-                            viewModel.setOpenPermissionDialog(false)
+                            viewModel.setOpenNotificationPermissionDialog(false)
                             requestPermissionLauncher.launch(
                                 Manifest.permission.POST_NOTIFICATIONS
                             )
@@ -102,8 +103,9 @@ class ClientActivity : ComponentActivity() {
                     clientLog("showPermissionDialog")
                     PermissionDialog(
                         modifier = Modifier.align(Alignment.Center),
+                        permissionReason = R.string.notification_permission_reason,
                         onDismissRequest = {
-                            viewModel.setOpenPermissionDialog(false)
+                            viewModel.setOpenNotificationPermissionDialog(false)
                             finish()
                         }
                     ) {

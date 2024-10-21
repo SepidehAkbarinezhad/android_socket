@@ -17,6 +17,8 @@ import ir.example.androidsocket.ui.base.BaseViewModel
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,6 +32,9 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
 
     var fileUrl: MutableStateFlow<Uri?> = MutableStateFlow(null)
         private set
+
+    private val _fileProgress : MutableStateFlow<Int?> = MutableStateFlow(null)
+    var fileprogress = _fileProgress.asStateFlow()
 
     var serverMessage = MutableStateFlow("")
         private set
@@ -66,21 +71,21 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         }
 
         override fun onConnected() {
-            clientLog(
-                "clientConnectionListener onConnected"
-            )
+            clientLog("clientConnectionListener onConnected"  )
             onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.CONNECTED))
         }
 
         override fun onMessage(message: String?) {
-            clientLog(
-                "clientConnectionListener onMessage : $message"
-            )
+            clientLog("clientConnectionListener onMessage : $message")
             onEvent(ClientEvent.SetLoading(false))
             setWaitingForServer(false)
             onEvent(ClientEvent.SetServerMessage(message ?: ""))
+        }
 
+        override fun onProgressUpdate(progress: Int) {
+            clientLog("clientConnectionListener onProgressUpdate : $progress")
+            _fileProgress.value = progress
         }
 
         override fun onDisconnected(code: Int?, reason: String?) {
@@ -172,6 +177,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                     setWaitingForServer(null)
                 }
             }
+            is ClientEvent.SetFileProgress ->{}
 
             is ClientEvent.SetFileUrl -> {
                 fileUrl.value = event.uri

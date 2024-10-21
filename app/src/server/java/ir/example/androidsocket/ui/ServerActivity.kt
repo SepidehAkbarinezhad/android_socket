@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
@@ -24,13 +25,13 @@ import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.androidSocket.R
 import dagger.hilt.android.AndroidEntryPoint
 import ir.example.androidsocket.Constants
 import ir.example.androidsocket.MainApplication
 import ir.example.androidsocket.ui.base.PermissionDialog
 import ir.example.androidsocket.utils.ConnectionTypeManager
 import ir.example.androidsocket.utils.NotificationMessageBroadcastReceiver
-import ir.example.androidsocket.utils.clientLog
 import ir.example.androidsocket.utils.serverLog
 
 
@@ -49,88 +50,152 @@ class ServerActivity : ComponentActivity() {
         val connectionTypeManager = ConnectionTypeManager(this)
 
         val activity = this@ServerActivity
-        var requestPermissionLauncher : ActivityResultLauncher<String> =
+        var requestNotificationPermissionLauncher: ActivityResultLauncher<String> =
             registerForActivityResult(
                 ActivityResultContracts.RequestPermission()
             ) { isGranted: Boolean ->
                 if (isGranted) {
-                    // Permission is granted. Continue the action or workflow in your app
-                    clientLog("ActivityResult permission isGranted")
-                    viewModel.setOpenPermissionDialog(false)
-                    viewModel.startServerService(activity)
+                    viewModel.setOpenNotificationPermissionDialog(false)
+                    viewModel.setNotificationGranted(true)
                 } else {
-                    clientLog("ActivityResult permission isNotGranted")
-                    viewModel.setOpenPermissionDialog(true)
+                    viewModel.setOpenNotificationPermissionDialog(true)
                 }
             }
 
+        var requestStoragePermissionLauncher: ActivityResultLauncher<String> =
+            registerForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                if (isGranted) {
+                    viewModel.setOpenStoragePermissionDialog(false)
+                    viewModel.startServerService(activity)
+                } else {
+                    viewModel.setOpenStoragePermissionDialog(true)
+                }
+            }
         setClientMessageBroadcastReceiver()
         setConnectivityBroadcastReceiver(connectionTypeManager)
         setContent {
 
-            val openPermissionDialog by viewModel.openPermissionDialog.collectAsStateWithLifecycle(initialValue = false)
+            val openNotificationPermissionDialog by viewModel.openNotificationPermissionDialog.collectAsStateWithLifecycle(
+                initialValue = false
+            )
+
+            val notificationPermissionGranted by viewModel.notificationPermissionGranted.collectAsStateWithLifecycle(
+                initialValue = false
+            )
+
+            val openStoragePermissionDialog by viewModel.openStoragePermissionDialog.collectAsStateWithLifecycle(
+                initialValue = false
+            )
 
             LaunchedEffect(Unit) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    /**
+                     *  handles the logic to determine whether the app already has the permission, whether it needs to show a rationale, or whether it should request the permission.
+                     * **/
                     when {
                         ContextCompat.checkSelfPermission(
                             activity,
                             Manifest.permission.POST_NOTIFICATIONS
                         ) == PackageManager.PERMISSION_GRANTED -> {
-                            viewModel.startServerService(activity)
+                            viewModel.setNotificationGranted(true)
                         }
 
                         ActivityCompat.shouldShowRequestPermissionRationale(
                             activity, Manifest.permission.POST_NOTIFICATIONS
                         ) -> {
-                            /*
+                            /**
                             * true if the user has previously denied the permission request .
                             * explain to the user why your app requires this permission for a specific feature to behave as expected
                             * and what features are disabled if it's declined.
                             * */
-                            viewModel.setOpenPermissionDialog(true)
+                            viewModel.setOpenNotificationPermissionDialog(true)
 
                         }
 
                         else -> {
                             // The registered ActivityResultCallback gets the result of this request.
-                            viewModel.setOpenPermissionDialog(false)
-                            requestPermissionLauncher.launch(
+                            viewModel.setOpenNotificationPermissionDialog(false)
+                            requestNotificationPermissionLauncher.launch(
                                 Manifest.permission.POST_NOTIFICATIONS
                             )
                         }
                     }
-                } else {
-                    viewModel.startServerService(activity)
                 }
 
+            }
+            LaunchedEffect(notificationPermissionGranted) {
+                if(notificationPermissionGranted){
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                        when {
+                            ContextCompat.checkSelfPermission(
+                                activity,
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                            ) == PackageManager.PERMISSION_GRANTED -> {
+                                viewModel.startServerService(activity)
+                            }
+
+                            ActivityCompat.shouldShowRequestPermissionRationale(
+                                activity, Manifest.permission.WRITE_EXTERNAL_STORAGE
+                            ) -> {
+                                viewModel.setOpenStoragePermissionDialog(true)
+                            }
+                            else -> {
+                                // The registered ActivityResultCallback gets the result of this request.
+                                viewModel.setOpenStoragePermissionDialog(false)
+                                requestStoragePermissionLauncher.launch(
+                                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                                )
+                            }
+                        }
+                    } else {
+                        viewModel.startServerService(activity)
+                    }
+                }
             }
 
             Box(Modifier.fillMaxSize()) {
-            ServerComposable(
-                viewModel = viewModel,
-                connectionTypeManager = connectionTypeManager,
-                onEvent = {viewModel.onEvent(it)}
-            )
-            if (openPermissionDialog){
-                clientLog("showPermissionDialog")
-                PermissionDialog(
-                    modifier = Modifier.align(Alignment.Center),
-                    onDismissRequest = {
-                        viewModel.setOpenPermissionDialog(false)
-                        finish() }
-                ) {
-                    requestPermissionLauncher.launch(
-                        Manifest.permission.POST_NOTIFICATIONS
-                    )
+                ServerComposable(
+                    viewModel = viewModel,
+                    connectionTypeManager = connectionTypeManager,
+                    onEvent = { viewModel.onEvent(it) }
+                )
+                if (openNotificationPermissionDialog) {
+                    PermissionDialog(
+                        modifier = Modifier.align(Alignment.Center),
+                        permissionReason = R.string.notification_permission_reason,
+                        onDismissRequest = {
+                            viewModel.setOpenNotificationPermissionDialog(false)
+                            finish()
+                        }
+                    ) {
+                        viewModel.setOpenNotificationPermissionDialog(false)
+                        requestNotificationPermissionLauncher.launch(
+                            Manifest.permission.POST_NOTIFICATIONS
+                        )
+                    }
+                }
+                if(openStoragePermissionDialog){
+                    PermissionDialog(
+                        modifier = Modifier.align(Alignment.Center),
+                        permissionReason = R.string.storage_permission_reason,
+                        onDismissRequest = {
+                            viewModel.setOpenStoragePermissionDialog(false)
+                            finish()
+                        }
+                    ) {
+                        viewModel.setOpenStoragePermissionDialog(false)
+                        requestStoragePermissionLauncher.launch(
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        )
+                    }
                 }
             }
-        }
         }
     }
 
     override fun onDestroy() {
-        serverLog("ServerActivity onDestroy ")
         viewModel.performCleanup()
         unregisterReceiver(connectivityBroadcastReceiver)
         unregisterReceiver(notificationMessageReceiver)
@@ -188,7 +253,6 @@ class ServerActivity : ComponentActivity() {
 
         val intentFilter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         registerReceiver(connectivityBroadcastReceiver, intentFilter)
-
     }
 }
 

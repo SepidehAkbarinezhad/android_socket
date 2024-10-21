@@ -50,10 +50,8 @@ class TcpClientManager(
                     clientLog("TcpClientManager connectWithTimeout isConnected ${socket.isConnected}")
                     if (socket.isConnected) {
                         socketListener.forEach { it.onConnected() }
-                        clientLog("TcpClientManager connectWithTimeout isConnected if1")
                         inputStream = socket.getInputStream()
                         outputStream = socket.getOutputStream()
-                        clientLog("TcpClientManager connectWithTimeout isConnected if2")
 
                         listenToServer(socket)
                     }
@@ -143,14 +141,19 @@ class TcpClientManager(
 
                     // Send the file in chunks
                     val buffer = ByteArray(BUFFER_SIZE)
+
                     var bytesRead: Int
+                    var totalBytesRead = 0
+
                    while (fileInputStream.read(buffer).also { bytesRead = it } != -1) {
-                        clientLog("sendFile-->sendFile while $bytesRead")
+                       clientLog("sendFile-->sendFile while $bytesRead")
+                       totalBytesRead += bytesRead
+                       val progress = (totalBytesRead * 100) / fileSize.toInt()
+                       delay(50)
+                       socketListener.forEach { it.onProgressUpdate(progress) }
                         outputStream?.write(buffer, 0, bytesRead)
                         outputStream?.flush()
                     }
-
-
                     fileInputStream.close()
                     clientLog("sendFile--> File transfer complete")
                 } else {

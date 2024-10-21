@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
@@ -64,6 +67,7 @@ internal fun ClientCompose(
     val selectedProtocol by viewModel.selectedProtocol.collectAsState()
     val clientMessage by viewModel.clientMessage.collectAsStateWithLifecycle("")
     val fileUrl by viewModel.fileUrl.collectAsStateWithLifecycle()
+    val fileProgress by viewModel.fileprogress.collectAsState()
     val serverMessage by viewModel.serverMessage.collectAsStateWithLifecycle("")
     val waitingForServerConfirmation by viewModel.waitingForServerConfirmation.collectAsStateWithLifecycle(
         null
@@ -116,6 +120,7 @@ internal fun ClientCompose(
             color = MaterialTheme.colors.background
         ) {
 
+            clientLog("................ $fileProgress")
             ClientContent(
                 onEvent = onEvent,
                 selectedProtocol = selectedProtocol,
@@ -125,6 +130,7 @@ internal fun ClientCompose(
                 serverPortError = serverPortError,
                 clientMessage = clientMessage,
                 fileUrl = fileUrl?.toString() ?: "",
+                fileProgress = fileProgress,
                 serverMessage = serverMessage,
                 waitingForServer = waitingForServerConfirmation,
                 socketStatus = socketStatus,
@@ -161,6 +167,7 @@ fun ClientContent(
     serverPortError: Boolean,
     clientMessage: String,
     fileUrl: String,
+    fileProgress: Int?,
     serverMessage: String,
     waitingForServer: Boolean?,
     socketStatus: Constants.SocketStatus,
@@ -168,12 +175,17 @@ fun ClientContent(
     onDisconnectFromServer: () -> Unit,
     onSendMessageEvent: (String) -> Unit,
     onAttachFileEvent: () -> Unit,
-
     ) {
 
-    val attachVisibility by remember(clientMessage) {
-        derivedStateOf { clientMessage.isEmpty() || fileUrl.isNotEmpty() }
+    clientLog("ClientContent:: ${clientMessage.isEmpty()}  ${fileUrl.isNotEmpty()}  ${waitingForServer != true}  ")
+    clientLog("ClientContent:: fileProgress $fileProgress")
+    val attachVisibility by remember(clientMessage, waitingForServer) {
+        derivedStateOf { clientMessage.isEmpty() || (fileUrl.isNotEmpty() && waitingForServer != true) }
     }
+    val animatedProgress by animateFloatAsState(
+        targetValue = fileProgress?.toFloat() ?: 0f,
+        animationSpec = tween(durationMillis = 500), label = ""
+    )
 
     AppBaseScreen(
         headerTitle = stringResource(id = R.string.client_header, selectedProtocol.title),
@@ -265,6 +277,7 @@ fun ClientContent(
                                 )
                             }
                         } else {
+                            clientLog("progress $attachVisibility  $waitingForServer")
                             if (attachVisibility) {
                                 IconButton(
                                     onClick = {
@@ -279,40 +292,47 @@ fun ClientContent(
                                     )
                                 }
                             } else if (waitingForServer != null) {
-                                IconButton(
-                                    modifier = Modifier,
-                                    onClick = {
-                                        onAttachFileEvent()
+                                clientLog("progress $fileProgress  ${fileProgress!=null}")
+                                if (fileProgress != null) {
+                                    clientLog("progress...")
+                                    CircularProgressIndicator(modifier = Modifier.size(28.dp),progress = animatedProgress/100, color = Orange700 , backgroundColor = Color.LightGray)
+                                } else{
+                                  IconButton(
+                                        modifier = Modifier,
+                                        onClick = {
+                                            onAttachFileEvent()
+                                        }
+                                    ) {
+                                        Icon(
+                                            modifier = Modifier.size(28.dp),
+                                            painter = painterResource(id = R.drawable.seen_icon),
+                                            tint = if (waitingForServer == true) Gray200 else Color.Green,
+                                            contentDescription = "send check"
+                                        )
                                     }
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(28.dp),
-                                        painter = painterResource(id = R.drawable.seen_icon),
-                                        tint = if (waitingForServer == true) Gray200 else Color.Green,
-                                        contentDescription = "send check"
-                                    )
                                 }
+
                             }
                         }
 
                     })
 
 
-              /*  if (socketStatus.connection && waitingForServer == true && serverMessage.isEmpty()) {
-                    AppText(
-                        modifier = Modifier.padding(MaterialTheme.spacing.small),
-                        text = stringResource(R.string.server_confirmation_message),
-                        textColor = Color.Red
-                    )
-                }
+                /*  if (socketStatus.connection && waitingForServer == true && serverMessage.isEmpty()) {
+                      AppText(
+                          modifier = Modifier.padding(MaterialTheme.spacing.small),
+                          text = stringResource(R.string.server_confirmation_message),
+                          textColor = Color.Red
+                      )
+                  }
 
-                if (serverMessage.isNotEmpty()) {
-                    AppText(
-                        modifier = Modifier.padding(MaterialTheme.spacing.small),
-                        text = serverMessage,
-                        textColor = Orange700
-                    )
-                }*/
+                  if (serverMessage.isNotEmpty()) {
+                      AppText(
+                          modifier = Modifier.padding(MaterialTheme.spacing.small),
+                          text = serverMessage,
+                          textColor = Orange700
+                      )
+                  }*/
             }
 
         }) {

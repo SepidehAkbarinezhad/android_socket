@@ -21,6 +21,7 @@ import ir.example.androidsocket.ui.theme.spacing
 @Composable
 fun PermissionDialog(
     modifier: Modifier = Modifier,
+    permissionReason : Int,
     onDismissRequest: () -> Unit,
     onGrantClicked: () -> Unit,
 ) {
@@ -48,7 +49,7 @@ fun PermissionDialog(
                 .height(1.dp)
                 .background(Color.Red))
             AppText(
-                text = stringResource(id = R.string.permission_dialog_message),
+                text = stringResource(id = permissionReason),
                 maxLine = 5
             )
             AppButtonsRow(

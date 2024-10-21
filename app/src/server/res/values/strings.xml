@@ -10,7 +10,8 @@
     <string name="port_title">port :</string>
     <string name="wifi_connection_description">wifi connection</string>
     <string name="ethernet_connection_description">ethernet connection</string>
-    <string name="permission_dialog_message"> notification permission is mandatory to inform the user about the service which is running and about the received message from client when server is in background</string>
+    <string name="notification_permission_reason"> notification permission is mandatory to inform the user about the service which is running and about the received message from client when server is in background</string>
+    <string name="storage_permission_reason">write external storage permission is mandatory to save received file by server in external storage</string>
 
 
 </resources>

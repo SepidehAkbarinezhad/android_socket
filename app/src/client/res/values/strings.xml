@@ -10,6 +10,6 @@
     <string name="message"> message </string>
     <string name="message_empty_error"> message is empty </string>
     <string name="server_confirmation_message"> waiting for server confirmation ... </string>
-    <string name="permission_dialog_message"> notification permission is mandatory to inform the user about the service which is running</string>
+    <string name="notification_permission_reason"> notification permission is mandatory to inform the user about the service which is running</string>
 
 </resources>

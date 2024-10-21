@@ -135,7 +135,7 @@ class TcpServerManager(
 
     }
 
-    private suspend fun receiveFileContent(fileSize: Int): ByteArray? {
+    private fun receiveFileContent(fileSize: Int): ByteArray? {
         try {
             val fileContent = ByteArray(fileSize)
             var totalBytesRead = 0
@@ -144,6 +144,13 @@ class TcpServerManager(
                 val bytesRead = inputStream?.read(fileContent, totalBytesRead, fileSize - totalBytesRead) ?: break
                 if (bytesRead > 0) {
                     totalBytesRead += bytesRead
+                    // Calculate the percentage of file read
+                    val progress = (totalBytesRead * 100) / fileSize
+
+                    // Call the onProgressUpdate callback with the progress percentage
+                    socketListener.forEach { it.onProgressUpdate(progress) }
+
+                    serverLog("Progress: $progress%")
                 } else {
                     break
                 }
@@ -178,18 +185,6 @@ class TcpServerManager(
             }
         }
     }
-    private fun prepareFileForReception(folderName: String, fileName: String): File {
-        serverLog("prepareFileForReception()")
-
-        val directoryPath = File(path, folderName)
-        // Create directory if it doesn't exist
-        if (!directoryPath.exists()) {
-            directoryPath.mkdirs()
-            serverLog("Directory created: ${directoryPath.absolutePath}")
-        }
-
-        return File(directoryPath, fileName) // Return the file path
-    }
 
     private suspend fun readMessageSizeFromStream(): Int? {
         serverLog("readMessageSizeFromStream()")
@@ -222,7 +217,6 @@ class TcpServerManager(
     }
 
     private fun saveFileToDownloads(fileName: String, fileContent: ByteArray) {
-
         val contentValues = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, fileName)
             put(MediaStore.Downloads.MIME_TYPE, "application/octet-stream")
