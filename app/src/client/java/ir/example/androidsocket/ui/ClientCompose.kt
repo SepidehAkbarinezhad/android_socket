@@ -308,22 +308,6 @@ fun ClientContent(
 
                     })
 
-
-                /*  if (socketStatus.connection && waitingForServer == true && serverMessage.isEmpty()) {
-                      AppText(
-                          modifier = Modifier.padding(MaterialTheme.spacing.small),
-                          text = stringResource(R.string.server_confirmation_message),
-                          textColor = Color.Red
-                      )
-                  }
-
-                  if (serverMessage.isNotEmpty()) {
-                      AppText(
-                          modifier = Modifier.padding(MaterialTheme.spacing.small),
-                          text = serverMessage,
-                          textColor = Orange700
-                      )
-                  }*/
             }
 
         }) {
@@ -339,7 +323,7 @@ fun ClientContent(
             secondButtonTitle = if (fileUrl.isNotEmpty()) stringResource(id = R.string.send_file) else stringResource(
                 id = R.string.send_message
             ),
-            secondEnable = socketStatus.connection && clientMessage.isNotEmpty(),
+            secondEnable = socketStatus.connection && clientMessage.isNotEmpty() && !waitingForServer,
             secondButtonColor = ButtonDefaults.buttonColors(
                 disabledBackgroundColor = Color.LightGray,
                 backgroundColor = Indigo,

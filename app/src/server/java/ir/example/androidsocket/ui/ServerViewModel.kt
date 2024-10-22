@@ -37,6 +37,9 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
     var fileProgress = MutableStateFlow<Int?>(null)
         private set
 
+    var fileIsSaved = MutableStateFlow<Boolean>(false)
+        private set
+
     var wifiServerIp = MutableStateFlow("")
         private set
 
@@ -66,28 +69,30 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
         }
 
         override fun onMessage(messageContentType: Int?, message: String?) {
-            serverLog("SocketConnectionListener onMessage:  $message","progressCheck")
+            serverLog("SocketConnectionListener onMessage:  $message", "progressCheck")
             when (messageContentType) {
                 MESSAGE_TYPE_TEXT_CONTENT -> {
                     onEvent(ServerEvent.SetClientMessage(message ?: ""))
                     createNotificationFromClientMessage(message = message)
                     serverForgroundService?.sendMessageWithTimeout("message is received by server")
                 }
+
                 MESSAGE_TYPE_FILE_CONTENT -> {
-                    serverLog("MESSAGE_TYPE_FILE_CONTENT","progressCheck")
+                    serverLog("MESSAGE_TYPE_FILE_CONTENT", "progressCheck")
+                    onEvent(ServerEvent.SetFileIsSaved(true))
                     emitMessageValue(R.string.file_message_saved)
                 }
             }
         }
 
         override fun onProgressUpdate(progress: Int) {
-            serverLog("SocketConnectionListener onProgressUpdate:  $progress","progressCheck")
+            serverLog("SocketConnectionListener onProgressUpdate:  $progress", "progressCheck")
             fileProgress.value = progress
-            if(progress==100){
+            if (progress == 100) {
                 emitMessageValue(R.string.file_message_received)
                 createNotificationFromClientMessage(message = "a file message is received")
                 serverForgroundService?.sendMessageWithTimeout("message is received by server")
-               fileProgress.value = null
+                fileProgress.value = null
             }
 
         }
@@ -192,6 +197,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
                 }
                 serverForgroundService?.startSocketServer(selectedProtocol.value)
             }
+            is ServerEvent.SetFileIsSaved -> fileIsSaved.value = event.saved
         }
     }
 
