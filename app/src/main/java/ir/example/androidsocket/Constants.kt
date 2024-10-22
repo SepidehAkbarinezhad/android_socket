@@ -29,5 +29,10 @@ object Constants {
 
     val PROTOCOLS = listOf(ProtocolType.WEBSOCKET.title, ProtocolType.TCP.title)
 
+    object MessageConstantType {
+        const val MESSAGE_TYPE_TEXT_CONTENT = 0x01
+        const val MESSAGE_TYPE_FILE_CONTENT = 0x02
+    }
+
 
 }

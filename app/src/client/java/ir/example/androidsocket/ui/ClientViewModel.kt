@@ -17,8 +17,6 @@ import ir.example.androidsocket.ui.base.BaseViewModel
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -33,8 +31,8 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     var fileUrl: MutableStateFlow<Uri?> = MutableStateFlow(null)
         private set
 
-    private val _fileProgress : MutableStateFlow<Int?> = MutableStateFlow(null)
-    var fileprogress = _fileProgress.asStateFlow()
+    var fileProgress = MutableStateFlow<Int?>(null)
+        private set
 
     var serverMessage = MutableStateFlow("")
         private set
@@ -71,21 +69,21 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         }
 
         override fun onConnected() {
-            clientLog("clientConnectionListener onConnected"  )
+            clientLog("clientConnectionListener onConnected")
             onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.CONNECTED))
         }
 
-        override fun onMessage(message: String?) {
-            clientLog("clientConnectionListener onMessage : $message")
+        override fun onMessage(messageContentType: Int?, message: String?) {
+            clientLog("clientConnectionListener onMessage : $message", "progressCheck")
             onEvent(ClientEvent.SetLoading(false))
             setWaitingForServer(false)
             onEvent(ClientEvent.SetServerMessage(message ?: ""))
         }
 
         override fun onProgressUpdate(progress: Int) {
-            clientLog("clientConnectionListener onProgressUpdate : $progress")
-            _fileProgress.value = progress
+            clientLog("clientConnectionListener onProgressUpdate : $progress", "progressCheck")
+            fileProgress.value = progress
         }
 
         override fun onDisconnected(code: Int?, reason: String?) {
@@ -173,11 +171,10 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             is ClientEvent.SetSocketConnectionStatus -> socketStatus.value = event.status
             is ClientEvent.SetClientMessage -> {
                 clientMessage.value = event.message
-                if(clientMessage.value.isEmpty()){
+                if (clientMessage.value.isEmpty()) {
                     setWaitingForServer(null)
                 }
             }
-            is ClientEvent.SetFileProgress ->{}
 
             is ClientEvent.SetFileUrl -> {
                 fileUrl.value = event.uri
@@ -203,6 +200,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                     }
                 }
             }
+
             ClientEvent.OnDisconnectFromServer -> clientForegroundService?.closeClientSocket()
             is ClientEvent.SendMessageToServer -> {
                 clientLog("SocketClientForegroundService SendMessageToServer")
@@ -217,6 +215,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 }
 
             }
+
             is ClientEvent.SetProtocolType -> selectedProtocol.value = when (event.type) {
                 Constants.ProtocolType.TCP.title -> Constants.ProtocolType.TCP
                 else -> Constants.ProtocolType.WEBSOCKET

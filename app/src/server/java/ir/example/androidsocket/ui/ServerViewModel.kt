@@ -8,16 +8,20 @@ import android.content.ServiceConnection
 import android.os.Build
 import android.os.IBinder
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.viewModelScope
 import com.example.androidSocket.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import ir.example.androidsocket.Constants
 import ir.example.androidsocket.Constants.CLIENT_MESSAGE_NOTIFICATION_ID
+import ir.example.androidsocket.Constants.MessageConstantType.MESSAGE_TYPE_FILE_CONTENT
+import ir.example.androidsocket.Constants.MessageConstantType.MESSAGE_TYPE_TEXT_CONTENT
 import ir.example.androidsocket.MainApplication
 import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.socket.SocketServerForegroundService
 import ir.example.androidsocket.ui.base.BaseViewModel
 import ir.example.androidsocket.utils.IpAddressManager
 import ir.example.androidsocket.utils.serverLog
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import javax.inject.Inject
 
@@ -28,6 +32,9 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
     var openStoragePermissionDialog = MutableStateFlow(false)
 
     var clientMessage = MutableStateFlow("")
+        private set
+
+    var fileProgress = MutableStateFlow<Int?>(null)
         private set
 
     var wifiServerIp = MutableStateFlow("")
@@ -58,15 +65,31 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             onEvent(ServerEvent.SetLoading(false))
         }
 
-        override fun onMessage(message: String?) {
-            serverLog("SocketConnectionListener onMessage:  $message")
-            serverForgroundService?.sendMessageWithTimeout("message is received by server")
-            onEvent(ServerEvent.SetClientMessage(message ?: ""))
-            createNotificationFromClientMessage(message = message)
+        override fun onMessage(messageContentType: Int?, message: String?) {
+            serverLog("SocketConnectionListener onMessage:  $message","progressCheck")
+            when (messageContentType) {
+                MESSAGE_TYPE_TEXT_CONTENT -> {
+                    onEvent(ServerEvent.SetClientMessage(message ?: ""))
+                    createNotificationFromClientMessage(message = message)
+                    serverForgroundService?.sendMessageWithTimeout("message is received by server")
+                }
+                MESSAGE_TYPE_FILE_CONTENT -> {
+                    serverLog("MESSAGE_TYPE_FILE_CONTENT","progressCheck")
+                    emitMessageValue(R.string.file_message_saved)
+                }
+            }
         }
 
         override fun onProgressUpdate(progress: Int) {
-            serverLog("SocketConnectionListener onProgressUpdate:  $progress")
+            serverLog("SocketConnectionListener onProgressUpdate:  $progress","progressCheck")
+            fileProgress.value = progress
+            if(progress==100){
+                emitMessageValue(R.string.file_message_received)
+                createNotificationFromClientMessage(message = "a file message is received")
+                serverForgroundService?.sendMessageWithTimeout("message is received by server")
+               fileProgress.value = null
+            }
+
         }
 
         override fun onDisconnected(code: Int?, reason: String?) {
@@ -112,8 +135,8 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
-    fun setOpenStoragePermissionDialog(value : Boolean){
-        openStoragePermissionDialog.value= value
+    fun setOpenStoragePermissionDialog(value: Boolean) {
+        openStoragePermissionDialog.value = value
     }
 
     fun startServerService(context: Context) {

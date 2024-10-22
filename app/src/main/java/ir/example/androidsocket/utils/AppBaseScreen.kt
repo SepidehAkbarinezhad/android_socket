@@ -89,7 +89,9 @@ fun AppBaseScreen(
                     expanded = false
                 },
                 onDismissClicked = { expanded = false })
-            bodyContent()
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center){
+                bodyContent()
+            }
         }
 
         Box(

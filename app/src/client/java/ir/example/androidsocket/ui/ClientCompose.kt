@@ -29,7 +29,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -41,7 +40,6 @@ import com.example.androidSocket.R
 import ir.example.androidsocket.Constants
 import ir.example.androidsocket.ui.base.AppButtonsRow
 import ir.example.androidsocket.ui.base.AppOutlinedTextField
-import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.AppTitleValueText
 import ir.example.androidsocket.ui.base.BaseUiEvent
 import ir.example.androidsocket.ui.base.TextType
@@ -67,7 +65,7 @@ internal fun ClientCompose(
     val selectedProtocol by viewModel.selectedProtocol.collectAsState()
     val clientMessage by viewModel.clientMessage.collectAsStateWithLifecycle("")
     val fileUrl by viewModel.fileUrl.collectAsStateWithLifecycle()
-    val fileProgress by viewModel.fileprogress.collectAsState()
+    val fileProgress by viewModel.fileProgress.collectAsState()
     val serverMessage by viewModel.serverMessage.collectAsStateWithLifecycle("")
     val waitingForServerConfirmation by viewModel.waitingForServerConfirmation.collectAsStateWithLifecycle(
         null
@@ -119,8 +117,6 @@ internal fun ClientCompose(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colors.background
         ) {
-
-            clientLog("................ $fileProgress")
             ClientContent(
                 onEvent = onEvent,
                 selectedProtocol = selectedProtocol,
@@ -177,8 +173,6 @@ fun ClientContent(
     onAttachFileEvent: () -> Unit,
     ) {
 
-    clientLog("ClientContent:: ${clientMessage.isEmpty()}  ${fileUrl.isNotEmpty()}  ${waitingForServer != true}  ")
-    clientLog("ClientContent:: fileProgress $fileProgress")
     val attachVisibility by remember(clientMessage, waitingForServer) {
         derivedStateOf { clientMessage.isEmpty() || (fileUrl.isNotEmpty() && waitingForServer != true) }
     }
@@ -277,7 +271,6 @@ fun ClientContent(
                                 )
                             }
                         } else {
-                            clientLog("progress $attachVisibility  $waitingForServer")
                             if (attachVisibility) {
                                 IconButton(
                                     onClick = {
@@ -292,9 +285,7 @@ fun ClientContent(
                                     )
                                 }
                             } else if (waitingForServer != null) {
-                                clientLog("progress $fileProgress  ${fileProgress!=null}")
                                 if (fileProgress != null) {
-                                    clientLog("progress...")
                                     CircularProgressIndicator(modifier = Modifier.size(28.dp),progress = animatedProgress/100, color = Orange700 , backgroundColor = Color.LightGray)
                                 } else{
                                   IconButton(

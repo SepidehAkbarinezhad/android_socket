@@ -5,6 +5,8 @@ import android.content.ContentValues
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import ir.example.androidsocket.Constants.MessageConstantType.MESSAGE_TYPE_FILE_CONTENT
+import ir.example.androidsocket.Constants.MessageConstantType.MESSAGE_TYPE_TEXT_CONTENT
 import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.utils.clientLog
 import ir.example.androidsocket.utils.serverLog
@@ -13,7 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -83,11 +84,10 @@ class TcpServerManager(
                     val messageType = inputStream?.read()?.toByte() ?: break
                     serverLog("listenToClient messageType : $messageType")
                     when (messageType) {
-                        0x01.toByte() -> {
+                        MESSAGE_TYPE_TEXT_CONTENT.toByte() -> {
                             handleTextMessage()
                         }
-
-                        0x02.toByte() -> {
+                        MESSAGE_TYPE_FILE_CONTENT.toByte() -> {
                             handleFileMessage()
                         }
                     }
@@ -115,7 +115,7 @@ class TcpServerManager(
         if (totalMessageBytesRead == messageSize) {
             val stringMessage = String(messageBuffer, 0, messageSize)
             serverLog("Received complete text message: $stringMessage")
-            socketListener.forEach { it.onMessage(stringMessage) }
+            socketListener.forEach { it.onMessage(MESSAGE_TYPE_TEXT_CONTENT,stringMessage) }
         } else {
             serverLog("Failed to read the entire message. Only $totalMessageBytesRead bytes read.")
         }
@@ -155,7 +155,6 @@ class TcpServerManager(
                     break
                 }
             }
-
             return if (totalBytesRead == fileSize) {
                 serverLog("Received full file content: $totalBytesRead bytes.")
                 fileContent
@@ -171,19 +170,26 @@ class TcpServerManager(
     }
 
     private fun saveFileBasedOnVersion(fileName: String, fileContent: ByteArray) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Use MediaStore for Android 10+ (Scoped Storage)
-            saveFileToDownloads(fileName, fileContent)
-        } else {
-            // Use external storage for Android 9 and below
-            val file = prepareFileForReceptionInDownloads(fileName)
-            if (file != null) {
-                file.writeBytes(fileContent) // Write file content to the prepared file
-                serverLog("File saved to Downloads: ${file.absolutePath}")
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Use MediaStore for Android 10+ (Scoped Storage)
+                saveFileToDownloads(fileName, fileContent)
             } else {
-                serverLog("Failed to save the file on Android 9 and below.")
+                // Use external storage for Android 9 and below
+                val file = prepareFileForReceptionInDownloads(fileName)
+                if (file != null) {
+                    serverLog("File saved to Downloads: ${file.absolutePath}")
+                    file.writeBytes(fileContent) // Write file content to the prepared file
+                } else {
+                    serverLog("Failed to save the file on Android 9 and below.")
+                }
             }
+            socketListener.forEach { it.onMessage(MESSAGE_TYPE_FILE_CONTENT,"")}
+        }catch (e:Exception){
+            serverLog("Error saving received file message: ${e.message}")
+            socketListener.forEach { it.onError(e) }
         }
+
     }
 
     private suspend fun readMessageSizeFromStream(): Int? {

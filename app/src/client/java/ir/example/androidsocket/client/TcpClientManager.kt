@@ -189,7 +189,7 @@ class TcpClientManager(
                         clientLog("handleClient try bytesRead > 0")
                         val hexMessage = BytesUtils.bytesToHex(buffer.copyOf(bytesRead))
                         val stringMessage = BytesUtils.hexToString(hexMessage)
-                        socketListener.forEach { it.onMessage(stringMessage) }
+                        socketListener.forEach { it.onMessage(null,stringMessage) }
                     }
                 }
 
@@ -241,7 +241,7 @@ class TcpClientManager(
                 if (bytesRead != null && bytesRead > 0) {
                     val hexMessage = BytesUtils.bytesToHex(buffer)
                     val stringMessage = BytesUtils.hexToString(hexMessage)
-                    socketListener.forEach { it.onMessage(message = stringMessage) }
+                    socketListener.forEach { it.onMessage(null,message = stringMessage) }
                 }
             } catch (e: Exception) {
                 clientLog("send--> catch ${e.message}")

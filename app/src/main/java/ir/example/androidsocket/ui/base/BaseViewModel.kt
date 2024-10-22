@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import ir.example.androidsocket.Constants
+import ir.example.androidsocket.utils.serverLog
 import kotlinx.coroutines.flow.MutableStateFlow
 
 internal abstract class BaseViewModel() : ViewModel() {
@@ -24,6 +25,7 @@ internal abstract class BaseViewModel() : ViewModel() {
     }
 
     fun emitMessageValue(messageId: Int?, vararg parameters: String? = emptyArray()) {
+        serverLog("emitMessageValue : $messageId","progressCheck")
         sendUiEvent(BaseUiEvent.ShowToast(messageId, parameters))
     }
 
