@@ -2,24 +2,23 @@ package ir.example.androidsocket.ui
 
 import android.app.Activity
 import android.content.Intent
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,31 +28,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.androidSocket.R
 import ir.example.androidsocket.Constants
-import ir.example.androidsocket.ui.base.AppButtonsRow
-import ir.example.androidsocket.ui.base.AppOutlinedTextField
-import ir.example.androidsocket.ui.base.AppTitleValueText
+import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.BaseUiEvent
-import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
-import ir.example.androidsocket.ui.theme.Gray200
-import ir.example.androidsocket.ui.theme.Green900
-import ir.example.androidsocket.ui.theme.Indigo
-import ir.example.androidsocket.ui.theme.Indigo400
-import ir.example.androidsocket.ui.theme.Orange700
 import ir.example.androidsocket.ui.theme.spacing
-import ir.example.androidsocket.utils.AppBaseScreen
 import ir.example.androidsocket.utils.clientLog
-import ir.example.androidsocket.utils.isIpValid
-import ir.example.androidsocket.utils.isPortValid
 
 @Composable
 internal fun ClientCompose(
@@ -171,7 +164,7 @@ fun ClientContent(
     onDisconnectFromServer: () -> Unit,
     onSendMessageEvent: (String) -> Unit,
     onAttachFileEvent: () -> Unit,
-    ) {
+) {
 
     val attachVisibility by remember(clientMessage, waitingForServer) {
         derivedStateOf { clientMessage.isEmpty() || (fileUrl.isNotEmpty() && waitingForServer != true) }
@@ -180,158 +173,280 @@ fun ClientContent(
         targetValue = fileProgress?.toFloat() ?: 0f,
         animationSpec = tween(durationMillis = 500), label = ""
     )
+    val configuration = LocalConfiguration.current
 
-    AppBaseScreen(
-        headerTitle = stringResource(id = R.string.client_header, selectedProtocol.title),
-        headerBackGround = Indigo,
-        onProtocolSelected = { onEvent(ClientEvent.SetProtocolType(it)) },
-        bodyContent = {
-            Column(
-                Modifier.padding(MaterialTheme.spacing.small),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    Modifier
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AppOutlinedTextField(
-                        modifier = Modifier
-                            .weight(1.5f)
-                            .padding(MaterialTheme.spacing.small),
-                        value = serverIp,
-                        onValueChange = { ip ->
-                            if (isIpValid(ip)) {
-                                onEvent(ClientEvent.SetServerIp(ip))
-                            }
-                        },
-                        label = stringResource(id = R.string.ip_label),
-                        hasError = serverIpError,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        Header()
+    }
 
-                        )
 
-                    AppOutlinedTextField(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(MaterialTheme.spacing.small),
-                        value = serverPort,
-                        onValueChange = { port ->
-                            if (isPortValid(port))
-                                onEvent(ClientEvent.SetServerPort(port))
-                        },
-                        label = stringResource(id = R.string.port_label),
-                        hasError = serverPortError,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    )
-                }
+    /*   AppBaseScreen(
+           headerTitle = stringResource(id = R.string.client_header, selectedProtocol.title),
+           headerBackGround = Indigo,
+           onProtocolSelected = { onEvent(ClientEvent.SetProtocolType(it)) },
+           bodyContent = {
+               Column(
+                   Modifier.padding(MaterialTheme.spacing.small),
+                   verticalArrangement = Arrangement.Center,
+                   horizontalAlignment = Alignment.CenterHorizontally
+               ) {
+                   Row(
+                       Modifier
+                           .fillMaxWidth(),
+                       verticalAlignment = Alignment.CenterVertically,
+                   ) {
+                       AppOutlinedTextField(
+                           modifier = Modifier
+                               .weight(1.5f)
+                               .padding(MaterialTheme.spacing.small),
+                           value = serverIp,
+                           onValueChange = { ip ->
+                               if (isIpValid(ip)) {
+                                   onEvent(ClientEvent.SetServerIp(ip))
+                               }
+                           },
+                           label = stringResource(id = R.string.ip_label),
+                           hasError = serverIpError,
+                           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
 
-                AppTitleValueText(
-                    modifier = Modifier.padding(MaterialTheme.spacing.small),
-                    title = stringResource(
-                        id = R.string.socket_status_title
-                    ),
-                    value = socketStatus.title,
-                    valueColor = if (!socketStatus.connection) Color.Red else Green900,
-                    titleTextType = TextType.TEXT,
-                    valueTextType = TextType.TEXT
-                )
+                           )
 
-                AppOutlinedTextField(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    value = clientMessage,
-                    onValueChange = {
-                        onEvent(ClientEvent.SetClientMessage(it))
-                    },
-                    enabled = socketStatus.connection,
-                    singleLine = true,
-                    label = stringResource(id = R.string.message),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        textColor = Color.DarkGray,
-                        focusedBorderColor = Indigo,
-                        unfocusedBorderColor = Indigo400,
-                        disabledBorderColor = Gray200,
-                        disabledTextColor = Color.LightGray,
-                        cursorColor = Indigo,
-                        backgroundColor = Color.White,
-                    ),
-                    trailingIcon = {
-                        if (!socketStatus.connection) {
-                            IconButton(
-                                onClick = {
-                                }
-                            ) {
-                                Icon(
-                                    modifier = Modifier.size(28.dp),
-                                    painter = painterResource(id = R.drawable.attach_file_icon),
-                                    tint = Gray200,
-                                    contentDescription = "Attach File"
-                                )
-                            }
-                        } else {
-                            if (attachVisibility) {
-                                IconButton(
-                                    onClick = {
-                                        onAttachFileEvent()
-                                    }
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(28.dp),
-                                        painter = painterResource(id = R.drawable.attach_file_icon),
-                                        tint = Indigo,
-                                        contentDescription = "Attach File"
-                                    )
-                                }
-                            } else if (waitingForServer != null) {
-                                if (fileProgress != null) {
-                                    CircularProgressIndicator(modifier = Modifier.size(28.dp),progress = animatedProgress/100, color = Orange700 , backgroundColor = Color.LightGray)
-                                } else{
-                                  IconButton(
-                                        modifier = Modifier,
-                                        onClick = {
-                                            onAttachFileEvent()
-                                        }
-                                    ) {
-                                        Icon(
-                                            modifier = Modifier.size(28.dp),
-                                            painter = painterResource(id = R.drawable.seen_icon),
-                                            tint = if (waitingForServer == true) Gray200 else Color.Green,
-                                            contentDescription = "send check"
-                                        )
-                                    }
-                                }
+                       AppOutlinedTextField(
+                           modifier = Modifier
+                               .weight(1f)
+                               .padding(MaterialTheme.spacing.small),
+                           value = serverPort,
+                           onValueChange = { port ->
+                               if (isPortValid(port))
+                                   onEvent(ClientEvent.SetServerPort(port))
+                           },
+                           label = stringResource(id = R.string.port_label),
+                           hasError = serverPortError,
+                           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                       )
+                   }
 
-                            }
-                        }
+                   AppTitleValueText(
+                       modifier = Modifier.padding(MaterialTheme.spacing.small),
+                       title = stringResource(
+                           id = R.string.socket_status_title
+                       ),
+                       value = socketStatus.title,
+                       valueColor = if (!socketStatus.connection) Color.Red else Green900,
+                       titleTextType = TextType.TEXT,
+                       valueTextType = TextType.TEXT
+                   )
 
-                    })
+                   AppOutlinedTextField(
+                       modifier = Modifier
+                           .fillMaxWidth(),
+                       value = clientMessage,
+                       onValueChange = {
+                           onEvent(ClientEvent.SetClientMessage(it))
+                       },
+                       enabled = socketStatus.connection,
+                       singleLine = true,
+                       label = stringResource(id = R.string.message),
+                       colors = TextFieldDefaults.outlinedTextFieldColors(
+                           textColor = Color.DarkGray,
+                           focusedBorderColor = Indigo,
+                           unfocusedBorderColor = Indigo400,
+                           disabledBorderColor = Gray200,
+                           disabledTextColor = Color.LightGray,
+                           cursorColor = Indigo,
+                           backgroundColor = Color.White,
+                       ),
+                       trailingIcon = {
+                           if (!socketStatus.connection) {
+                               IconButton(
+                                   onClick = {
+                                   }
+                               ) {
+                                   Icon(
+                                       modifier = Modifier.size(28.dp),
+                                       painter = painterResource(id = R.drawable.attach_file_icon),
+                                       tint = Gray200,
+                                       contentDescription = "Attach File"
+                                   )
+                               }
+                           } else {
+                               if (attachVisibility) {
+                                   IconButton(
+                                       onClick = {
+                                           onAttachFileEvent()
+                                       }
+                                   ) {
+                                       Icon(
+                                           modifier = Modifier.size(28.dp),
+                                           painter = painterResource(id = R.drawable.attach_file_icon),
+                                           tint = Indigo,
+                                           contentDescription = "Attach File"
+                                       )
+                                   }
+                               } else if (waitingForServer != null) {
+                                   if (fileProgress != null) {
+                                       CircularProgressIndicator(modifier = Modifier.size(28.dp),progress = animatedProgress/100, color = Orange700 , backgroundColor = Color.LightGray)
+                                   } else{
+                                     IconButton(
+                                           modifier = Modifier,
+                                           onClick = {
+                                               onAttachFileEvent()
+                                           }
+                                       ) {
+                                           Icon(
+                                               modifier = Modifier.size(28.dp),
+                                               painter = painterResource(id = R.drawable.seen_icon),
+                                               tint = if (waitingForServer == true) Gray200 else Color.Green,
+                                               contentDescription = "send check"
+                                           )
+                                       }
+                                   }
 
-            }
+                               }
+                           }
 
-        }) {
-        AppButtonsRow(
-            firstButtonTitle = if (!socketStatus.connection) stringResource(id = R.string.connect_to_server) else stringResource(
-                id = R.string.disconnect_from_server
-            ),
-            onFirstClicked = { if (!socketStatus.connection) onConnectToServer() else onDisconnectFromServer() },
-            firstButtonColor = ButtonDefaults.buttonColors(
-                disabledBackgroundColor = Color.LightGray,
-                backgroundColor = Indigo,
-            ),
-            secondButtonTitle = if (fileUrl.isNotEmpty()) stringResource(id = R.string.send_file) else stringResource(
-                id = R.string.send_message
-            ),
-            secondEnable = socketStatus.connection && clientMessage.isNotEmpty() && !waitingForServer,
-            secondButtonColor = ButtonDefaults.buttonColors(
-                disabledBackgroundColor = Color.LightGray,
-                backgroundColor = Indigo,
-            )
+                       })
+
+               }
+
+           }) {
+           AppButtonsRow(
+               firstButtonTitle = if (!socketStatus.connection) stringResource(id = R.string.connect_to_server) else stringResource(
+                   id = R.string.disconnect_from_server
+               ),
+               onFirstClicked = { if (!socketStatus.connection) onConnectToServer() else onDisconnectFromServer() },
+               firstButtonColor = ButtonDefaults.buttonColors(
+                   disabledBackgroundColor = Color.LightGray,
+                   backgroundColor = Indigo,
+               ),
+               secondButtonTitle = if (fileUrl.isNotEmpty()) stringResource(id = R.string.send_file) else stringResource(
+                   id = R.string.send_message
+               ),
+               secondEnable = socketStatus.connection && clientMessage.isNotEmpty() && !waitingForServer,
+               secondButtonColor = ButtonDefaults.buttonColors(
+                   disabledBackgroundColor = Color.LightGray,
+                   backgroundColor = Indigo,
+               )
+           ) {
+               onSendMessageEvent(clientMessage)
+           }
+
+       }*/
+
+
+}
+
+@Composable
+fun Header() {
+    val configuration = LocalConfiguration.current
+
+    val screenWidth = configuration.screenWidthDp
+    val screenHeight = configuration.screenHeightDp
+    val headerHeight = screenHeight / 3
+    val headerBrushStart = MaterialTheme.colors.onPrimary
+    val headerBrushMiddle = MaterialTheme.colors.primaryVariant
+    val headerBrushEnd = MaterialTheme.colors.primary
+    val shadowColor = MaterialTheme.colors.onSecondary
+    var downHeaderRectangleTop = 0f
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(headerHeight.dp)
+    ) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
         ) {
-            onSendMessageEvent(clientMessage)
+            drawRect(
+                brush = Brush.linearGradient(
+                    colors = listOf(headerBrushEnd, headerBrushMiddle),
+                    start = Offset(0f, 0f), // Top of the arc
+                    end = Offset(
+                        0f,
+                        size.height - (size.height / 4) - 2
+                    )                        // Bottom of the arc
+                ),
+                size = Size(size.width, size.height - (size.height / 4))
+            )
+
+            downHeaderRectangleTop = size.height - (size.height / 2)
+            val downHeaderRectangle = Path().apply {
+                arcTo(
+                    rect = Rect(
+                        left = 0 - 100f,
+                        top = downHeaderRectangleTop - 2,
+                        right = size.width + 100,
+                        bottom = size.height
+                    ),
+                    startAngleDegrees = 0f,
+                    sweepAngleDegrees = 180f,
+                    forceMoveTo = false
+                )
+                close()
+            }
+            drawPath(
+                path = downHeaderRectangle,
+                color = headerBrushMiddle,
+            )
+            val shadowArcPath = Path().apply {
+                arcTo(
+                    rect = Rect(
+                        left = 0 - 100f,
+                        top = size.height - (size.height / 2),
+                        right = size.width + 100,
+                        bottom = size.height
+                    ),
+                    startAngleDegrees = 0f,
+                    sweepAngleDegrees = 180f,
+                    forceMoveTo = false
+                )
+            }
+            drawPath(
+                path = shadowArcPath,
+                color = shadowColor,
+                style = Stroke(width = 40f)
+            )
         }
 
+        val powerContainerCircleRadius = screenWidth / 2
+        DrawPowerButton(powerContainerCircleRadius = powerContainerCircleRadius.toFloat())
+        Row(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = (-(headerHeight / 8)).dp),
+        ) {
+            AppText(
+                text = "connected", textColor = Color.White
+            )
+        }
+    }
+}
+
+
+@Composable
+fun DrawPowerButton(powerContainerCircleRadius: Float) {
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawCircle(color = Color.White, radius = powerContainerCircleRadius)
+            drawCircle(
+                color = Color.LightGray,
+                radius = powerContainerCircleRadius,
+                style = Stroke(width = 14f)
+            )
+        }
+        Image(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .size((powerContainerCircleRadius / 3).dp),
+            painter = painterResource(id = R.drawable.power_icon),
+            contentDescription = "power",
+        )
     }
 
 }

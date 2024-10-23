@@ -20,26 +20,28 @@ sealed class AppColors(
     val background: Color,
     val onBackground: Color
 ) {
+
+
     object Dark : AppColors(
-        primary = Color(0xFF3462CD),
-        primaryVariant = Color(0xFF06888F),
-        onPrimary = Color(0xFFC5E7E9),
-        surface = Color(0xFF13232C),
-        onSurface = Color(0xFFE0F1FF),
-        secondary = Color(0xFF1E2A32),
-        onSecondary = Color(0xFFAFE0C5),
+        primary = Color(0xFF4a5c92),
+        primaryVariant = Color(0xFFF44336),
+        onPrimary = Color(0xFFFFFFFF),
+        surface = Color(0xFFfaf8ff),
+        onSurface = Color(0xFFdad9e0),
+        secondary = Color(0xFF735471),
+        onSecondary = Color(0xFFCDDC39),
         background = Color(0xFF0E181E),
         onBackground = Color(0xFFA8ADBD)
     )
 
     object Light : AppColors(
         primary = Color(0xFF3462CD),
-        primaryVariant = Color(0xFFC5E7E9),
-        onPrimary = Color(0xFF9FB3E4),
+        primaryVariant = Color(0xFFb3c5ff),
+        onPrimary = Color(0xFFdbe1ff),
         surface = Color(0xFFF3F4F9),
         onSurface = Color(0xFFDfE2E5),
         secondary = Color(0xFF344563),
-        onSecondary = Color(0xFFAFE0C5),
+        onSecondary = Color(0xFFdbe1ff),
         background = Color(0xFFF7E8ED),
         onBackground = Color(0xFF74777F)
     )
