@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -33,6 +34,7 @@ class ClientActivity : ComponentActivity() {
     @SuppressLint("SuspiciousIndentation")
     override fun onCreate(savedInstanceState: Bundle?) {
         clientLog("ClientActivity onCreate()")
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val activity = this@ClientActivity
         var requestPermissionLauncher: ActivityResultLauncher<String> =

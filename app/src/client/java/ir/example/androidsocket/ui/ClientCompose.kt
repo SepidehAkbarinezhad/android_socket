@@ -14,12 +14,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -200,254 +205,243 @@ fun ClientContent(
         animationSpec = tween(durationMillis = 500), label = ""
     )
     val configuration = LocalConfiguration.current
-    Box(
+
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
+            .background(Color.White),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.primary)
-            ) {
-                AppText(
-                    modifier = Modifier
-                        .padding(MaterialTheme.spacing.medium)
-                        .align(Alignment.TopCenter),
-                    text = stringResource(id = R.string.client_header, selectedProtocol.title),
-                    textType = TextType.HEADER,
-                    fontWeight = Bold,
-                    textColor = White,
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Icon(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(MaterialTheme.spacing.medium)
-                        .clickable { expanded = !expanded },
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "menu",
-                    tint = Color.White
-                )
-            }
-            PowerButtonBody(
-                socketStatus = socketStatus, onPowerButtonClicked = {
-                    when (socketStatus.isConnected) {
-                        true -> onConnectToServer()
-                        false -> onDisconnectFromServer()
-                    }
-                }
+        Box(modifier =   Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.primary)
+            .padding(WindowInsets.statusBars.asPaddingValues()),
+            contentAlignment = Alignment.Center){
+            AppText(
+                modifier = Modifier.padding(MaterialTheme.spacing.small),
+                text = stringResource(id = R.string.client_header, selectedProtocol.title),
+                textType = TextType.HEADER,
+                fontWeight = Bold,
+                textColor = White,
+                style = MaterialTheme.typography.headlineSmall
             )
-            Column(
-                Modifier
-                    .fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                AppOutlinedTextField(
-                    modifier = Modifier
-                        .padding(MaterialTheme.spacing.medium)
-                        .fillMaxWidth(),
-                    value = serverIp,
-                    onValueChange = { ip ->
-                        if (isIpValid(ip)) {
-                            onEvent(ClientEvent.SetServerIp(ip))
-                        }
-                    },
-                    label = stringResource(id = R.string.ip_label),
-                    hasError = serverIpError,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-
-                    )
-
-                AppOutlinedTextField(
-                    modifier = Modifier
-                        .padding(MaterialTheme.spacing.medium)
-                        .fillMaxWidth(),
-                    value = serverPort,
-                    onValueChange = { port ->
-                        if (isPortValid(port))
-                            onEvent(ClientEvent.SetServerPort(port))
-                    },
-                    label = stringResource(id = R.string.port_label),
-                    hasError = serverPortError,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                )
-            }
-
         }
 
-        ProtocolTypeMenu(
-            modifier = Modifier.align(Alignment.TopEnd),
-            expanded = expanded,
-            protocols = Constants.PROTOCOLS,
-            selectedProtocol = Constants.ProtocolType.WEBSOCKET,
-            onProtocolSelected = {
-                onEvent(ClientEvent.SetProtocolType(it))
-                expanded = false
-            },
-            onDismissClicked = { expanded = false })
 
+        PowerButtonBody(
+            socketStatus = socketStatus, onPowerButtonClicked = {
+                when (socketStatus.isConnected) {
+                    true -> onConnectToServer()
+                    false -> onDisconnectFromServer()
+                }
+            }
+        )
+        Column(
+            Modifier
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            AppOutlinedTextField(
+                modifier = Modifier
+                    .padding(MaterialTheme.spacing.medium)
+                    .fillMaxWidth(),
+                value = serverIp,
+                onValueChange = { ip ->
+                    if (isIpValid(ip)) {
+                        onEvent(ClientEvent.SetServerIp(ip))
+                    }
+                },
+                label = stringResource(id = R.string.ip_label),
+                hasError = serverIpError,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+
+                )
+
+            AppOutlinedTextField(
+                modifier = Modifier
+                    .padding(MaterialTheme.spacing.medium)
+                    .fillMaxWidth(),
+                value = serverPort,
+                onValueChange = { port ->
+                    if (isPortValid(port))
+                        onEvent(ClientEvent.SetServerPort(port))
+                },
+                label = stringResource(id = R.string.port_label),
+                hasError = serverPortError,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+        }
 
     }
 
+    /*  ProtocolTypeMenu(
+          modifier = Modifier.align(Alignment.TopEnd),
+          expanded = expanded,
+          protocols = Constants.PROTOCOLS,
+          selectedProtocol = Constants.ProtocolType.WEBSOCKET,
+          onProtocolSelected = {
+              onEvent(ClientEvent.SetProtocolType(it))
+              expanded = false
+          },
+          onDismissClicked = { expanded = false })
 
-    /*   AppBaseScreen(
-           headerTitle = stringResource(id = R.string.client_header, selectedProtocol.title),
-           headerBackGround = Indigo,
-           onProtocolSelected = { onEvent(ClientEvent.SetProtocolType(it)) },
-           bodyContent = {
-               Column(
-                   Modifier.padding(MaterialTheme.spacing.small),
-                   verticalArrangement = Arrangement.Center,
-                   horizontalAlignment = Alignment.CenterHorizontally
+*/
+
+
+
+/*   AppBaseScreen(
+       headerTitle = stringResource(id = R.string.client_header, selectedProtocol.title),
+       headerBackGround = Indigo,
+       onProtocolSelected = { onEvent(ClientEvent.SetProtocolType(it)) },
+       bodyContent = {
+           Column(
+               Modifier.padding(MaterialTheme.spacing.small),
+               verticalArrangement = Arrangement.Center,
+               horizontalAlignment = Alignment.CenterHorizontally
+           ) {
+               Row(
+                   Modifier
+                       .fillMaxWidth(),
+                   verticalAlignment = Alignment.CenterVertically,
                ) {
-                   Row(
-                       Modifier
-                           .fillMaxWidth(),
-                       verticalAlignment = Alignment.CenterVertically,
-                   ) {
-                       AppOutlinedTextField(
-                           modifier = Modifier
-                               .weight(1.5f)
-                               .padding(MaterialTheme.spacing.small),
-                           value = serverIp,
-                           onValueChange = { ip ->
-                               if (isIpValid(ip)) {
-                                   onEvent(ClientEvent.SetServerIp(ip))
-                               }
-                           },
-                           label = stringResource(id = R.string.ip_label),
-                           hasError = serverIpError,
-                           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                   AppOutlinedTextField(
+                       modifier = Modifier
+                           .weight(1.5f)
+                           .padding(MaterialTheme.spacing.small),
+                       value = serverIp,
+                       onValueChange = { ip ->
+                           if (isIpValid(ip)) {
+                               onEvent(ClientEvent.SetServerIp(ip))
+                           }
+                       },
+                       label = stringResource(id = R.string.ip_label),
+                       hasError = serverIpError,
+                       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
 
-                           )
-
-                       AppOutlinedTextField(
-                           modifier = Modifier
-                               .weight(1f)
-                               .padding(MaterialTheme.spacing.small),
-                           value = serverPort,
-                           onValueChange = { port ->
-                               if (isPortValid(port))
-                                   onEvent(ClientEvent.SetServerPort(port))
-                           },
-                           label = stringResource(id = R.string.port_label),
-                           hasError = serverPortError,
-                           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                        )
-                   }
-
-                   AppTitleValueText(
-                       modifier = Modifier.padding(MaterialTheme.spacing.small),
-                       title = stringResource(
-                           id = R.string.socket_status_title
-                       ),
-                       value = socketStatus.title,
-                       valueColor = if (!socketStatus.connection) Color.Red else Green900,
-                       titleTextType = TextType.TEXT,
-                       valueTextType = TextType.TEXT
-                   )
 
                    AppOutlinedTextField(
                        modifier = Modifier
-                           .fillMaxWidth(),
-                       value = clientMessage,
-                       onValueChange = {
-                           onEvent(ClientEvent.SetClientMessage(it))
+                           .weight(1f)
+                           .padding(MaterialTheme.spacing.small),
+                       value = serverPort,
+                       onValueChange = { port ->
+                           if (isPortValid(port))
+                               onEvent(ClientEvent.SetServerPort(port))
                        },
-                       enabled = socketStatus.connection,
-                       singleLine = true,
-                       label = stringResource(id = R.string.message),
-                       colors = TextFieldDefaults.outlinedTextFieldColors(
-                           textColor = Color.DarkGray,
-                           focusedBorderColor = Indigo,
-                           unfocusedBorderColor = Indigo400,
-                           disabledBorderColor = Gray200,
-                           disabledTextColor = Color.LightGray,
-                           cursorColor = Indigo,
-                           backgroundColor = Color.White,
-                       ),
-                       trailingIcon = {
-                           if (!socketStatus.connection) {
+                       label = stringResource(id = R.string.port_label),
+                       hasError = serverPortError,
+                       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                   )
+               }
+
+               AppTitleValueText(
+                   modifier = Modifier.padding(MaterialTheme.spacing.small),
+                   title = stringResource(
+                       id = R.string.socket_status_title
+                   ),
+                   value = socketStatus.title,
+                   valueColor = if (!socketStatus.connection) Color.Red else Green900,
+                   titleTextType = TextType.TEXT,
+                   valueTextType = TextType.TEXT
+               )
+
+               AppOutlinedTextField(
+                   modifier = Modifier
+                       .fillMaxWidth(),
+                   value = clientMessage,
+                   onValueChange = {
+                       onEvent(ClientEvent.SetClientMessage(it))
+                   },
+                   enabled = socketStatus.connection,
+                   singleLine = true,
+                   label = stringResource(id = R.string.message),
+                   colors = TextFieldDefaults.outlinedTextFieldColors(
+                       textColor = Color.DarkGray,
+                       focusedBorderColor = Indigo,
+                       unfocusedBorderColor = Indigo400,
+                       disabledBorderColor = Gray200,
+                       disabledTextColor = Color.LightGray,
+                       cursorColor = Indigo,
+                       backgroundColor = Color.White,
+                   ),
+                   trailingIcon = {
+                       if (!socketStatus.connection) {
+                           IconButton(
+                               onClick = {
+                               }
+                           ) {
+                               Icon(
+                                   modifier = Modifier.size(28.dp),
+                                   painter = painterResource(id = R.drawable.attach_file_icon),
+                                   tint = Gray200,
+                                   contentDescription = "Attach File"
+                               )
+                           }
+                       } else {
+                           if (attachVisibility) {
                                IconButton(
                                    onClick = {
+                                       onAttachFileEvent()
                                    }
                                ) {
                                    Icon(
                                        modifier = Modifier.size(28.dp),
                                        painter = painterResource(id = R.drawable.attach_file_icon),
-                                       tint = Gray200,
+                                       tint = Indigo,
                                        contentDescription = "Attach File"
                                    )
                                }
-                           } else {
-                               if (attachVisibility) {
-                                   IconButton(
+                           } else if (waitingForServer != null) {
+                               if (fileProgress != null) {
+                                   CircularProgressIndicator(modifier = Modifier.size(28.dp),progress = animatedProgress/100, color = Orange700 , backgroundColor = Color.LightGray)
+                               } else{
+                                 IconButton(
+                                       modifier = Modifier,
                                        onClick = {
                                            onAttachFileEvent()
                                        }
                                    ) {
                                        Icon(
                                            modifier = Modifier.size(28.dp),
-                                           painter = painterResource(id = R.drawable.attach_file_icon),
-                                           tint = Indigo,
-                                           contentDescription = "Attach File"
+                                           painter = painterResource(id = R.drawable.seen_icon),
+                                           tint = if (waitingForServer == true) Gray200 else Color.Green,
+                                           contentDescription = "send check"
                                        )
                                    }
-                               } else if (waitingForServer != null) {
-                                   if (fileProgress != null) {
-                                       CircularProgressIndicator(modifier = Modifier.size(28.dp),progress = animatedProgress/100, color = Orange700 , backgroundColor = Color.LightGray)
-                                   } else{
-                                     IconButton(
-                                           modifier = Modifier,
-                                           onClick = {
-                                               onAttachFileEvent()
-                                           }
-                                       ) {
-                                           Icon(
-                                               modifier = Modifier.size(28.dp),
-                                               painter = painterResource(id = R.drawable.seen_icon),
-                                               tint = if (waitingForServer == true) Gray200 else Color.Green,
-                                               contentDescription = "send check"
-                                           )
-                                       }
-                                   }
-
                                }
+
                            }
+                       }
 
-                       })
+                   })
 
-               }
-
-           }) {
-           AppButtonsRow(
-               firstButtonTitle = if (!socketStatus.connection) stringResource(id = R.string.connect_to_server) else stringResource(
-                   id = R.string.disconnect_from_server
-               ),
-               onFirstClicked = { if (!socketStatus.connection) onConnectToServer() else onDisconnectFromServer() },
-               firstButtonColor = ButtonDefaults.buttonColors(
-                   disabledBackgroundColor = Color.LightGray,
-                   backgroundColor = Indigo,
-               ),
-               secondButtonTitle = if (fileUrl.isNotEmpty()) stringResource(id = R.string.send_file) else stringResource(
-                   id = R.string.send_message
-               ),
-               secondEnable = socketStatus.connection && clientMessage.isNotEmpty() && !waitingForServer,
-               secondButtonColor = ButtonDefaults.buttonColors(
-                   disabledBackgroundColor = Color.LightGray,
-                   backgroundColor = Indigo,
-               )
-           ) {
-               onSendMessageEvent(clientMessage)
            }
 
-       }*/
+       }) {
+       AppButtonsRow(
+           firstButtonTitle = if (!socketStatus.connection) stringResource(id = R.string.connect_to_server) else stringResource(
+               id = R.string.disconnect_from_server
+           ),
+           onFirstClicked = { if (!socketStatus.connection) onConnectToServer() else onDisconnectFromServer() },
+           firstButtonColor = ButtonDefaults.buttonColors(
+               disabledBackgroundColor = Color.LightGray,
+               backgroundColor = Indigo,
+           ),
+           secondButtonTitle = if (fileUrl.isNotEmpty()) stringResource(id = R.string.send_file) else stringResource(
+               id = R.string.send_message
+           ),
+           secondEnable = socketStatus.connection && clientMessage.isNotEmpty() && !waitingForServer,
+           secondButtonColor = ButtonDefaults.buttonColors(
+               disabledBackgroundColor = Color.LightGray,
+               backgroundColor = Indigo,
+           )
+       ) {
+           onSendMessageEvent(clientMessage)
+       }
+
+   }*/
 
 
 }
