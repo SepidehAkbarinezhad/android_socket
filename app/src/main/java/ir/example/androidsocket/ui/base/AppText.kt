@@ -29,17 +29,18 @@ fun AppText(
     textAlign: TextAlign = TextAlign.Center,
     maxLine: Int = 1,
     fontWeight: FontWeight = FontWeight.Normal,
-    textDecoration: TextDecoration? = null
+    textDecoration: TextDecoration? = null,
+    style: TextStyle = TextStyle()
 ) {
     Text(
         modifier = modifier,
         text = text,
         color = textColor,
-        style = styleText(textType,textDecoration),
+        style = style,
         textAlign = textAlign,
         maxLines = maxLine,
         overflow = TextOverflow.Ellipsis,
-        fontWeight = fontWeight
+        fontWeight = fontWeight,
     )
 }
 

@@ -5,6 +5,9 @@ import androidx.compose.ui.graphics.Color
 val Indigo = Color(0xFF3F51B5)
 val Indigo200 = Color(0xFF9FA8DA)
 val Gray200 = Color(0xFFB0BEC5)
+val Green900 = Color(0xFF33691E)
+val Green400 = Color(0xFF9CCC65)
+val Yellow600 = Color(0xFFFDD835)
 
 sealed class AppColors(
     val primary: Color,
@@ -45,11 +48,11 @@ sealed class AppColors(
         primaryContainer = Color(0xFFd6e3ff),
         onPrimaryContainer = Color(0xFF001849),
         secondary = Color(0xFF565f71),
-        onSecondary = Color(0xFF151b2c),
+        onSecondary = Color(0xFFffffff),
         tertiary = Color(0xFFFFC107),
         onTertiary = Color(0xFFffffff),
         surface = Color(0xFFd9d9e0),
-        onSurface = Color(0xFF191c20),
+        onSurface = Color(0xFFCFCFE9),
         background = Color(0xFFf9f9ff),
         error = Color(0xFFba1a1a),
         onError = Color(0xFFffffff)

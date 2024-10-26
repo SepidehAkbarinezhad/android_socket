@@ -8,7 +8,7 @@ object Constants {
         val title: String,
         val isConnected: Boolean,
     ) {
-        CONNECTED("connected", isConnected = true), DISCONNECTED("Disconnected", isConnected = false)
+        CONNECTED("Connected", isConnected = true), DISCONNECTED("Disconnected", isConnected = false)
     }
 
     enum class ConnectionType(

@@ -8,5 +8,6 @@
     <string name="ip_label">ip </string>
     <string name="port_label">port </string>
     <string name="protocol_type">"protocol type : "</string>
+    <string name="connecting_label">"Connecting"</string>
 
 </resources>

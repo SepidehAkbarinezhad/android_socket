@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -13,7 +14,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,7 +31,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -37,12 +42,16 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.LightGray
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight.Companion.Bold
+import androidx.compose.ui.text.font.FontWeight.Companion.Normal
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,11 +60,17 @@ import ir.example.androidsocket.Constants
 import ir.example.androidsocket.ui.base.AppOutlinedTextField
 import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.BaseUiEvent
+import ir.example.androidsocket.ui.base.ProtocolTypeMenu
+import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
+import ir.example.androidsocket.ui.theme.Green400
+import ir.example.androidsocket.ui.theme.Green900
+import ir.example.androidsocket.ui.theme.Yellow600
 import ir.example.androidsocket.ui.theme.spacing
 import ir.example.androidsocket.utils.clientLog
 import ir.example.androidsocket.utils.isIpValid
 import ir.example.androidsocket.utils.isPortValid
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -176,6 +191,7 @@ fun ClientContent(
     onAttachFileEvent: () -> Unit,
 ) {
 
+    var expanded by remember { mutableStateOf(false) }
     val attachVisibility by remember(clientMessage, waitingForServer) {
         derivedStateOf { clientMessage.isEmpty() || (fileUrl.isNotEmpty() && waitingForServer != true) }
     }
@@ -184,56 +200,98 @@ fun ClientContent(
         animationSpec = tween(durationMillis = 500), label = ""
     )
     val configuration = LocalConfiguration.current
-
-    Column(
+    Box(
         modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
+            .fillMaxWidth()
     ) {
-        Header(
-            socketStatus, onPowerButtonClicked = {
-                when (socketStatus.isConnected) {
-                    true -> onConnectToServer()
-                    false -> onDisconnectFromServer()
-                }
-            }
-        )
         Column(
-            Modifier
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
         ) {
-            AppOutlinedTextField(
+            Box(
                 modifier = Modifier
-                    .padding(MaterialTheme.spacing.medium)
-                    .fillMaxWidth(),
-                value = serverIp,
-                onValueChange = { ip ->
-                    if (isIpValid(ip)) {
-                        onEvent(ClientEvent.SetServerIp(ip))
-                    }
-                },
-                label = stringResource(id = R.string.ip_label),
-                hasError = serverIpError,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.primary)
+            ) {
+                AppText(
+                    modifier = Modifier
+                        .padding(MaterialTheme.spacing.medium)
+                        .align(Alignment.TopCenter),
+                    text = stringResource(id = R.string.client_header, selectedProtocol.title),
+                    textType = TextType.HEADER,
+                    fontWeight = Bold,
+                    textColor = White,
+                    style = MaterialTheme.typography.headlineSmall
                 )
-
-            AppOutlinedTextField(
-                modifier = Modifier
-                    .padding(MaterialTheme.spacing.medium)
-                    .fillMaxWidth(),
-                value = serverPort,
-                onValueChange = { port ->
-                    if (isPortValid(port))
-                        onEvent(ClientEvent.SetServerPort(port))
-                },
-                label = stringResource(id = R.string.port_label),
-                hasError = serverPortError,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                Icon(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(MaterialTheme.spacing.medium)
+                        .clickable { expanded = !expanded },
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "menu",
+                    tint = Color.White
+                )
+            }
+            PowerButtonBody(
+                socketStatus = socketStatus, onPowerButtonClicked = {
+                    when (socketStatus.isConnected) {
+                        true -> onConnectToServer()
+                        false -> onDisconnectFromServer()
+                    }
+                }
             )
+            Column(
+                Modifier
+                    .fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                AppOutlinedTextField(
+                    modifier = Modifier
+                        .padding(MaterialTheme.spacing.medium)
+                        .fillMaxWidth(),
+                    value = serverIp,
+                    onValueChange = { ip ->
+                        if (isIpValid(ip)) {
+                            onEvent(ClientEvent.SetServerIp(ip))
+                        }
+                    },
+                    label = stringResource(id = R.string.ip_label),
+                    hasError = serverIpError,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+
+                    )
+
+                AppOutlinedTextField(
+                    modifier = Modifier
+                        .padding(MaterialTheme.spacing.medium)
+                        .fillMaxWidth(),
+                    value = serverPort,
+                    onValueChange = { port ->
+                        if (isPortValid(port))
+                            onEvent(ClientEvent.SetServerPort(port))
+                    },
+                    label = stringResource(id = R.string.port_label),
+                    hasError = serverPortError,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                )
+            }
+
         }
+
+        ProtocolTypeMenu(
+            modifier = Modifier.align(Alignment.TopEnd),
+            expanded = expanded,
+            protocols = Constants.PROTOCOLS,
+            selectedProtocol = Constants.ProtocolType.WEBSOCKET,
+            onProtocolSelected = {
+                onEvent(ClientEvent.SetProtocolType(it))
+                expanded = false
+            },
+            onDismissClicked = { expanded = false })
+
 
     }
 
@@ -395,7 +453,7 @@ fun ClientContent(
 }
 
 @Composable
-fun Header(socketStatus: Constants.SocketStatus, onPowerButtonClicked: () -> Unit) {
+fun PowerButtonBody(socketStatus: Constants.SocketStatus, onPowerButtonClicked: () -> Unit) {
     val configuration = LocalConfiguration.current
 
     val screenWidth = configuration.screenWidthDp
@@ -403,7 +461,7 @@ fun Header(socketStatus: Constants.SocketStatus, onPowerButtonClicked: () -> Uni
     val headerHeight = screenHeight / 3
     val headerStartBrush = MaterialTheme.colorScheme.primary
     val headerEndBrush = MaterialTheme.colorScheme.onPrimaryContainer
-    val shadowColor = MaterialTheme.colorScheme.onSecondary
+    val shadowColor = MaterialTheme.colorScheme.onSurface
     var downHeaderRectangleTop = 0f
 
     Box(
@@ -468,39 +526,91 @@ fun Header(socketStatus: Constants.SocketStatus, onPowerButtonClicked: () -> Uni
 
         val powerContainerCircleRadius = screenWidth / 2
         DrawPowerButton(
+            headerHeight = headerHeight,
             powerContainerCircleRadius = powerContainerCircleRadius.toFloat(),
             socketStatus = socketStatus
-        ) {}
-        Row(
-            Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = (-(headerHeight / 8)).dp),
-        ) {
-            AppText(
-                text = socketStatus.title, textColor = Color.White
-            )
-        }
+        ) { onPowerButtonClicked() }
+
     }
 }
 
 
 @Composable
 fun DrawPowerButton(
+    headerHeight: Int,
     powerContainerCircleRadius: Float,
     socketStatus: Constants.SocketStatus,
     onPowerButtonClicked: () -> Unit
 ) {
+    var isAnimating by remember { mutableStateOf(false) }
+    val connectionStatusBrush = Brush.verticalGradient(
+        colors = if (isAnimating) listOf(Yellow600, White)
+        else
+            when (socketStatus.isConnected) {
+                true -> listOf(Green900, Green400)
+                false -> listOf(LightGray, LightGray)
+            }
+    )
+
+    val powerButtonTargetScale = remember { Animatable(1f) }
+    val coroutineScope = rememberCoroutineScope()
+    // Calculate the alpha based on the current scale
+    val currentScale = powerButtonTargetScale.value
+    val alpha = (1 - currentScale / 1.5f).coerceIn(0f, 1f)
+    fun animateCircle() {
+        isAnimating = true
+
+        coroutineScope.launch {
+            // Loop for continuous animation
+            while (isAnimating && !socketStatus.isConnected) {
+                // Scale up
+                powerButtonTargetScale.animateTo(
+                    targetValue = 1.5f,
+                    animationSpec = tween(durationMillis = 1000)
+                )
+
+                // Fade out the circle
+                powerButtonTargetScale.animateTo(
+                    targetValue = 1.5f,
+                    animationSpec = tween(durationMillis = 1000) // Keep it at max scale for the fade
+                )
+
+                // Fade the circle out by resetting to original scale and alpha
+                powerButtonTargetScale.snapTo(1f) // Reset scale instantly
+
+                // Optional: add a delay before restarting the animation
+                kotlinx.coroutines.delay(100)
+            }
+        }
+    }
+    LaunchedEffect(socketStatus.isConnected) {
+        if (socketStatus.isConnected) {
+            isAnimating = false
+        }
+    }
 
     Box(modifier = Modifier
         .fillMaxSize()
-        .clickable { onPowerButtonClicked() }) {
+        .clickable {
+            animateCircle()
+            onPowerButtonClicked()
+        }) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            drawCircle(color = Color.White, radius = powerContainerCircleRadius)
+            drawCircle(color = White, radius = powerContainerCircleRadius)
+
             drawCircle(
-                color = Color.LightGray,
+                color = if (!isAnimating) LightGray else Yellow600,
                 radius = powerContainerCircleRadius,
                 style = Stroke(width = 14f)
             )
+
+            if (isAnimating)
+                drawCircle(
+                    color = Yellow600.copy(alpha = alpha),
+                    radius = powerContainerCircleRadius * powerButtonTargetScale.value,
+                    style = Stroke(width = 24f)
+                )
+
         }
         if (socketStatus.isConnected) {
             Image(
@@ -520,6 +630,19 @@ fun DrawPowerButton(
                 contentDescription = socketStatus.title
             )
         }
+        AppText(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = (-(headerHeight / 9)).dp),
+            text = if (isAnimating) stringResource(id = R.string.connecting_label) else socketStatus.title,
+            fontWeight = when (socketStatus.isConnected) {
+                true -> Bold
+                false -> Normal
+            },
+            style = MaterialTheme.typography.titleMedium.copy(
+                brush = connectionStatusBrush
+            )
+        )
     }
 
 }
