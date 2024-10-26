@@ -10,10 +10,10 @@ import androidx.compose.material.Scaffold
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.Snackbar
 import androidx.compose.material.SnackbarHost
-import androidx.compose.material.Typography
-import androidx.compose.material.darkColors
-import androidx.compose.material.lightColors
+import androidx.compose.material3.Typography
 import androidx.compose.material.rememberScaffoldState
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -27,26 +27,37 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import ir.example.androidsocket.ui.base.BaseUiEvent
 
-private val DarkColorPalette = darkColors(
+private val DarkColorScheme = darkColorScheme(
     primary = AppColors.Dark.primary,
     onPrimary = AppColors.Dark.onPrimary,
-    surface = AppColors.Dark.surface,
-    onSurface = AppColors.Dark.onSurface,
+    primaryContainer=AppColors.Dark.primaryContainer,
+    onPrimaryContainer=AppColors.Dark.onPrimaryContainer,
     secondary = AppColors.Dark.secondary,
     onSecondary = AppColors.Dark.onSecondary,
+    tertiary = AppColors.Dark.tertiary,
+    onTertiary = AppColors.Dark.onTertiary,
+    surface = AppColors.Dark.surface,
+    onSurface = AppColors.Dark.onSurface,
     background = AppColors.Dark.background,
-    onBackground = AppColors.Dark.onBackground
+    error = AppColors.Dark.error,
+    onError = AppColors.Dark.onError,
+
 )
 
-private val LightColorPalette = lightColors(
+private val LightColorScheme = lightColorScheme(
     primary = AppColors.Light.primary,
     onPrimary = AppColors.Light.onPrimary,
-    surface = AppColors.Light.surface,
-    onSurface = AppColors.Light.onSurface,
+    primaryContainer=AppColors.Light.primaryContainer,
+    onPrimaryContainer=AppColors.Light.onPrimaryContainer,
     secondary = AppColors.Light.secondary,
     onSecondary = AppColors.Light.onSecondary,
+    tertiary = AppColors.Light.tertiary,
+    onTertiary = AppColors.Light.onTertiary,
+    surface = AppColors.Light.surface,
+    onSurface = AppColors.Light.onSurface,
     background = AppColors.Light.background,
-    onBackground = AppColors.Light.onBackground
+    error = AppColors.Light.error,
+    onError = AppColors.Light.onError,
 )
 
 @Composable
@@ -59,17 +70,13 @@ fun AndroidSocketTheme(
     displayProgressBar: Boolean? = null,
     content: @Composable () -> Unit
 ) {
-    val colors = if (darkTheme) {
-        DarkColorPalette
-    } else {
-        LightColorPalette
-    }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
 
     CompositionLocalProvider(LocalSpacing provides Spacing()) {
-        androidx.compose.material.MaterialTheme(
-            colors = colors,
+        androidx.compose.material3.MaterialTheme(
+            colorScheme = colorScheme,
             typography = Typography(),
-            shapes = appShape,
         ) {
             val context = LocalContext.current
 

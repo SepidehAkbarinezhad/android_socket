@@ -2,7 +2,6 @@ package ir.example.androidsocket.ui
 
 import android.app.Activity
 import android.content.Intent
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
@@ -10,7 +9,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,7 +20,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.MaterialTheme
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,15 +42,21 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.androidSocket.R
 import ir.example.androidsocket.Constants
+import ir.example.androidsocket.ui.base.AppOutlinedTextField
 import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.BaseUiEvent
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
 import ir.example.androidsocket.ui.theme.spacing
 import ir.example.androidsocket.utils.clientLog
+import ir.example.androidsocket.utils.isIpValid
+import ir.example.androidsocket.utils.isPortValid
+
 
 @Composable
 internal fun ClientCompose(
@@ -94,7 +104,7 @@ internal fun ClientCompose(
 
 
     LaunchedEffect(key1 = socketStatus) {
-        if (!socketStatus.connection) {
+        if (!socketStatus.isConnected) {
             onEvent(ClientEvent.SetClientMessage(""))
             onEvent(ClientEvent.SetServerMessage(""))
         }
@@ -108,7 +118,7 @@ internal fun ClientCompose(
         // A surface container using the 'background' color from the theme
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colors.background
+            color = MaterialTheme.colorScheme.background
         ) {
             ClientContent(
                 onEvent = onEvent,
@@ -175,12 +185,56 @@ fun ClientContent(
     )
     val configuration = LocalConfiguration.current
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
-        Header()
+        Header(
+            socketStatus, onPowerButtonClicked = {
+                when (socketStatus.isConnected) {
+                    true -> onConnectToServer()
+                    false -> onDisconnectFromServer()
+                }
+            }
+        )
+        Column(
+            Modifier
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            AppOutlinedTextField(
+                modifier = Modifier
+                    .padding(MaterialTheme.spacing.medium)
+                    .fillMaxWidth(),
+                value = serverIp,
+                onValueChange = { ip ->
+                    if (isIpValid(ip)) {
+                        onEvent(ClientEvent.SetServerIp(ip))
+                    }
+                },
+                label = stringResource(id = R.string.ip_label),
+                hasError = serverIpError,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+
+                )
+
+            AppOutlinedTextField(
+                modifier = Modifier
+                    .padding(MaterialTheme.spacing.medium)
+                    .fillMaxWidth(),
+                value = serverPort,
+                onValueChange = { port ->
+                    if (isPortValid(port))
+                        onEvent(ClientEvent.SetServerPort(port))
+                },
+                label = stringResource(id = R.string.port_label),
+                hasError = serverPortError,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+        }
+
     }
 
 
@@ -341,16 +395,15 @@ fun ClientContent(
 }
 
 @Composable
-fun Header() {
+fun Header(socketStatus: Constants.SocketStatus, onPowerButtonClicked: () -> Unit) {
     val configuration = LocalConfiguration.current
 
     val screenWidth = configuration.screenWidthDp
     val screenHeight = configuration.screenHeightDp
     val headerHeight = screenHeight / 3
-    val headerBrushStart = MaterialTheme.colors.onPrimary
-    val headerBrushMiddle = MaterialTheme.colors.primaryVariant
-    val headerBrushEnd = MaterialTheme.colors.primary
-    val shadowColor = MaterialTheme.colors.onSecondary
+    val headerStartBrush = MaterialTheme.colorScheme.primary
+    val headerEndBrush = MaterialTheme.colorScheme.onPrimaryContainer
+    val shadowColor = MaterialTheme.colorScheme.onSecondary
     var downHeaderRectangleTop = 0f
 
     Box(
@@ -364,7 +417,7 @@ fun Header() {
         ) {
             drawRect(
                 brush = Brush.linearGradient(
-                    colors = listOf(headerBrushEnd, headerBrushMiddle),
+                    colors = listOf(headerStartBrush, headerEndBrush),
                     start = Offset(0f, 0f), // Top of the arc
                     end = Offset(
                         0f,
@@ -391,7 +444,7 @@ fun Header() {
             }
             drawPath(
                 path = downHeaderRectangle,
-                color = headerBrushMiddle,
+                color = headerEndBrush,
             )
             val shadowArcPath = Path().apply {
                 arcTo(
@@ -414,14 +467,17 @@ fun Header() {
         }
 
         val powerContainerCircleRadius = screenWidth / 2
-        DrawPowerButton(powerContainerCircleRadius = powerContainerCircleRadius.toFloat())
+        DrawPowerButton(
+            powerContainerCircleRadius = powerContainerCircleRadius.toFloat(),
+            socketStatus = socketStatus
+        ) {}
         Row(
             Modifier
                 .align(Alignment.BottomCenter)
                 .offset(y = (-(headerHeight / 8)).dp),
         ) {
             AppText(
-                text = "connected", textColor = Color.White
+                text = socketStatus.title, textColor = Color.White
             )
         }
     }
@@ -429,9 +485,15 @@ fun Header() {
 
 
 @Composable
-fun DrawPowerButton(powerContainerCircleRadius: Float) {
+fun DrawPowerButton(
+    powerContainerCircleRadius: Float,
+    socketStatus: Constants.SocketStatus,
+    onPowerButtonClicked: () -> Unit
+) {
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .clickable { onPowerButtonClicked() }) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawCircle(color = Color.White, radius = powerContainerCircleRadius)
             drawCircle(
@@ -440,13 +502,24 @@ fun DrawPowerButton(powerContainerCircleRadius: Float) {
                 style = Stroke(width = 14f)
             )
         }
-        Image(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size((powerContainerCircleRadius / 3).dp),
-            painter = painterResource(id = R.drawable.power_icon),
-            contentDescription = "power",
-        )
+        if (socketStatus.isConnected) {
+            Image(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size((powerContainerCircleRadius / 3).dp),
+                painter = painterResource(id = R.drawable.power_icon),
+                contentDescription = socketStatus.title,
+            )
+        } else {
+            Icon(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size((powerContainerCircleRadius / 3).dp),
+                painter = painterResource(id = R.drawable.power_icon),
+                tint = Color.LightGray,
+                contentDescription = socketStatus.title
+            )
+        }
     }
 
 }

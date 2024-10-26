@@ -1,10 +1,11 @@
 package ir.example.androidsocket.ui.base
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.TextFieldColors
 import androidx.compose.material.TextFieldDefaults
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import ir.example.androidsocket.ui.theme.Gray200
 import ir.example.androidsocket.ui.theme.Indigo
 import ir.example.androidsocket.ui.theme.Indigo200
+import ir.example.androidsocket.ui.theme.spacing
 
 
 @Composable
@@ -38,18 +40,19 @@ fun AppOutlinedTextField(
     leadingIcon: @Composable (() -> Unit)? = {},
     trailingIcon : @Composable (() -> Unit)? = {},
     colors: TextFieldColors = TextFieldDefaults.outlinedTextFieldColors(
-        textColor = Color.DarkGray,
-        focusedBorderColor = Indigo,
-        unfocusedBorderColor = Indigo200,
+        textColor = MaterialTheme.colorScheme.onSurface,
+        focusedBorderColor = MaterialTheme.colorScheme.primary,
+        unfocusedBorderColor = MaterialTheme.colorScheme.primaryContainer,
         disabledBorderColor = Indigo200,
         disabledTextColor = Color.LightGray,
         cursorColor = Indigo,
-        backgroundColor = Color.White,
+        backgroundColor = MaterialTheme.colorScheme.surface,
     ),
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     textStyle: TextStyle = styleText(TextType.TEXT),
     isFocused: Boolean = false,
     hasError: Boolean = false,
+    shape: RoundedCornerShape = RoundedCornerShape(MaterialTheme.spacing.extraMedium)
 ) {
 
 
@@ -71,7 +74,7 @@ fun AppOutlinedTextField(
                 } else {
                     label
                 } ?: "",
-                textColor = if (hasError) MaterialTheme.colors.error else if (enabled) Indigo else Gray200,
+                textColor = if (hasError) MaterialTheme.colorScheme.error else if (enabled) Indigo else Gray200,
                 fontWeight = FontWeight.Bold,
             )
         },
@@ -91,6 +94,7 @@ fun AppOutlinedTextField(
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
         keyboardActions = keyboardActions,
+        shape = shape
     )
 }
 
