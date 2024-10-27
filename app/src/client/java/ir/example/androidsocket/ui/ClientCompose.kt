@@ -10,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -36,6 +39,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -59,6 +63,7 @@ import ir.example.androidsocket.Constants
 import ir.example.androidsocket.ui.base.AppOutlinedTextField
 import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.BaseUiEvent
+import ir.example.androidsocket.ui.base.ProtocolTypeMenu
 import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
 import ir.example.androidsocket.ui.theme.Green400
@@ -91,6 +96,7 @@ internal fun ClientCompose(
     val serverPort by viewModel.serverPort.collectAsState()
     val serverPortError by viewModel.serverPortError.collectAsState()
     val socketStatus by viewModel.socketStatus.collectAsState()
+    val isConnecting by viewModel.isConnecting.collectAsState()
     val uiEvent by viewModel.uiEvent.collectAsStateWithLifecycle(initialValue = BaseUiEvent.None)
 
     val launcher = rememberLauncherForActivityResult(
@@ -146,6 +152,7 @@ internal fun ClientCompose(
                 serverMessage = serverMessage,
                 waitingForServer = waitingForServerConfirmation,
                 socketStatus = socketStatus,
+                isConnecting = isConnecting,
                 onConnectToServer = {
                     clientLog("onConnectToServer")
                     onEvent(ClientEvent.OnConnectToServer)
@@ -183,6 +190,7 @@ fun ClientContent(
     serverMessage: String,
     waitingForServer: Boolean?,
     socketStatus: Constants.SocketStatus,
+    isConnecting: Boolean,
     onConnectToServer: () -> Unit,
     onDisconnectFromServer: () -> Unit,
     onSendMessageEvent: (String) -> Unit,
@@ -199,91 +207,104 @@ fun ClientContent(
     )
     val configuration = LocalConfiguration.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.primary)
-                .padding(WindowInsets.statusBars.asPaddingValues()),
-            contentAlignment = Alignment.Center
-        ) {
-            AppText(
-                modifier = Modifier.padding(MaterialTheme.spacing.small),
-                text = stringResource(id = R.string.client_header, selectedProtocol.title),
-                textType = TextType.HEADER,
-                fontWeight = Bold,
-                textColor = White,
-                style = MaterialTheme.typography.headlineSmall
-            )
-        }
-
-
-        PowerButtonBody(
-            modifier = Modifier.weight(.3f),
-            socketStatus = socketStatus, onPowerButtonClicked = {
-                when (socketStatus.isConnected) {
-                    true -> onConnectToServer()
-                    false -> onDisconnectFromServer()
-                }
-            }
-        )
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
-            Modifier
-                .weight(.3f)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AppOutlinedTextField(
+            Box(
                 modifier = Modifier
-                    .padding(MaterialTheme.spacing.medium)
-                    .fillMaxWidth(),
-                value = serverIp,
-                onValueChange = { ip ->
-                    if (isIpValid(ip)) {
-                        onEvent(ClientEvent.SetServerIp(ip))
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(WindowInsets.statusBars.asPaddingValues()),
+                contentAlignment = Alignment.Center
+            ) {
+                AppText(
+                    modifier = Modifier.padding(MaterialTheme.spacing.small),
+                    text = stringResource(id = R.string.client_header, selectedProtocol.title),
+                    textType = TextType.HEADER,
+                    fontWeight = Bold,
+                    textColor = White,
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Icon(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(MaterialTheme.spacing.small)
+                        .clickable { expanded = !expanded },
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "menu",
+                    tint = Color.White
+                )
+            }
+
+            PowerButtonBody(
+                modifier = Modifier.weight(.3f),
+                socketStatus = socketStatus, onPowerButtonClicked = {
+                    when (socketStatus.isConnected) {
+                        true -> onDisconnectFromServer()
+                        false -> onConnectToServer()
                     }
                 },
-                label = stringResource(id = R.string.ip_label),
-                hasError = serverIpError,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isConnecting = isConnecting,
+                serverAddress = if (!serverIpError && !serverPortError) "$serverIp:$serverPort" else "",
+                onEvent = onEvent
+            )
 
+            Column(
+                Modifier
+                    .weight(.3f)
+                    .fillMaxWidth()
+                    .alpha(if (isConnecting) 0f else 1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                AppOutlinedTextField(
+                    modifier = Modifier
+                        .padding(MaterialTheme.spacing.medium)
+                        .fillMaxWidth(),
+                    value = serverIp,
+                    onValueChange = { ip ->
+                        if (isIpValid(ip)) {
+                            onEvent(ClientEvent.SetServerIp(ip))
+                        }
+                    },
+                    label = stringResource(id = R.string.ip_label),
+                    hasError = serverIpError,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    textStyle = MaterialTheme.typography.bodyLarge
                 )
 
-            AppOutlinedTextField(
-                modifier = Modifier
-                    .padding(MaterialTheme.spacing.medium)
-                    .fillMaxWidth(),
-                value = serverPort,
-                onValueChange = { port ->
-                    if (isPortValid(port))
-                        onEvent(ClientEvent.SetServerPort(port))
-                },
-                label = stringResource(id = R.string.port_label),
-                hasError = serverPortError,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            )
+                AppOutlinedTextField(
+                    modifier = Modifier
+                        .padding(MaterialTheme.spacing.medium)
+                        .fillMaxWidth(),
+                    value = serverPort,
+                    onValueChange = { port ->
+                        if (isPortValid(port))
+                            onEvent(ClientEvent.SetServerPort(port))
+                    },
+                    label = stringResource(id = R.string.port_label),
+                    hasError = serverPortError,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    textStyle = MaterialTheme.typography.bodyLarge
+                )
+            }
+
         }
-
+        ProtocolTypeMenu(
+            modifier = Modifier.align(Alignment.TopEnd),
+            expanded = expanded,
+            protocols = Constants.PROTOCOLS,
+            selectedProtocol = Constants.ProtocolType.WEBSOCKET,
+            onProtocolSelected = {
+                onEvent(ClientEvent.SetProtocolType(it))
+                expanded = false
+            },
+            onDismissClicked = { expanded = false })
     }
-
-    /*  ProtocolTypeMenu(
-          modifier = Modifier.align(Alignment.TopEnd),
-          expanded = expanded,
-          protocols = Constants.PROTOCOLS,
-          selectedProtocol = Constants.ProtocolType.WEBSOCKET,
-          onProtocolSelected = {
-              onEvent(ClientEvent.SetProtocolType(it))
-              expanded = false
-          },
-          onDismissClicked = { expanded = false })
-
-*/
 
 
     /*   AppBaseScreen(
@@ -446,14 +467,16 @@ fun ClientContent(
 fun PowerButtonBody(
     modifier: Modifier,
     socketStatus: Constants.SocketStatus,
+    isConnecting: Boolean,
+    serverAddress: String,
+    onEvent: (ClientEvent) -> Unit,
     onPowerButtonClicked: () -> Unit
 ) {
     val configuration = LocalConfiguration.current
 
     var powerContainerCircleRadius by remember { mutableIntStateOf(0) }
-    var isAnimating by remember { mutableStateOf(false) }
     val connectionStatusBrush = Brush.verticalGradient(
-        colors = if (isAnimating) listOf(Yellow600, White)
+        colors = if (isConnecting) listOf(Yellow600, White)
         else
             when (socketStatus.isConnected) {
                 true -> listOf(Green900, Green400)
@@ -465,11 +488,10 @@ fun PowerButtonBody(
     val currentScale = powerButtonTargetScale.value
     val alpha = (1 - currentScale / 1.5f).coerceIn(0f, 1f)
     fun animateCircle() {
-        isAnimating = true
-
+        onEvent(ClientEvent.SetIsConnecting(true))
         coroutineScope.launch {
             // Loop for continuous animation
-            while (isAnimating && !socketStatus.isConnected) {
+            while (isConnecting && !socketStatus.isConnected) {
                 // Scale up
                 powerButtonTargetScale.animateTo(
                     targetValue = 1.5f,
@@ -490,17 +512,13 @@ fun PowerButtonBody(
             }
         }
     }
-    LaunchedEffect(socketStatus.isConnected) {
-        if (socketStatus.isConnected) {
-            isAnimating = false
-        }
-    }
+
     val screenWidth = configuration.screenWidthDp
     val screenHeight = configuration.screenHeightDp
     val headerHeight = screenHeight / 3
     val headerStartBrush = MaterialTheme.colorScheme.primary
     val headerEndBrush = MaterialTheme.colorScheme.onPrimaryContainer
-    val shadowColor = MaterialTheme.colorScheme.onSurface
+    val shadowColor = MaterialTheme.colorScheme.primaryContainer
     var downHeaderRectangleTop = 0f
 
     Column(
@@ -511,6 +529,12 @@ fun PowerButtonBody(
             Modifier
                 .fillMaxWidth()
                 .weight(.3f)
+                .clickable {
+                    if (!socketStatus.isConnected && serverAddress.isNotEmpty()) {
+                        animateCircle()
+                        onPowerButtonClicked()
+                    }
+                }
         ) {
             Canvas(
                 modifier = Modifier
@@ -531,11 +555,11 @@ fun PowerButtonBody(
 
                 drawCircle(color = White, radius = powerContainerCircleRadius.toFloat())
                 drawCircle(
-                    color = if (!isAnimating) LightGray else Yellow600,
+                    color = if (!isConnecting) LightGray else Yellow600,
                     radius = powerContainerCircleRadius.toFloat(),
                     style = Stroke(width = 14f)
                 )
-                if (isAnimating)
+                if (isConnecting)
                     drawCircle(
                         color = Yellow600.copy(alpha = alpha),
                         radius = powerContainerCircleRadius * powerButtonTargetScale.value,
@@ -566,7 +590,7 @@ fun PowerButtonBody(
         Box(
             Modifier
                 .fillMaxWidth()
-                .weight(.1f)
+                .weight(.2f)
         ) {
             Canvas(
                 modifier = Modifier
@@ -598,7 +622,7 @@ fun PowerButtonBody(
                     arcTo(
                         rect = Rect(
                             left = 0 - 100f,
-                            top = size.height - (size.height / 2),
+                            top = 0f,
                             right = size.width + 100,
                             bottom = size.height
                         ),
@@ -622,7 +646,7 @@ fun PowerButtonBody(
             ) {
                 AppText(
                     Modifier.padding(MaterialTheme.spacing.small),
-                    text = if (isAnimating) stringResource(id = R.string.connecting_label) else socketStatus.title,
+                    text = if (isConnecting) stringResource(id = R.string.connecting_label) else socketStatus.title,
                     fontWeight = when (socketStatus.isConnected) {
                         true -> Bold
                         false -> Normal
@@ -632,8 +656,10 @@ fun PowerButtonBody(
                     )
                 )
                 AppText(
-                    Modifier.padding(MaterialTheme.spacing.small),
-                    text = "10.200.6.67:3942",
+                    Modifier
+                        .padding(MaterialTheme.spacing.small)
+                        .alpha(if (socketStatus.isConnected) 1f else 0f),
+                    text = serverAddress,
                     style = MaterialTheme.typography.titleSmall,
                     textColor = LightGray
                 )

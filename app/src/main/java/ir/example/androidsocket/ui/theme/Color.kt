@@ -52,7 +52,7 @@ sealed class AppColors(
         tertiary = Color(0xFFFFC107),
         onTertiary = Color(0xFFffffff),
         surface = Color(0xFFd9d9e0),
-        onSurface = Color(0xFFCFCFE9),
+        onSurface = Color(0xFF44483d),
         background = Color(0xFFf9f9ff),
         error = Color(0xFFba1a1a),
         onError = Color(0xFFffffff)

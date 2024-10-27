@@ -76,6 +76,7 @@ fun AppOutlinedTextField(
                 } ?: "",
                 textColor = if (hasError) MaterialTheme.colorScheme.error else if (enabled) Indigo else Gray200,
                 fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
             )
         },
         singleLine = singleLine,

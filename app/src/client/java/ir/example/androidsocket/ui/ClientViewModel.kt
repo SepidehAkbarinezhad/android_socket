@@ -55,6 +55,9 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     var socketStatus = MutableStateFlow(Constants.SocketStatus.DISCONNECTED)
         private set
 
+    var isConnecting = MutableStateFlow(false)
+        private set
+
     var isServiceBound = MutableStateFlow<Boolean>(false)
         private set
 
@@ -71,6 +74,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         override fun onConnected() {
             clientLog("clientConnectionListener onConnected")
             onEvent(ClientEvent.SetLoading(false))
+            onEvent(ClientEvent.SetIsConnecting(false))
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.CONNECTED))
         }
 
@@ -93,7 +97,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             emitMessageValue(R.string.disconnected_error_message, reason)
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
             onEvent(ClientEvent.SetLoading(false))
-
+            onEvent(ClientEvent.SetIsConnecting(false))
         }
 
         override fun onError(exception: Exception?) {
@@ -102,6 +106,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             )
             emitMessageValue(R.string.error_message, exception?.message ?: "")
             onEvent(ClientEvent.SetLoading(false))
+            onEvent(ClientEvent.SetIsConnecting(false))
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
         }
 
@@ -110,6 +115,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 "clientConnectionListener onException() ${exception?.message}"
             )
             onEvent(ClientEvent.SetLoading(false))
+            onEvent(ClientEvent.SetIsConnecting(false))
             emitMessageValue(R.string.error_message, exception?.message ?: "")
         }
     }
@@ -161,6 +167,10 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
 
             is ClientEvent.SetLoading -> {
                 loading.value = event.value
+            }
+
+            is ClientEvent.SetIsConnecting-> {
+                isConnecting.value = event.value
             }
 
             is ClientEvent.SetServerIp -> {
@@ -245,4 +255,5 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         }
 
     }
+
 }

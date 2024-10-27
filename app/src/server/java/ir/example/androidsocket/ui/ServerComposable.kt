@@ -266,7 +266,7 @@ fun ServerContent(
                         valueTextType = TextType.TEXT
                     )
                     fileProgress?.let { FileTransferAnimation() }
-                //    if (fileIsSaved) {
+                    if (fileIsSaved) {
                         Dialog(onDismissRequest = { onEvent(ServerEvent.SetFileIsSaved(false)) }) {
                             Column(Modifier.background(Color.White).padding(MaterialTheme.spacing.extraMedium)) {
                                 AppText(
@@ -284,7 +284,7 @@ fun ServerContent(
                                 )
                             }
                         }
-                  //  }
+                   }
 
 
                     /*   Column(
