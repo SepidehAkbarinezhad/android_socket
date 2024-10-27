@@ -200,7 +200,6 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 serverPortError.value = serverPort.value.isEmpty()
 
                 if (!serverIpError.value && !serverPortError.value && isServiceBound.value) {
-                    onEvent(ClientEvent.SetLoading(true))
                     clientForegroundService?.let { service ->
                         service.connectWebSocket(
                             selectedProtocol.value,

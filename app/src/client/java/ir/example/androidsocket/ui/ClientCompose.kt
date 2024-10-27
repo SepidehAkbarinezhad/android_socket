@@ -249,7 +249,7 @@ fun ClientContent(
                     }
                 },
                 isConnecting = isConnecting,
-                serverAddress = if (!serverIpError && !serverPortError) "$serverIp:$serverPort" else "",
+                serverAddress = if (!serverIpError && !serverPortError) "$serverIp : $serverPort" else "",
                 onEvent = onEvent
             )
 
@@ -257,7 +257,7 @@ fun ClientContent(
                 Modifier
                     .weight(.3f)
                     .fillMaxWidth()
-                    .alpha(if (isConnecting) 0f else 1f),
+                    .alpha(if (socketStatus.isConnected) 0f else 1f),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {

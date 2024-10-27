@@ -11,6 +11,7 @@ import ir.example.androidsocket.utils.NotificationHandler
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class SocketClientForegroundService : Service() {
@@ -86,6 +87,7 @@ class SocketClientForegroundService : Service() {
             Constants.ProtocolType.TCP -> TcpClientManager(ip, port , connectionListeners,this.contentResolver)
         }
         CoroutineScope(Dispatchers.IO).launch {
+            delay(1000)
             clientManager.connectWithTimeout()
         }
     }
