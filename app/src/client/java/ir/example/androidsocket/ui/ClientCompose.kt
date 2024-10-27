@@ -10,7 +10,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,16 +17,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -36,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -65,7 +59,6 @@ import ir.example.androidsocket.Constants
 import ir.example.androidsocket.ui.base.AppOutlinedTextField
 import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.BaseUiEvent
-import ir.example.androidsocket.ui.base.ProtocolTypeMenu
 import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
 import ir.example.androidsocket.ui.theme.Green400
@@ -212,11 +205,13 @@ fun ClientContent(
             .background(Color.White),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(modifier =   Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
-            .padding(WindowInsets.statusBars.asPaddingValues()),
-            contentAlignment = Alignment.Center){
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(WindowInsets.statusBars.asPaddingValues()),
+            contentAlignment = Alignment.Center
+        ) {
             AppText(
                 modifier = Modifier.padding(MaterialTheme.spacing.small),
                 text = stringResource(id = R.string.client_header, selectedProtocol.title),
@@ -229,6 +224,7 @@ fun ClientContent(
 
 
         PowerButtonBody(
+            modifier = Modifier.weight(.3f),
             socketStatus = socketStatus, onPowerButtonClicked = {
                 when (socketStatus.isConnected) {
                     true -> onConnectToServer()
@@ -238,7 +234,8 @@ fun ClientContent(
         )
         Column(
             Modifier
-                .fillMaxSize(),
+                .weight(.3f)
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -289,253 +286,171 @@ fun ClientContent(
 */
 
 
-
-/*   AppBaseScreen(
-       headerTitle = stringResource(id = R.string.client_header, selectedProtocol.title),
-       headerBackGround = Indigo,
-       onProtocolSelected = { onEvent(ClientEvent.SetProtocolType(it)) },
-       bodyContent = {
-           Column(
-               Modifier.padding(MaterialTheme.spacing.small),
-               verticalArrangement = Arrangement.Center,
-               horizontalAlignment = Alignment.CenterHorizontally
-           ) {
-               Row(
-                   Modifier
-                       .fillMaxWidth(),
-                   verticalAlignment = Alignment.CenterVertically,
+    /*   AppBaseScreen(
+           headerTitle = stringResource(id = R.string.client_header, selectedProtocol.title),
+           headerBackGround = Indigo,
+           onProtocolSelected = { onEvent(ClientEvent.SetProtocolType(it)) },
+           bodyContent = {
+               Column(
+                   Modifier.padding(MaterialTheme.spacing.small),
+                   verticalArrangement = Arrangement.Center,
+                   horizontalAlignment = Alignment.CenterHorizontally
                ) {
-                   AppOutlinedTextField(
-                       modifier = Modifier
-                           .weight(1.5f)
-                           .padding(MaterialTheme.spacing.small),
-                       value = serverIp,
-                       onValueChange = { ip ->
-                           if (isIpValid(ip)) {
-                               onEvent(ClientEvent.SetServerIp(ip))
-                           }
-                       },
-                       label = stringResource(id = R.string.ip_label),
-                       hasError = serverIpError,
-                       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-
-                       )
-
-                   AppOutlinedTextField(
-                       modifier = Modifier
-                           .weight(1f)
-                           .padding(MaterialTheme.spacing.small),
-                       value = serverPort,
-                       onValueChange = { port ->
-                           if (isPortValid(port))
-                               onEvent(ClientEvent.SetServerPort(port))
-                       },
-                       label = stringResource(id = R.string.port_label),
-                       hasError = serverPortError,
-                       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                   )
-               }
-
-               AppTitleValueText(
-                   modifier = Modifier.padding(MaterialTheme.spacing.small),
-                   title = stringResource(
-                       id = R.string.socket_status_title
-                   ),
-                   value = socketStatus.title,
-                   valueColor = if (!socketStatus.connection) Color.Red else Green900,
-                   titleTextType = TextType.TEXT,
-                   valueTextType = TextType.TEXT
-               )
-
-               AppOutlinedTextField(
-                   modifier = Modifier
-                       .fillMaxWidth(),
-                   value = clientMessage,
-                   onValueChange = {
-                       onEvent(ClientEvent.SetClientMessage(it))
-                   },
-                   enabled = socketStatus.connection,
-                   singleLine = true,
-                   label = stringResource(id = R.string.message),
-                   colors = TextFieldDefaults.outlinedTextFieldColors(
-                       textColor = Color.DarkGray,
-                       focusedBorderColor = Indigo,
-                       unfocusedBorderColor = Indigo400,
-                       disabledBorderColor = Gray200,
-                       disabledTextColor = Color.LightGray,
-                       cursorColor = Indigo,
-                       backgroundColor = Color.White,
-                   ),
-                   trailingIcon = {
-                       if (!socketStatus.connection) {
-                           IconButton(
-                               onClick = {
+                   Row(
+                       Modifier
+                           .fillMaxWidth(),
+                       verticalAlignment = Alignment.CenterVertically,
+                   ) {
+                       AppOutlinedTextField(
+                           modifier = Modifier
+                               .weight(1.5f)
+                               .padding(MaterialTheme.spacing.small),
+                           value = serverIp,
+                           onValueChange = { ip ->
+                               if (isIpValid(ip)) {
+                                   onEvent(ClientEvent.SetServerIp(ip))
                                }
-                           ) {
-                               Icon(
-                                   modifier = Modifier.size(28.dp),
-                                   painter = painterResource(id = R.drawable.attach_file_icon),
-                                   tint = Gray200,
-                                   contentDescription = "Attach File"
-                               )
-                           }
-                       } else {
-                           if (attachVisibility) {
+                           },
+                           label = stringResource(id = R.string.ip_label),
+                           hasError = serverIpError,
+                           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+
+                           )
+
+                       AppOutlinedTextField(
+                           modifier = Modifier
+                               .weight(1f)
+                               .padding(MaterialTheme.spacing.small),
+                           value = serverPort,
+                           onValueChange = { port ->
+                               if (isPortValid(port))
+                                   onEvent(ClientEvent.SetServerPort(port))
+                           },
+                           label = stringResource(id = R.string.port_label),
+                           hasError = serverPortError,
+                           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                       )
+                   }
+
+                   AppTitleValueText(
+                       modifier = Modifier.padding(MaterialTheme.spacing.small),
+                       title = stringResource(
+                           id = R.string.socket_status_title
+                       ),
+                       value = socketStatus.title,
+                       valueColor = if (!socketStatus.connection) Color.Red else Green900,
+                       titleTextType = TextType.TEXT,
+                       valueTextType = TextType.TEXT
+                   )
+
+                   AppOutlinedTextField(
+                       modifier = Modifier
+                           .fillMaxWidth(),
+                       value = clientMessage,
+                       onValueChange = {
+                           onEvent(ClientEvent.SetClientMessage(it))
+                       },
+                       enabled = socketStatus.connection,
+                       singleLine = true,
+                       label = stringResource(id = R.string.message),
+                       colors = TextFieldDefaults.outlinedTextFieldColors(
+                           textColor = Color.DarkGray,
+                           focusedBorderColor = Indigo,
+                           unfocusedBorderColor = Indigo400,
+                           disabledBorderColor = Gray200,
+                           disabledTextColor = Color.LightGray,
+                           cursorColor = Indigo,
+                           backgroundColor = Color.White,
+                       ),
+                       trailingIcon = {
+                           if (!socketStatus.connection) {
                                IconButton(
                                    onClick = {
-                                       onAttachFileEvent()
                                    }
                                ) {
                                    Icon(
                                        modifier = Modifier.size(28.dp),
                                        painter = painterResource(id = R.drawable.attach_file_icon),
-                                       tint = Indigo,
+                                       tint = Gray200,
                                        contentDescription = "Attach File"
                                    )
                                }
-                           } else if (waitingForServer != null) {
-                               if (fileProgress != null) {
-                                   CircularProgressIndicator(modifier = Modifier.size(28.dp),progress = animatedProgress/100, color = Orange700 , backgroundColor = Color.LightGray)
-                               } else{
-                                 IconButton(
-                                       modifier = Modifier,
+                           } else {
+                               if (attachVisibility) {
+                                   IconButton(
                                        onClick = {
                                            onAttachFileEvent()
                                        }
                                    ) {
                                        Icon(
                                            modifier = Modifier.size(28.dp),
-                                           painter = painterResource(id = R.drawable.seen_icon),
-                                           tint = if (waitingForServer == true) Gray200 else Color.Green,
-                                           contentDescription = "send check"
+                                           painter = painterResource(id = R.drawable.attach_file_icon),
+                                           tint = Indigo,
+                                           contentDescription = "Attach File"
                                        )
                                    }
+                               } else if (waitingForServer != null) {
+                                   if (fileProgress != null) {
+                                       CircularProgressIndicator(modifier = Modifier.size(28.dp),progress = animatedProgress/100, color = Orange700 , backgroundColor = Color.LightGray)
+                                   } else{
+                                     IconButton(
+                                           modifier = Modifier,
+                                           onClick = {
+                                               onAttachFileEvent()
+                                           }
+                                       ) {
+                                           Icon(
+                                               modifier = Modifier.size(28.dp),
+                                               painter = painterResource(id = R.drawable.seen_icon),
+                                               tint = if (waitingForServer == true) Gray200 else Color.Green,
+                                               contentDescription = "send check"
+                                           )
+                                       }
+                                   }
+
                                }
-
                            }
-                       }
 
-                   })
+                       })
 
+               }
+
+           }) {
+           AppButtonsRow(
+               firstButtonTitle = if (!socketStatus.connection) stringResource(id = R.string.connect_to_server) else stringResource(
+                   id = R.string.disconnect_from_server
+               ),
+               onFirstClicked = { if (!socketStatus.connection) onConnectToServer() else onDisconnectFromServer() },
+               firstButtonColor = ButtonDefaults.buttonColors(
+                   disabledBackgroundColor = Color.LightGray,
+                   backgroundColor = Indigo,
+               ),
+               secondButtonTitle = if (fileUrl.isNotEmpty()) stringResource(id = R.string.send_file) else stringResource(
+                   id = R.string.send_message
+               ),
+               secondEnable = socketStatus.connection && clientMessage.isNotEmpty() && !waitingForServer,
+               secondButtonColor = ButtonDefaults.buttonColors(
+                   disabledBackgroundColor = Color.LightGray,
+                   backgroundColor = Indigo,
+               )
+           ) {
+               onSendMessageEvent(clientMessage)
            }
 
-       }) {
-       AppButtonsRow(
-           firstButtonTitle = if (!socketStatus.connection) stringResource(id = R.string.connect_to_server) else stringResource(
-               id = R.string.disconnect_from_server
-           ),
-           onFirstClicked = { if (!socketStatus.connection) onConnectToServer() else onDisconnectFromServer() },
-           firstButtonColor = ButtonDefaults.buttonColors(
-               disabledBackgroundColor = Color.LightGray,
-               backgroundColor = Indigo,
-           ),
-           secondButtonTitle = if (fileUrl.isNotEmpty()) stringResource(id = R.string.send_file) else stringResource(
-               id = R.string.send_message
-           ),
-           secondEnable = socketStatus.connection && clientMessage.isNotEmpty() && !waitingForServer,
-           secondButtonColor = ButtonDefaults.buttonColors(
-               disabledBackgroundColor = Color.LightGray,
-               backgroundColor = Indigo,
-           )
-       ) {
-           onSendMessageEvent(clientMessage)
-       }
-
-   }*/
+       }*/
 
 
 }
 
 @Composable
-fun PowerButtonBody(socketStatus: Constants.SocketStatus, onPowerButtonClicked: () -> Unit) {
-    val configuration = LocalConfiguration.current
-
-    val screenWidth = configuration.screenWidthDp
-    val screenHeight = configuration.screenHeightDp
-    val headerHeight = screenHeight / 3
-    val headerStartBrush = MaterialTheme.colorScheme.primary
-    val headerEndBrush = MaterialTheme.colorScheme.onPrimaryContainer
-    val shadowColor = MaterialTheme.colorScheme.onSurface
-    var downHeaderRectangleTop = 0f
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(headerHeight.dp)
-    ) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            drawRect(
-                brush = Brush.linearGradient(
-                    colors = listOf(headerStartBrush, headerEndBrush),
-                    start = Offset(0f, 0f), // Top of the arc
-                    end = Offset(
-                        0f,
-                        size.height - (size.height / 4) - 2
-                    )                        // Bottom of the arc
-                ),
-                size = Size(size.width, size.height - (size.height / 4))
-            )
-
-            downHeaderRectangleTop = size.height - (size.height / 2)
-            val downHeaderRectangle = Path().apply {
-                arcTo(
-                    rect = Rect(
-                        left = 0 - 100f,
-                        top = downHeaderRectangleTop - 2,
-                        right = size.width + 100,
-                        bottom = size.height
-                    ),
-                    startAngleDegrees = 0f,
-                    sweepAngleDegrees = 180f,
-                    forceMoveTo = false
-                )
-                close()
-            }
-            drawPath(
-                path = downHeaderRectangle,
-                color = headerEndBrush,
-            )
-            val shadowArcPath = Path().apply {
-                arcTo(
-                    rect = Rect(
-                        left = 0 - 100f,
-                        top = size.height - (size.height / 2),
-                        right = size.width + 100,
-                        bottom = size.height
-                    ),
-                    startAngleDegrees = 0f,
-                    sweepAngleDegrees = 180f,
-                    forceMoveTo = false
-                )
-            }
-            drawPath(
-                path = shadowArcPath,
-                color = shadowColor,
-                style = Stroke(width = 40f)
-            )
-        }
-
-        val powerContainerCircleRadius = screenWidth / 2
-        DrawPowerButton(
-            headerHeight = headerHeight,
-            powerContainerCircleRadius = powerContainerCircleRadius.toFloat(),
-            socketStatus = socketStatus
-        ) { onPowerButtonClicked() }
-
-    }
-}
-
-
-@Composable
-fun DrawPowerButton(
-    headerHeight: Int,
-    powerContainerCircleRadius: Float,
+fun PowerButtonBody(
+    modifier: Modifier,
     socketStatus: Constants.SocketStatus,
     onPowerButtonClicked: () -> Unit
 ) {
+    val configuration = LocalConfiguration.current
+
+    var powerContainerCircleRadius by remember { mutableIntStateOf(0) }
     var isAnimating by remember { mutableStateOf(false) }
     val connectionStatusBrush = Brush.verticalGradient(
         colors = if (isAnimating) listOf(Yellow600, White)
@@ -545,10 +460,8 @@ fun DrawPowerButton(
                 false -> listOf(LightGray, LightGray)
             }
     )
-
     val powerButtonTargetScale = remember { Animatable(1f) }
     val coroutineScope = rememberCoroutineScope()
-    // Calculate the alpha based on the current scale
     val currentScale = powerButtonTargetScale.value
     val alpha = (1 - currentScale / 1.5f).coerceIn(0f, 1f)
     fun animateCircle() {
@@ -582,61 +495,152 @@ fun DrawPowerButton(
             isAnimating = false
         }
     }
+    val screenWidth = configuration.screenWidthDp
+    val screenHeight = configuration.screenHeightDp
+    val headerHeight = screenHeight / 3
+    val headerStartBrush = MaterialTheme.colorScheme.primary
+    val headerEndBrush = MaterialTheme.colorScheme.onPrimaryContainer
+    val shadowColor = MaterialTheme.colorScheme.onSurface
+    var downHeaderRectangleTop = 0f
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .clickable {
-            animateCircle()
-            onPowerButtonClicked()
-        }) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawCircle(color = White, radius = powerContainerCircleRadius)
-
-            drawCircle(
-                color = if (!isAnimating) LightGray else Yellow600,
-                radius = powerContainerCircleRadius,
-                style = Stroke(width = 14f)
-            )
-
-            if (isAnimating)
-                drawCircle(
-                    color = Yellow600.copy(alpha = alpha),
-                    radius = powerContainerCircleRadius * powerButtonTargetScale.value,
-                    style = Stroke(width = 24f)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .weight(.3f)
+        ) {
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                powerContainerCircleRadius = size.height.toInt() / 3
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(headerStartBrush, headerEndBrush),
+                        start = Offset(0f, 0f), // Top of the arc
+                        end = Offset(
+                            0f,
+                            size.height - (size.height / 4) - 2
+                        )                        // Bottom of the arc
+                    ),
+                    size = Size(size.width, size.height)
                 )
 
-        }
-        if (socketStatus.isConnected) {
-            Image(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size((powerContainerCircleRadius / 3).dp),
-                painter = painterResource(id = R.drawable.power_icon),
-                contentDescription = socketStatus.title,
-            )
-        } else {
-            Icon(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size((powerContainerCircleRadius / 3).dp),
-                painter = painterResource(id = R.drawable.power_icon),
-                tint = Color.LightGray,
-                contentDescription = socketStatus.title
-            )
-        }
-        AppText(
-            Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = (-(headerHeight / 9)).dp),
-            text = if (isAnimating) stringResource(id = R.string.connecting_label) else socketStatus.title,
-            fontWeight = when (socketStatus.isConnected) {
-                true -> Bold
-                false -> Normal
-            },
-            style = MaterialTheme.typography.titleMedium.copy(
-                brush = connectionStatusBrush
-            )
-        )
-    }
+                drawCircle(color = White, radius = powerContainerCircleRadius.toFloat())
+                drawCircle(
+                    color = if (!isAnimating) LightGray else Yellow600,
+                    radius = powerContainerCircleRadius.toFloat(),
+                    style = Stroke(width = 14f)
+                )
+                if (isAnimating)
+                    drawCircle(
+                        color = Yellow600.copy(alpha = alpha),
+                        radius = powerContainerCircleRadius * powerButtonTargetScale.value,
+                        style = Stroke(width = 24f)
+                    )
 
+
+            }
+            if (socketStatus.isConnected) {
+                Image(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size((powerContainerCircleRadius / 3).dp),
+                    painter = painterResource(id = R.drawable.power_icon),
+                    contentDescription = socketStatus.title,
+                )
+            } else {
+                Icon(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size((powerContainerCircleRadius / 3).dp),
+                    painter = painterResource(id = R.drawable.power_icon),
+                    tint = LightGray,
+                    contentDescription = socketStatus.title
+                )
+            }
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .weight(.1f)
+        ) {
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                drawRect(
+                    color = headerEndBrush,
+                    size = Size(size.width, size.height / 2)
+                )
+                val downHeaderRectangle = Path().apply {
+                    arcTo(
+                        rect = Rect(
+                            left = 0 - 140f,
+                            top = 0f,
+                            right = size.width + 140,
+                            bottom = size.height
+                        ),
+                        startAngleDegrees = 0f,
+                        sweepAngleDegrees = 180f,
+                        forceMoveTo = false
+                    )
+                    close()
+                }
+                drawPath(
+                    path = downHeaderRectangle,
+                    color = headerEndBrush,
+                )
+                val shadowArcPath = Path().apply {
+                    arcTo(
+                        rect = Rect(
+                            left = 0 - 100f,
+                            top = size.height - (size.height / 2),
+                            right = size.width + 100,
+                            bottom = size.height
+                        ),
+                        startAngleDegrees = 0f,
+                        sweepAngleDegrees = 180f,
+                        forceMoveTo = false
+                    )
+                }
+                drawPath(
+                    path = shadowArcPath,
+                    color = shadowColor,
+                    style = Stroke(width = 40f)
+                )
+            }
+
+            Column(
+                Modifier
+                    .align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                AppText(
+                    Modifier.padding(MaterialTheme.spacing.small),
+                    text = if (isAnimating) stringResource(id = R.string.connecting_label) else socketStatus.title,
+                    fontWeight = when (socketStatus.isConnected) {
+                        true -> Bold
+                        false -> Normal
+                    },
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        brush = connectionStatusBrush
+                    )
+                )
+                AppText(
+                    Modifier.padding(MaterialTheme.spacing.small),
+                    text = "10.200.6.67:3942",
+                    style = MaterialTheme.typography.titleSmall,
+                    textColor = LightGray
+                )
+            }
+
+        }
+
+    }
 }
+
