@@ -2,6 +2,7 @@ package ir.example.androidsocket.ui
 
 import android.app.Activity
 import android.content.Intent
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
@@ -249,7 +250,8 @@ fun ClientContent(
                     }
                 },
                 isConnecting = isConnecting,
-                serverAddress = if (!serverIpError && !serverPortError) "$serverIp : $serverPort" else "",
+                serverAddress = if (serverIp.isNotEmpty() && serverPort.isNotEmpty() && socketStatus.isConnected) "$serverIp : $serverPort" else "",
+                formIsFilled = serverIp.isNotEmpty() && serverPort.isNotEmpty(),
                 onEvent = onEvent
             )
 
@@ -469,6 +471,7 @@ fun PowerButtonBody(
     socketStatus: Constants.SocketStatus,
     isConnecting: Boolean,
     serverAddress: String,
+    formIsFilled: Boolean,
     onEvent: (ClientEvent) -> Unit,
     onPowerButtonClicked: () -> Unit
 ) {
@@ -530,10 +533,10 @@ fun PowerButtonBody(
                 .fillMaxWidth()
                 .weight(.3f)
                 .clickable {
-                    if (!socketStatus.isConnected && serverAddress.isNotEmpty()) {
+                    if (formIsFilled) {
                         animateCircle()
-                        onPowerButtonClicked()
                     }
+                    onPowerButtonClicked()
                 }
         ) {
             Canvas(
