@@ -2,6 +2,7 @@ package ir.example.androidsocket.ui
 
 import android.app.Activity
 import android.content.Intent
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
@@ -245,6 +246,7 @@ fun ClientContent(
                 )
             }
 
+
             PowerButtonBody(
                 modifier = Modifier.weight(.3f),
                 socketStatus = socketStatus, onPowerButtonClicked = {
@@ -258,20 +260,19 @@ fun ClientContent(
                 formIsFilled = serverIp.isNotEmpty() && serverPort.isNotEmpty(),
                 onEvent = onEvent
             )
-
-          /*  ServerInfoForm(
-                modifier = Modifier
-                    .weight(.3f)
-                    .fillMaxWidth()
-                    .alpha(if (socketStatus.isConnected) 0f else 1f),
-                serverIp = serverIp,
-                serverIpError = serverIpError,
-                serverPort = serverPort,
-                serverPortError = serverPortError,
-                onEvent = onEvent
-            )*/
-
             if (!socketStatus.isConnected)
+                ServerInfoForm(
+                    modifier = Modifier
+                        .weight(.3f)
+                        .fillMaxWidth(),
+                    serverIp = serverIp,
+                    serverIpError = serverIpError,
+                    serverPort = serverPort,
+                    serverPortError = serverPortError,
+                    onEvent = onEvent
+                )
+
+            if (socketStatus.isConnected)
                 MessageContainer(
                     modifier = Modifier
                         .weight(.3f)
@@ -310,11 +311,12 @@ fun PowerButtonBody(
     onEvent: (ClientEvent) -> Unit,
     onPowerButtonClicked: () -> Unit
 ) {
-    val configuration = LocalConfiguration.current
+
+    var isAnimating by remember { mutableStateOf(false) }
 
     var powerContainerCircleRadius by remember { mutableIntStateOf(0) }
     val connectionStatusBrush = Brush.verticalGradient(
-        colors = if (isConnecting) listOf(Yellow600, White)
+        colors = if (isAnimating) listOf(Yellow600, White)
         else
             when (socketStatus.isConnected) {
                 true -> listOf(Green900, Green400)
@@ -325,11 +327,13 @@ fun PowerButtonBody(
     val coroutineScope = rememberCoroutineScope()
     val currentScale = powerButtonTargetScale.value
     val alpha = (1 - currentScale / 1.5f).coerceIn(0f, 1f)
+
     fun animateCircle() {
-        onEvent(ClientEvent.SetIsConnecting(true))
+        isAnimating = true
+
         coroutineScope.launch {
             // Loop for continuous animation
-            while (isConnecting && !socketStatus.isConnected) {
+            while (isAnimating) {
                 // Scale up
                 powerButtonTargetScale.animateTo(
                     targetValue = 1.5f,
@@ -350,14 +354,15 @@ fun PowerButtonBody(
             }
         }
     }
+    LaunchedEffect(isConnecting) {
+        if (!isConnecting) {
+            isAnimating = false
+        }
+    }
 
-    val screenWidth = configuration.screenWidthDp
-    val screenHeight = configuration.screenHeightDp
-    val headerHeight = screenHeight / 3
     val headerStartBrush = MaterialTheme.colorScheme.primary
     val headerEndBrush = MaterialTheme.colorScheme.onPrimaryContainer
     val shadowColor = MaterialTheme.colorScheme.primaryContainer
-    var downHeaderRectangleTop = 0f
 
     Column(
         modifier = modifier
@@ -371,6 +376,7 @@ fun PowerButtonBody(
                     if (formIsFilled) {
                         animateCircle()
                     }
+                    onEvent(ClientEvent.SetIsConnecting(true))
                     onPowerButtonClicked()
                 }
         ) {
@@ -393,11 +399,11 @@ fun PowerButtonBody(
 
                 drawCircle(color = White, radius = powerContainerCircleRadius.toFloat())
                 drawCircle(
-                    color = if (!isConnecting) LightGray else Yellow600,
+                    color = if (!isAnimating) LightGray else Yellow600,
                     radius = powerContainerCircleRadius.toFloat(),
                     style = Stroke(width = 14f)
                 )
-                if (isConnecting)
+                if (isAnimating)
                     drawCircle(
                         color = Yellow600.copy(alpha = alpha),
                         radius = powerContainerCircleRadius * powerButtonTargetScale.value,

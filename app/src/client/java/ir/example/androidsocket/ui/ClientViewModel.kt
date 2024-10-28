@@ -170,6 +170,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             }
 
             is ClientEvent.SetIsConnecting-> {
+                clientLog(" SetIsConnecting: ${event.value}","mjmjmj")
                 isConnecting.value = event.value
             }
 
