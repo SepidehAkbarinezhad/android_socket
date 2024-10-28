@@ -74,7 +74,6 @@ import ir.example.androidsocket.ui.theme.Gray200
 import ir.example.androidsocket.ui.theme.Green400
 import ir.example.androidsocket.ui.theme.Green900
 import ir.example.androidsocket.ui.theme.Indigo
-import ir.example.androidsocket.ui.theme.Yellow600
 import ir.example.androidsocket.ui.theme.spacing
 import ir.example.androidsocket.utils.clientLog
 import ir.example.androidsocket.utils.isIpValid
@@ -316,7 +315,7 @@ fun PowerButtonBody(
 
     var powerContainerCircleRadius by remember { mutableIntStateOf(0) }
     val connectionStatusBrush = Brush.verticalGradient(
-        colors = if (isAnimating) listOf(Yellow600, White)
+        colors = if (isAnimating) listOf(MaterialTheme.colorScheme.tertiary, White)
         else
             when (socketStatus.isConnected) {
                 true -> listOf(Green900, Green400)
@@ -362,7 +361,8 @@ fun PowerButtonBody(
 
     val headerStartBrush = MaterialTheme.colorScheme.primary
     val headerEndBrush = MaterialTheme.colorScheme.onPrimaryContainer
-    val shadowColor = MaterialTheme.colorScheme.primaryContainer
+    val animateColor = MaterialTheme.colorScheme.tertiary
+    val shadowColor = if(isAnimating)animateColor else MaterialTheme.colorScheme.primaryContainer
 
     Column(
         modifier = modifier
@@ -399,13 +399,13 @@ fun PowerButtonBody(
 
                 drawCircle(color = White, radius = powerContainerCircleRadius.toFloat())
                 drawCircle(
-                    color = if (!isAnimating) LightGray else Yellow600,
+                    color = if (!isAnimating) LightGray else animateColor,
                     radius = powerContainerCircleRadius.toFloat(),
                     style = Stroke(width = 14f)
                 )
                 if (isAnimating)
                     drawCircle(
-                        color = Yellow600.copy(alpha = alpha),
+                        color = animateColor.copy(alpha = alpha),
                         radius = powerContainerCircleRadius * powerButtonTargetScale.value,
                         style = Stroke(width = 24f)
                     )
@@ -649,7 +649,7 @@ fun MessageContainer(
                             CircularProgressIndicator(
                                 modifier = Modifier.size(28.dp),
                                 progress = animatedProgress / 100,
-                                color = Yellow600,
+                                color = MaterialTheme.colorScheme.tertiary,
                             )
                         } else {
                             IconButton(

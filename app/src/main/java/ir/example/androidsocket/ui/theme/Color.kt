@@ -7,7 +7,6 @@ val Indigo200 = Color(0xFF9FA8DA)
 val Gray200 = Color(0xFFB0BEC5)
 val Green900 = Color(0xFF33691E)
 val Green400 = Color(0xFF9CCC65)
-val Yellow600 = Color(0xFFFDD835)
 
 sealed class AppColors(
     val primary: Color,
@@ -49,7 +48,7 @@ sealed class AppColors(
         onPrimaryContainer = Color(0xFF001849),
         secondary = Color(0xFF565f71),
         onSecondary = Color(0xFFffffff),
-        tertiary = Color(0xFFFFC107),
+        tertiary = Color(0xFFFDD835),
         onTertiary = Color(0xFFffffff),
         surface = Color(0xFFd9d9e0),
         onSurface = Color(0xFF44483d),
