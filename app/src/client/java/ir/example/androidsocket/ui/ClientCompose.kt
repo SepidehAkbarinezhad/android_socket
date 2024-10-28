@@ -2,7 +2,6 @@ package ir.example.androidsocket.ui
 
 import android.app.Activity
 import android.content.Intent
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
@@ -25,7 +24,9 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -47,6 +48,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.LightGray
+import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -67,8 +69,10 @@ import ir.example.androidsocket.ui.base.BaseUiEvent
 import ir.example.androidsocket.ui.base.ProtocolTypeMenu
 import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
+import ir.example.androidsocket.ui.theme.Gray200
 import ir.example.androidsocket.ui.theme.Green400
 import ir.example.androidsocket.ui.theme.Green900
+import ir.example.androidsocket.ui.theme.Indigo
 import ir.example.androidsocket.ui.theme.Yellow600
 import ir.example.androidsocket.ui.theme.spacing
 import ir.example.androidsocket.utils.clientLog
@@ -255,45 +259,31 @@ fun ClientContent(
                 onEvent = onEvent
             )
 
-            Column(
-                Modifier
+          /*  ServerInfoForm(
+                modifier = Modifier
                     .weight(.3f)
                     .fillMaxWidth()
                     .alpha(if (socketStatus.isConnected) 0f else 1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                AppOutlinedTextField(
-                    modifier = Modifier
-                        .padding(MaterialTheme.spacing.medium)
-                        .fillMaxWidth(),
-                    value = serverIp,
-                    onValueChange = { ip ->
-                        if (isIpValid(ip)) {
-                            onEvent(ClientEvent.SetServerIp(ip))
-                        }
-                    },
-                    label = stringResource(id = R.string.ip_label),
-                    hasError = serverIpError,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    textStyle = MaterialTheme.typography.bodyLarge
-                )
+                serverIp = serverIp,
+                serverIpError = serverIpError,
+                serverPort = serverPort,
+                serverPortError = serverPortError,
+                onEvent = onEvent
+            )*/
 
-                AppOutlinedTextField(
+            if (!socketStatus.isConnected)
+                MessageContainer(
                     modifier = Modifier
-                        .padding(MaterialTheme.spacing.medium)
-                        .fillMaxWidth(),
-                    value = serverPort,
-                    onValueChange = { port ->
-                        if (isPortValid(port))
-                            onEvent(ClientEvent.SetServerPort(port))
-                    },
-                    label = stringResource(id = R.string.port_label),
-                    hasError = serverPortError,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    textStyle = MaterialTheme.typography.bodyLarge
+                        .weight(.3f)
+                        .fillMaxWidth()
+                        .padding(MaterialTheme.spacing.small),
+                    socketStatus = socketStatus,
+                    clientMessage = clientMessage,
+                    fileUrl = fileUrl,
+                    fileProgress = fileProgress,
+                    waitingForServer = waitingForServer,
+                    onEvent = onEvent
                 )
-            }
 
         }
         ProtocolTypeMenu(
@@ -307,161 +297,6 @@ fun ClientContent(
             },
             onDismissClicked = { expanded = false })
     }
-
-
-    /*   AppBaseScreen(
-           headerTitle = stringResource(id = R.string.client_header, selectedProtocol.title),
-           headerBackGround = Indigo,
-           onProtocolSelected = { onEvent(ClientEvent.SetProtocolType(it)) },
-           bodyContent = {
-               Column(
-                   Modifier.padding(MaterialTheme.spacing.small),
-                   verticalArrangement = Arrangement.Center,
-                   horizontalAlignment = Alignment.CenterHorizontally
-               ) {
-                   Row(
-                       Modifier
-                           .fillMaxWidth(),
-                       verticalAlignment = Alignment.CenterVertically,
-                   ) {
-                       AppOutlinedTextField(
-                           modifier = Modifier
-                               .weight(1.5f)
-                               .padding(MaterialTheme.spacing.small),
-                           value = serverIp,
-                           onValueChange = { ip ->
-                               if (isIpValid(ip)) {
-                                   onEvent(ClientEvent.SetServerIp(ip))
-                               }
-                           },
-                           label = stringResource(id = R.string.ip_label),
-                           hasError = serverIpError,
-                           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-
-                           )
-
-                       AppOutlinedTextField(
-                           modifier = Modifier
-                               .weight(1f)
-                               .padding(MaterialTheme.spacing.small),
-                           value = serverPort,
-                           onValueChange = { port ->
-                               if (isPortValid(port))
-                                   onEvent(ClientEvent.SetServerPort(port))
-                           },
-                           label = stringResource(id = R.string.port_label),
-                           hasError = serverPortError,
-                           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                       )
-                   }
-
-                   AppTitleValueText(
-                       modifier = Modifier.padding(MaterialTheme.spacing.small),
-                       title = stringResource(
-                           id = R.string.socket_status_title
-                       ),
-                       value = socketStatus.title,
-                       valueColor = if (!socketStatus.connection) Color.Red else Green900,
-                       titleTextType = TextType.TEXT,
-                       valueTextType = TextType.TEXT
-                   )
-
-                   AppOutlinedTextField(
-                       modifier = Modifier
-                           .fillMaxWidth(),
-                       value = clientMessage,
-                       onValueChange = {
-                           onEvent(ClientEvent.SetClientMessage(it))
-                       },
-                       enabled = socketStatus.connection,
-                       singleLine = true,
-                       label = stringResource(id = R.string.message),
-                       colors = TextFieldDefaults.outlinedTextFieldColors(
-                           textColor = Color.DarkGray,
-                           focusedBorderColor = Indigo,
-                           unfocusedBorderColor = Indigo400,
-                           disabledBorderColor = Gray200,
-                           disabledTextColor = Color.LightGray,
-                           cursorColor = Indigo,
-                           backgroundColor = Color.White,
-                       ),
-                       trailingIcon = {
-                           if (!socketStatus.connection) {
-                               IconButton(
-                                   onClick = {
-                                   }
-                               ) {
-                                   Icon(
-                                       modifier = Modifier.size(28.dp),
-                                       painter = painterResource(id = R.drawable.attach_file_icon),
-                                       tint = Gray200,
-                                       contentDescription = "Attach File"
-                                   )
-                               }
-                           } else {
-                               if (attachVisibility) {
-                                   IconButton(
-                                       onClick = {
-                                           onAttachFileEvent()
-                                       }
-                                   ) {
-                                       Icon(
-                                           modifier = Modifier.size(28.dp),
-                                           painter = painterResource(id = R.drawable.attach_file_icon),
-                                           tint = Indigo,
-                                           contentDescription = "Attach File"
-                                       )
-                                   }
-                               } else if (waitingForServer != null) {
-                                   if (fileProgress != null) {
-                                       CircularProgressIndicator(modifier = Modifier.size(28.dp),progress = animatedProgress/100, color = Orange700 , backgroundColor = Color.LightGray)
-                                   } else{
-                                     IconButton(
-                                           modifier = Modifier,
-                                           onClick = {
-                                               onAttachFileEvent()
-                                           }
-                                       ) {
-                                           Icon(
-                                               modifier = Modifier.size(28.dp),
-                                               painter = painterResource(id = R.drawable.seen_icon),
-                                               tint = if (waitingForServer == true) Gray200 else Color.Green,
-                                               contentDescription = "send check"
-                                           )
-                                       }
-                                   }
-
-                               }
-                           }
-
-                       })
-
-               }
-
-           }) {
-           AppButtonsRow(
-               firstButtonTitle = if (!socketStatus.connection) stringResource(id = R.string.connect_to_server) else stringResource(
-                   id = R.string.disconnect_from_server
-               ),
-               onFirstClicked = { if (!socketStatus.connection) onConnectToServer() else onDisconnectFromServer() },
-               firstButtonColor = ButtonDefaults.buttonColors(
-                   disabledBackgroundColor = Color.LightGray,
-                   backgroundColor = Indigo,
-               ),
-               secondButtonTitle = if (fileUrl.isNotEmpty()) stringResource(id = R.string.send_file) else stringResource(
-                   id = R.string.send_message
-               ),
-               secondEnable = socketStatus.connection && clientMessage.isNotEmpty() && !waitingForServer,
-               secondButtonColor = ButtonDefaults.buttonColors(
-                   disabledBackgroundColor = Color.LightGray,
-                   backgroundColor = Indigo,
-               )
-           ) {
-               onSendMessageEvent(clientMessage)
-           }
-
-       }*/
-
 
 }
 
@@ -671,5 +506,166 @@ fun PowerButtonBody(
         }
 
     }
+}
+
+
+@Composable
+fun ServerInfoForm(
+    modifier: Modifier,
+    serverIp: String,
+    serverIpError: Boolean,
+    serverPort: String,
+    serverPortError: Boolean,
+    onEvent: (ClientEvent) -> Unit
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        AppOutlinedTextField(
+            modifier = Modifier
+                .padding(MaterialTheme.spacing.medium)
+                .fillMaxWidth(),
+            value = serverIp,
+            onValueChange = { ip ->
+                if (isIpValid(ip)) {
+                    onEvent(ClientEvent.SetServerIp(ip))
+                }
+            },
+            label = stringResource(id = R.string.ip_label),
+            hasError = serverIpError,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            textStyle = MaterialTheme.typography.bodyLarge
+        )
+
+        AppOutlinedTextField(
+            modifier = Modifier
+                .padding(MaterialTheme.spacing.medium)
+                .fillMaxWidth(),
+            value = serverPort,
+            onValueChange = { port ->
+                if (isPortValid(port))
+                    onEvent(ClientEvent.SetServerPort(port))
+            },
+            label = stringResource(id = R.string.port_label),
+            hasError = serverPortError,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            textStyle = MaterialTheme.typography.bodyLarge
+        )
+    }
+
+}
+
+
+@Composable
+fun MessageContainer(
+    modifier: Modifier,
+    socketStatus: Constants.SocketStatus,
+    clientMessage: String,
+    fileUrl: String,
+    fileProgress: Int?,
+    waitingForServer: Boolean?,
+    onEvent: (ClientEvent) -> Unit
+) {
+    val attachVisibility by remember(clientMessage, waitingForServer) {
+        derivedStateOf { clientMessage.isEmpty() || (fileUrl.isNotEmpty() && waitingForServer != true) }
+    }
+    val animatedProgress by animateFloatAsState(
+        targetValue = fileProgress?.toFloat() ?: 0f,
+        animationSpec = tween(durationMillis = 500), label = ""
+    )
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // Get the URI of the selected file (result.data?.data)
+            val uri = result.data?.data
+            if (uri != null) {
+                onEvent(ClientEvent.SetClientMessage(uri.toString()))
+                onEvent(ClientEvent.SetFileUrl(uri))
+                println("File selected: $uri")
+            }
+        }
+    }
+
+    val onAttachFile = {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "*/*" // You can specify file types, e.g., "image/*", "application/pdf"
+            addCategory(Intent.CATEGORY_OPENABLE)
+        }
+        launcher.launch(intent)
+    }
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        AppOutlinedTextField(
+            modifier = Modifier
+                .fillMaxWidth(),
+            value = clientMessage,
+            onValueChange = {
+                onEvent(ClientEvent.SetClientMessage(it))
+            },
+            enabled = socketStatus.isConnected,
+            singleLine = true,
+            label = stringResource(id = R.string.message),
+            trailingIcon = {
+                if (!socketStatus.isConnected) {
+                    IconButton(
+                        onClick = {
+                        }
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(28.dp),
+                            painter = painterResource(id = R.drawable.attach_file_icon),
+                            tint = Gray200,
+                            contentDescription = "Attach File"
+                        )
+                    }
+                } else {
+                    if (attachVisibility) {
+                        IconButton(
+                            onClick = {
+                                onAttachFile()
+                            }
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(28.dp),
+                                painter = painterResource(id = R.drawable.attach_file_icon),
+                                tint = Indigo,
+                                contentDescription = "Attach File"
+                            )
+                        }
+                    } else if (waitingForServer != null) {
+                        if (fileProgress != null) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(28.dp),
+                                progress = animatedProgress / 100,
+                                color = Yellow600,
+                            )
+                        } else {
+                            IconButton(
+                                modifier = Modifier,
+                                onClick = {
+                                    onAttachFile()
+                                }
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(28.dp),
+                                    painter = painterResource(id = R.drawable.seen_icon),
+                                    tint = if (waitingForServer == true) Gray200 else Color.Green,
+                                    contentDescription = "send check"
+                                )
+                            }
+                        }
+
+                    }
+                }
+
+            })
+    }
+
 }
 
