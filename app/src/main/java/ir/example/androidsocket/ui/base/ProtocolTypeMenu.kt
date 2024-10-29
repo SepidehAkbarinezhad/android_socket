@@ -15,10 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.DarkGray
+import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.unit.dp
 import ir.example.androidsocket.Constants
-import ir.example.androidsocket.ui.theme.Indigo
-import ir.example.androidsocket.ui.theme.Indigo200
 import ir.example.androidsocket.ui.theme.spacing
 
 @Composable
@@ -36,7 +35,7 @@ fun ProtocolTypeMenu(
         modifier = modifier
             .width(150.dp)
             .padding(MaterialTheme.spacing.small),
-        border = BorderStroke(1.dp, color = Indigo),
+        border = BorderStroke(1.dp, color = MaterialTheme.colorScheme.primary),
         shape = RoundedCornerShape(MaterialTheme.spacing.small),
         backgroundColor = Color.White
     ) {
@@ -47,7 +46,7 @@ fun ProtocolTypeMenu(
                 onDismissRequest = { onDismissClicked() }) {
                 protocols.forEachIndexed { index, s ->
                     DropdownMenuItem(
-                        modifier = Modifier.background(if (selectedProtocol.title == s) Indigo200 else MaterialTheme.colorScheme.surface),
+                        modifier = Modifier.background(if (selectedProtocol.title == s) Red else MaterialTheme.colorScheme.surface),
                         onClick = {
                             onProtocolSelected(s)
                         }) {

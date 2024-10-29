@@ -2,9 +2,6 @@ package ir.example.androidsocket.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Indigo = Color(0xFF3F51B5)
-val Indigo200 = Color(0xFF9FA8DA)
-val Gray200 = Color(0xFFB0BEC5)
 val Green900 = Color(0xFF33691E)
 val Green400 = Color(0xFF9CCC65)
 
@@ -30,8 +27,8 @@ sealed class AppColors(
         onPrimary = Color(0xFFFFFFFF),
         primaryContainer = Color(0xFFdbe1ff),
         onPrimaryContainer = Color(0xFF001849),
-        secondary = Color(0xFF735471),
-        onSecondary = Color(0xFFCDDC39),
+        secondary = Color(0xFF33691E),
+        onSecondary = Color(0xFF9CCC65),
         tertiary = Color(0xFFCDDC39),
         onTertiary = Color(0xFFCDDC39),
         surface = Color(0xFFfaf8ff),
@@ -46,8 +43,8 @@ sealed class AppColors(
         onPrimary = Color(0xFFffffff),
         primaryContainer = Color(0xFFd6e3ff),
         onPrimaryContainer = Color(0xFF001849),
-        secondary = Color(0xFF565f71),
-        onSecondary = Color(0xFFffffff),
+        secondary = Color(0xFF33691E),
+        onSecondary = Color(0xFF9CCC65),
         tertiary = Color(0xFFFDD835),
         onTertiary = Color(0xFFffffff),
         surface = Color(0xFFd9d9e0),

@@ -1,16 +1,20 @@
 package ir.example.androidsocket.ui
 
+import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -21,14 +25,19 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -51,8 +60,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.androidSocket.R
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import ir.example.androidsocket.Constants
+import ir.example.androidsocket.socket.SocketServerForegroundService
+import ir.example.androidsocket.socket.SocketServerForegroundService.Companion.PORT
+import ir.example.androidsocket.ui.base.AppIcon
 import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.BaseUiEvent
 import ir.example.androidsocket.ui.base.TextType
@@ -134,6 +145,13 @@ fun ServerContent(
     fileIsSaved: Boolean
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val isWifi = remember(connectionType) {
+        connectionType == Constants.ConnectionType.WIFI
+    }
+    val isEthernet = remember(connectionType) {
+        connectionType == Constants.ConnectionType.ETHERNET
+    }
+    val hasConnection = remember(isWifi, isEthernet) { isWifi || isEthernet }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -168,19 +186,43 @@ fun ServerContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(.2f)
-        ) {}
+        ) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center)
+                    .padding(MaterialTheme.spacing.medium),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                AppIcon(
+                    enable = isWifi,
+                    enableSource = R.drawable.connected_wifi_icon,
+                    disableSource = R.drawable.disconnected_wifi_icon,
+                    contentDescription = stringResource(id = R.string.wifi_connection_description),
+                )
+                AppIcon(
+                    enable = isEthernet,
+                    enableSource = R.drawable.connected_ethernet_icon,
+                    disableSource = R.drawable.disconnected_ethernet_icon,
+                    contentDescription = stringResource(id = R.string.ethernet_connection_description),
+                )
+            }
+        }
 
-        PowerButtonBody(
+        ConnectionBody(
             modifier = Modifier.weight(.3f),
-            socketStatus = socketStatus, onPowerButtonClicked = {
+            socketStatus = Constants.SocketStatus.CONNECTED, onPowerButtonClicked = {
 
             },
             isConnecting = true,
             serverAddress = "",
+            wifiIpAddress = wifiIpAddress,
+            lanIpAddress = lanIpAddress,
             formIsFilled = true,
+            connectionType = connectionType,
             onEvent = onEvent
         )
-
 
     }
     /*  AppBaseScreen(
@@ -457,12 +499,15 @@ fun FileTransferAnimation() {
 
 
 @Composable
-fun PowerButtonBody(
+fun ConnectionBody(
     modifier: Modifier,
     socketStatus: Constants.SocketStatus,
     isConnecting: Boolean,
     serverAddress: String,
+    wifiIpAddress: String,
+    lanIpAddress: String,
     formIsFilled: Boolean,
+    connectionType: Constants.ConnectionType,
     onEvent: (ServerEvent) -> Unit,
     onPowerButtonClicked: () -> Unit
 ) {
@@ -518,7 +563,19 @@ fun PowerButtonBody(
     val headerStartBrush = MaterialTheme.colorScheme.primary
     val headerEndBrush = MaterialTheme.colorScheme.onPrimaryContainer
     val animateColor = MaterialTheme.colorScheme.tertiary
-    val shadowColor = if (isAnimating) animateColor else MaterialTheme.colorScheme.primaryContainer
+    val connectColor = MaterialTheme.colorScheme.onSecondary
+    val disConnectColor = MaterialTheme.colorScheme.primaryContainer
+    // val shadowColor = if (isAnimating) animateColor else if(socketStatus.isConnected) Green400 else MaterialTheme.colorScheme.primaryContainer
+    val borderColor by remember(socketStatus.isConnected, isAnimating) {
+        derivedStateOf {
+            when {
+                isAnimating -> animateColor
+                socketStatus.isConnected -> connectColor
+                else -> disConnectColor
+            }
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -538,10 +595,10 @@ fun PowerButtonBody(
                 val powerContainerRectangle = Path().apply {
                     arcTo(
                         rect = Rect(
-                            left = 0-30f,
-                            top = (size.height/4),
-                            right = size.width+30f,
-                            bottom = size.height+65
+                            left = 0 - 30f,
+                            top = (size.height / 4),
+                            right = size.width + 30f,
+                            bottom = size.height + 65
                         ),
                         startAngleDegrees = 0f,
                         sweepAngleDegrees = -180f,
@@ -556,10 +613,10 @@ fun PowerButtonBody(
                 val powerContainerRectangle2 = Path().apply {
                     arcTo(
                         rect = Rect(
-                            left = 0-30f,
-                            top = (size.height/4)-10,
-                            right = size.width+30f,
-                            bottom = size.height+65
+                            left = 0 - 30f,
+                            top = (size.height / 4) - 10,
+                            right = size.width + 30f,
+                            bottom = size.height + 65
                         ),
                         startAngleDegrees = 0f,
                         sweepAngleDegrees = -180f,
@@ -567,41 +624,50 @@ fun PowerButtonBody(
                     )
 
                 }
-                 drawPath(
-                     path = powerContainerRectangle2,
-                     color = shadowColor,
-                     style = Stroke(24f)
-                 )
+                drawPath(
+                    path = powerContainerRectangle2,
+                    color = borderColor,
+                    style = Stroke(24f)
+                )
 
                 powerContainerCircleRadius = (size.height.toInt()) / 4
-                val powerContainerCircleOffset = Offset(size.width/2f,size.height/4)
+                val powerContainerCircleOffset = Offset(size.width / 2f, size.height / 4)
 
-                drawCircle(color = Color.White, radius = powerContainerCircleRadius.toFloat(),center= powerContainerCircleOffset)
                 drawCircle(
-                    color = if (!isAnimating) shadowColor else animateColor,
+                    color = Color.White,
+                    radius = powerContainerCircleRadius.toFloat(),
+                    center = powerContainerCircleOffset
+                )
+                drawCircle(
+                    color = if (!isAnimating) borderColor else animateColor,
                     radius = powerContainerCircleRadius.toFloat(),
                     style = Stroke(width = 14f),
-                    center= powerContainerCircleOffset
+                    center = powerContainerCircleOffset
                 )
                 if (isAnimating)
                     drawCircle(
                         color = animateColor.copy(alpha = alpha),
                         radius = powerContainerCircleRadius * powerButtonTargetScale.value,
                         style = Stroke(width = 24f),
-                        center= powerContainerCircleOffset
+                        center = powerContainerCircleOffset
                     )
             }
 
-           Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(.5f),
-                contentAlignment = Alignment.Center){
-               if (socketStatus.isConnected) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(.5f),
+                contentAlignment = Alignment.Center
+            ) {
+                if (socketStatus.isConnected) {
                     Image(
-                        modifier = Modifier.clickable {
-                            if (formIsFilled) {
-                                animateCircle()
+                        modifier = Modifier
+                            .clickable {
+                                if (formIsFilled) {
+                                    animateCircle()
+                                }
+                                onPowerButtonClicked()
                             }
-                            onPowerButtonClicked()
-                        }
                             .size((powerContainerCircleRadius / 3).dp),
                         painter = painterResource(id = R.drawable.power_icon),
                         contentDescription = socketStatus.title,
@@ -615,7 +681,7 @@ fun PowerButtonBody(
                                 }
                                 onPowerButtonClicked()
                             }
-                            .size((powerContainerCircleRadius /3).dp),
+                            .size((powerContainerCircleRadius / 3).dp),
                         painter = painterResource(id = R.drawable.power_icon),
                         tint = Color.LightGray,
                         contentDescription = socketStatus.title
@@ -625,8 +691,8 @@ fun PowerButtonBody(
 
         }
 
-        Box(
-            Modifier
+        ServerInfoContainer(
+            modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(.6f)
                 .align(Alignment.BottomCenter)
@@ -635,11 +701,124 @@ fun PowerButtonBody(
                         colors = listOf(headerEndBrush, headerStartBrush)
                     )
                 ),
+            connectionType = connectionType,
+            wifiIpAddress = wifiIpAddress,
+            lanIpAddress = lanIpAddress,
+            socketStatus = Constants.SocketStatus.CONNECTED
+        )
 
-            ) {
+    }
 
+}
+
+@Composable
+fun ServerInfoContainer(
+    modifier: Modifier = Modifier,
+    connectionType: Constants.ConnectionType,
+    wifiIpAddress: String,
+    lanIpAddress: String,
+    socketStatus: Constants.SocketStatus,
+
+    ) {
+
+    val ip by remember(connectionType,wifiIpAddress,lanIpAddress) {
+        derivedStateOf {
+            when (connectionType) {
+                Constants.ConnectionType.NONE -> ""
+                Constants.ConnectionType.WIFI -> wifiIpAddress
+                Constants.ConnectionType.ETHERNET -> lanIpAddress
+            }
         }
     }
+
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+
+        AppText(text = "$ip : $PORT" , textColor = Color.White, style = MaterialTheme.typography.bodyLarge)
+//        Row(
+//            Modifier
+//                .fillMaxSize()
+//                .padding(MaterialTheme.spacing.small),
+//            horizontalArrangement = Arrangement.Center,
+//            verticalAlignment = Alignment.CenterVertically
+//        ) {
+//
+//            /*  Card(
+//                  Modifier
+//                      .weight(1.5f)
+//                      .padding(MaterialTheme.spacing.small),
+//                  border = BorderStroke(3.dp, MaterialTheme.colorScheme.primaryContainer),
+//                  colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+//
+//              ) {*/
+//            Column(
+//                modifier = Modifier
+//                    .weight(1.5f)
+//                    .padding(MaterialTheme.spacing.small),
+//                horizontalAlignment = Alignment.Start,
+//            ) {
+//                AppText(
+//                    modifier = Modifier.padding(MaterialTheme.spacing.small),
+//                    text = stringResource(id = R.string.ip_label),
+//                    fontWeight = FontWeight.Bold,
+//                    style = MaterialTheme.typography.bodyLarge,
+//                    textColor = Color.White
+//
+//                )
+//                AppText(
+//                    Modifier
+//                        .fillMaxWidth()
+//                        .padding(MaterialTheme.spacing.medium),
+//                    text = when (connectionType) {
+//                        Constants.ConnectionType.NONE -> ""
+//                        Constants.ConnectionType.WIFI -> wifiIpAddress
+//                        Constants.ConnectionType.ETHERNET -> lanIpAddress
+//                    },
+//                    fontWeight = FontWeight.Bold,
+//                    style = MaterialTheme.typography.bodyLarge,
+//                    textColor = Color.White
+//
+//                )
+//            }
+//            //  }
+//
+//
+//            /*  Card(
+//                  Modifier
+//                      .weight(1f)
+//                      .padding(MaterialTheme.spacing.small),
+//                  border = BorderStroke(3.dp, MaterialTheme.colorScheme.primaryContainer),
+//                  colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+//                  shape = RoundedCornerShape(MaterialTheme.spacing.medium)
+//              ) {*/
+//            Column(
+//                modifier = Modifier
+//                    .weight(1f)
+//                    .padding(MaterialTheme.spacing.small),
+//                horizontalAlignment = Alignment.Start,
+//            ) {
+//                AppText(
+//                    modifier = Modifier.padding(MaterialTheme.spacing.small),
+//                    text = stringResource(id = R.string.port_label),
+//                    fontWeight = FontWeight.Bold,
+//                    style = MaterialTheme.typography.bodyLarge,
+//                    textColor = Color.White,
+//                )
+//                AppText(
+//                    Modifier
+//                        .fillMaxWidth()
+//                        .padding(MaterialTheme.spacing.medium),
+//                    text = SocketServerForegroundService.PORT.toString(),
+//                    fontWeight = FontWeight.Bold,
+//                    style = MaterialTheme.typography.bodyLarge,
+//                    textColor = Color.White,
+//                )
+//            }
+//            //  }
+//        }
+    }
+
 }
+
+
 
 

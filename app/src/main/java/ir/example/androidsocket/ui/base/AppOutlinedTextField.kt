@@ -20,9 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import ir.example.androidsocket.ui.theme.Gray200
-import ir.example.androidsocket.ui.theme.Indigo
-import ir.example.androidsocket.ui.theme.Indigo200
 import ir.example.androidsocket.ui.theme.spacing
 
 
@@ -43,9 +40,9 @@ fun AppOutlinedTextField(
         textColor = MaterialTheme.colorScheme.onSurface,
         focusedBorderColor = MaterialTheme.colorScheme.primary,
         unfocusedBorderColor = MaterialTheme.colorScheme.primaryContainer,
-        disabledBorderColor = Indigo200,
+        disabledBorderColor = MaterialTheme.colorScheme.primaryContainer,
         disabledTextColor = Color.LightGray,
-        cursorColor = Indigo,
+        cursorColor = MaterialTheme.colorScheme.primary,
         backgroundColor = MaterialTheme.colorScheme.surface,
     ),
     keyboardActions: KeyboardActions = KeyboardActions.Default,
@@ -74,7 +71,7 @@ fun AppOutlinedTextField(
                 } else {
                     label
                 } ?: "",
-                textColor = if (hasError) MaterialTheme.colorScheme.error else if (enabled) Indigo else Gray200,
+                textColor = if (hasError) MaterialTheme.colorScheme.error else if (enabled) MaterialTheme.colorScheme.onPrimaryContainer else Color.LightGray,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleLarge
             )

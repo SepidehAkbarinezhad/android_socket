@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import ir.example.androidsocket.ui.theme.Indigo
 import ir.example.androidsocket.ui.theme.spacing
 
 @Composable
@@ -75,13 +74,13 @@ fun AppButtonRowPreview() {
         onFirstClicked = { },
         firstButtonColor = ButtonDefaults.buttonColors(
             disabledContainerColor = Color.LightGray,
-            contentColor = Indigo,
+            contentColor = MaterialTheme.colorScheme.primary,
         ),
         secondButtonTitle = "cancel",
         secondEnable = false,
         secondButtonColor = ButtonDefaults.buttonColors(
             disabledContainerColor = Color.LightGray,
-            contentColor = Indigo,
+            contentColor = MaterialTheme.colorScheme.primary,
         )
     ) {
     }

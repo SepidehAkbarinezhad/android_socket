@@ -2,13 +2,13 @@ package ir.example.androidsocket.ui.base
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import ir.example.androidsocket.ui.theme.Gray200
 
 
 @Composable
@@ -24,7 +24,7 @@ fun AppIcon(
         painter = if (enable) painterResource(id = enableSource) else painterResource(
             id = disableSource
         ),
-        colorFilter = ColorFilter.tint(if (enable) Color.Green else Gray200),
+        colorFilter = ColorFilter.tint(if (enable) MaterialTheme.colorScheme.onSecondary else Color.LightGray),
         contentDescription = contentDescription
     )
 }
