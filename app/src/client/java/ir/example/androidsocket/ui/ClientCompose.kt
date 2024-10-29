@@ -216,7 +216,7 @@ fun ClientContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White),
+                .background(MaterialTheme.colorScheme.background),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -259,6 +259,7 @@ fun ClientContent(
                 formIsFilled = serverIp.isNotEmpty() && serverPort.isNotEmpty(),
                 onEvent = onEvent
             )
+
             if (!socketStatus.isConnected)
                 ServerInfoForm(
                     modifier = Modifier

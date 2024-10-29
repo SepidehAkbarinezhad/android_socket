@@ -1,62 +1,68 @@
 package ir.example.androidsocket.ui
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.androidSocket.R
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import ir.example.androidsocket.Constants
-import ir.example.androidsocket.socket.SocketServerForegroundService
-import ir.example.androidsocket.ui.base.AppIcon
 import ir.example.androidsocket.ui.base.AppText
-import ir.example.androidsocket.ui.base.AppTitleValueText
 import ir.example.androidsocket.ui.base.BaseUiEvent
 import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
+import ir.example.androidsocket.ui.theme.Green400
 import ir.example.androidsocket.ui.theme.Green900
-import ir.example.androidsocket.ui.theme.Indigo
 import ir.example.androidsocket.ui.theme.spacing
-import ir.example.androidsocket.utils.AppBaseScreen
 import ir.example.androidsocket.utils.ConnectionTypeManager
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun ServerComposable(
@@ -82,7 +88,7 @@ internal fun ServerComposable(
 
 
     LaunchedEffect(key1 = socketStatus) {
-        if (!socketStatus.connection) {
+        if (!socketStatus.isConnected) {
             viewModel.onEvent(ServerEvent.SetClientMessage(""))
         }
     }
@@ -97,8 +103,8 @@ internal fun ServerComposable(
 
     AndroidSocketTheme(uiEvent = uiEvent, displayProgressBar = loading) {
         Surface(
-            modifier = Modifier,
-            color = MaterialTheme.colors.primary,
+            modifier = Modifier.padding(WindowInsets.navigationBars.asPaddingValues()),
+            color = MaterialTheme.colorScheme.primary,
         ) {
             ServerContent(
                 onEvent = onEvent,
@@ -127,210 +133,262 @@ fun ServerContent(
     fileProgress: Int?,
     fileIsSaved: Boolean
 ) {
+    var expanded by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(WindowInsets.statusBars.asPaddingValues()),
+            contentAlignment = Alignment.Center
+        ) {
+            AppText(
+                modifier = Modifier.padding(MaterialTheme.spacing.small),
+                text = stringResource(id = R.string.server_header, selectedProtocol.title),
+                textType = TextType.HEADER,
+                fontWeight = FontWeight.Bold,
+                textColor = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Icon(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(MaterialTheme.spacing.small)
+                    .clickable { expanded = !expanded },
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "menu",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(.2f)
+        ) {}
 
-    AppBaseScreen(
-        headerTitle = stringResource(id = R.string.server_header, selectedProtocol.title),
-        headerBackGround = Indigo,
-        onProtocolSelected = {
-            onEvent(ServerEvent.SetLoading(true))
-            onEvent(ServerEvent.SetProtocolType(it))
-        },
-        bodyContent = {
+        PowerButtonBody(
+            modifier = Modifier.weight(.3f),
+            socketStatus = socketStatus, onPowerButtonClicked = {
 
-            val isWifi = remember(connectionType) {
-                connectionType == Constants.ConnectionType.WIFI
-            }
-            val isEthernet = remember(connectionType) {
-                connectionType == Constants.ConnectionType.ETHERNET
-            }
-            val hasConnection = remember(isWifi, isEthernet) { isWifi || isEthernet }
+            },
+            isConnecting = true,
+            serverAddress = "",
+            formIsFilled = true,
+            onEvent = onEvent
+        )
 
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(
-                    modifier = Modifier.padding(MaterialTheme.spacing.small),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(MaterialTheme.spacing.medium),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        AppIcon(
-                            enable = isWifi,
-                            enableSource = R.drawable.connected_wifi_icon,
-                            disableSource = R.drawable.disconnected_wifi_icon,
-                            contentDescription = stringResource(id = R.string.wifi_connection_description),
-                        )
-                        AppIcon(
-                            enable = isEthernet,
-                            enableSource = R.drawable.connected_ethernet_icon,
-                            disableSource = R.drawable.disconnected_ethernet_icon,
-                            contentDescription = stringResource(id = R.string.ethernet_connection_description),
-                        )
-                    }
-
-                    if (hasConnection) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(MaterialTheme.spacing.small),
-
-                            verticalAlignment = Alignment.Bottom,
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .weight(1.5f)
-                                    .padding(MaterialTheme.spacing.small),
-                                horizontalAlignment = Alignment.Start,
-                            ) {
-                                AppText(
-                                    modifier = Modifier.padding(MaterialTheme.spacing.small),
-                                    text = stringResource(id = R.string.ip_label),
-                                    textColor = Indigo,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Card(
-                                    Modifier.fillMaxWidth(),
-                                    border = BorderStroke(1.dp, Indigo),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = Color.White,
-                                    ),
-                                ) {
-                                    AppText(
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(MaterialTheme.spacing.small),
-                                        text = when (connectionType) {
-                                            Constants.ConnectionType.NONE -> ""
-                                            Constants.ConnectionType.WIFI -> wifiIpAddress
-                                            Constants.ConnectionType.ETHERNET -> lanIpAddress
-                                        },
-                                        textColor = Indigo,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-
-                            AppText(
-                                modifier = Modifier
-                                    .weight(.5f)
-                                    .padding(MaterialTheme.spacing.small),
-                                text = ":",
-                                textColor = Indigo,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(MaterialTheme.spacing.small),
-                                horizontalAlignment = Alignment.Start,
-                            ) {
-                                AppText(
-                                    modifier = Modifier.padding(MaterialTheme.spacing.small),
-                                    text = stringResource(id = R.string.port_label),
-                                    textColor = Indigo,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Card(
-                                    Modifier.fillMaxWidth(),
-                                    border = BorderStroke(1.dp, Indigo),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = Color.White,
-                                    ),
-                                ) {
-                                    AppText(
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(MaterialTheme.spacing.small),
-                                        text = SocketServerForegroundService.PORT.toString(),
-                                        textColor = Indigo,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-
-                    }
-                    AppTitleValueText(
-                        modifier = Modifier.padding(MaterialTheme.spacing.small),
-                        title = stringResource(
-                            id = R.string.socket_status_title
-                        ),
-                        value = socketStatus.title,
-                        valueColor = if (!socketStatus.connection) Color.Red else Green900,
-                        titleTextType = TextType.TEXT,
-                        valueTextType = TextType.TEXT
-                    )
-                    fileProgress?.let { FileTransferAnimation() }
-                    if (fileIsSaved) {
-                        Dialog(onDismissRequest = { onEvent(ServerEvent.SetFileIsSaved(false)) }) {
-                            Column(Modifier.background(Color.White).padding(MaterialTheme.spacing.extraMedium)) {
-                                AppText(
-                                    Modifier,
-                                    text = stringResource(id = R.string.file_message_saved),
-                                    textType = TextType.TITLE
-                                )
-                                AppText(
-                                    Modifier.padding(MaterialTheme.spacing.small).clickable {  onEvent(ServerEvent.SetFileIsSaved(false))  },
-                                    text = "ok",
-                                    textColor = Color.Red,
-                                    textDecoration = TextDecoration.Underline,
-                                    textType = TextType.TITLE
-
-                                )
-                            }
-                        }
-                   }
-
-
-                    /*   Column(
-                           Modifier
-                               .fillMaxWidth()
-                               .padding(
-                                   horizontal = MaterialTheme.spacing.small,
-                                   vertical = MaterialTheme.spacing.extraMedium
-                               )
-                               .alpha(if (clientMessage.isNotEmpty()) 1f else 0f),
-                           horizontalAlignment = Alignment.Start,
-                           verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
-                       ) {
-
-                           AppText(
-                               text = stringResource(id = R.string.message_from_client),
-                               fontWeight = FontWeight.Bold,
-                               textType = TextType.TITLE,
-                               textColor = Indigo
-                           )
-
-                           Card(
-                               modifier = Modifier
-                                   .fillMaxWidth()
-                                   .height(MaterialTheme.spacing.extraLarge),
-                               border = BorderStroke(1.dp, color = Indigo),
-                               colors = CardDefaults.cardColors(containerColor = Color.White)
-                           ) {
-                               AppText(
-                                   modifier = Modifier.padding(MaterialTheme.spacing.small),
-                                   text = clientMessage
-                               )
-                           }
-
-
-                       }*/
-
-                }
-
-            }
-
-
-        }) {
 
     }
+    /*  AppBaseScreen(
+          headerTitle = stringResource(id = R.string.server_header, selectedProtocol.title),
+          headerBackGround = Indigo,
+          onProtocolSelected = {
+              onEvent(ServerEvent.SetLoading(true))
+              onEvent(ServerEvent.SetProtocolType(it))
+          },
+          bodyContent = {
 
+              var expanded by remember { mutableStateOf(false) }
+              val isWifi = remember(connectionType) {
+                  connectionType == Constants.ConnectionType.WIFI
+              }
+              val isEthernet = remember(connectionType) {
+                  connectionType == Constants.ConnectionType.ETHERNET
+              }
+              val hasConnection = remember(isWifi, isEthernet) { isWifi || isEthernet }
+
+
+
+              Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                  Column(
+                      modifier = Modifier.padding(MaterialTheme.spacing.small),
+                      horizontalAlignment = Alignment.CenterHorizontally,
+                      verticalArrangement = Arrangement.Center
+                  ) {
+                      Row(
+                          Modifier
+                              .fillMaxWidth()
+                              .padding(MaterialTheme.spacing.medium),
+                          verticalAlignment = Alignment.CenterVertically,
+                          horizontalArrangement = Arrangement.SpaceEvenly
+                      ) {
+                          AppIcon(
+                              enable = isWifi,
+                              enableSource = R.drawable.connected_wifi_icon,
+                              disableSource = R.drawable.disconnected_wifi_icon,
+                              contentDescription = stringResource(id = R.string.wifi_connection_description),
+                          )
+                          AppIcon(
+                              enable = isEthernet,
+                              enableSource = R.drawable.connected_ethernet_icon,
+                              disableSource = R.drawable.disconnected_ethernet_icon,
+                              contentDescription = stringResource(id = R.string.ethernet_connection_description),
+                          )
+                      }
+
+                      if (hasConnection) {
+                          Row(
+                              Modifier
+                                  .fillMaxWidth()
+                                  .padding(MaterialTheme.spacing.small),
+
+                              verticalAlignment = Alignment.Bottom,
+                          ) {
+                              Column(
+                                  modifier = Modifier
+                                      .weight(1.5f)
+                                      .padding(MaterialTheme.spacing.small),
+                                  horizontalAlignment = Alignment.Start,
+                              ) {
+                                  AppText(
+                                      modifier = Modifier.padding(MaterialTheme.spacing.small),
+                                      text = stringResource(id = R.string.ip_label),
+                                      textColor = Indigo,
+                                      fontWeight = FontWeight.Bold
+                                  )
+                                  Card(
+                                      Modifier.fillMaxWidth(),
+                                      border = BorderStroke(1.dp, Indigo),
+                                      colors = CardDefaults.cardColors(
+                                          containerColor = Color.White,
+                                      ),
+                                  ) {
+                                      AppText(
+                                          Modifier
+                                              .fillMaxWidth()
+                                              .padding(MaterialTheme.spacing.small),
+                                          text = when (connectionType) {
+                                              Constants.ConnectionType.NONE -> ""
+                                              Constants.ConnectionType.WIFI -> wifiIpAddress
+                                              Constants.ConnectionType.ETHERNET -> lanIpAddress
+                                          },
+                                          textColor = Indigo,
+                                          fontWeight = FontWeight.Bold
+                                      )
+                                  }
+                              }
+
+                              AppText(
+                                  modifier = Modifier
+                                      .weight(.5f)
+                                      .padding(MaterialTheme.spacing.small),
+                                  text = ":",
+                                  textColor = Indigo,
+                                  fontWeight = FontWeight.Bold
+                              )
+
+                              Column(
+                                  modifier = Modifier
+                                      .weight(1f)
+                                      .padding(MaterialTheme.spacing.small),
+                                  horizontalAlignment = Alignment.Start,
+                              ) {
+                                  AppText(
+                                      modifier = Modifier.padding(MaterialTheme.spacing.small),
+                                      text = stringResource(id = R.string.port_label),
+                                      textColor = Indigo,
+                                      fontWeight = FontWeight.Bold
+                                  )
+                                  Card(
+                                      Modifier.fillMaxWidth(),
+                                      border = BorderStroke(1.dp, Indigo),
+                                      colors = CardDefaults.cardColors(
+                                          containerColor = Color.White,
+                                      ),
+                                  ) {
+                                      AppText(
+                                          Modifier
+                                              .fillMaxWidth()
+                                              .padding(MaterialTheme.spacing.small),
+                                          text = SocketServerForegroundService.PORT.toString(),
+                                          textColor = Indigo,
+                                          fontWeight = FontWeight.Bold
+                                      )
+                                  }
+                              }
+                          }
+
+                      }
+                      AppTitleValueText(
+                          modifier = Modifier.padding(MaterialTheme.spacing.small),
+                          title = stringResource(
+                              id = R.string.socket_status_title
+                          ),
+                          value = socketStatus.title,
+                          valueColor = if (!socketStatus.isConnected) Color.Red else Green900,
+                          titleTextType = TextType.TEXT,
+                          valueTextType = TextType.TEXT
+                      )
+                      fileProgress?.let { FileTransferAnimation() }
+                      if (fileIsSaved) {
+                          Dialog(onDismissRequest = { onEvent(ServerEvent.SetFileIsSaved(false)) }) {
+                              Column(Modifier.background(Color.White).padding(MaterialTheme.spacing.extraMedium)) {
+                                  AppText(
+                                      Modifier,
+                                      text = stringResource(id = R.string.file_message_saved),
+                                      textType = TextType.TITLE
+                                  )
+                                  AppText(
+                                      Modifier.padding(MaterialTheme.spacing.small).clickable {  onEvent(ServerEvent.SetFileIsSaved(false))  },
+                                      text = "ok",
+                                      textColor = Color.Red,
+                                      textDecoration = TextDecoration.Underline,
+                                      textType = TextType.TITLE
+
+                                  )
+                              }
+                          }
+                     }
+
+
+                        Column(
+                             Modifier
+                                 .fillMaxWidth()
+                                 .padding(
+                                     horizontal = MaterialTheme.spacing.small,
+                                     vertical = MaterialTheme.spacing.extraMedium
+                                 )
+                                 .alpha(if (clientMessage.isNotEmpty()) 1f else 0f),
+                             horizontalAlignment = Alignment.Start,
+                             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
+                         ) {
+
+                             AppText(
+                                 text = stringResource(id = R.string.message_from_client),
+                                 fontWeight = FontWeight.Bold,
+                                 textType = TextType.TITLE,
+                                 textColor = Indigo
+                             )
+
+                             Card(
+                                 modifier = Modifier
+                                     .fillMaxWidth()
+                                     .height(MaterialTheme.spacing.extraLarge),
+                                 border = BorderStroke(1.dp, color = Indigo),
+                                 colors = CardDefaults.cardColors(containerColor = Color.White)
+                             ) {
+                                 AppText(
+                                     modifier = Modifier.padding(MaterialTheme.spacing.small),
+                                     text = clientMessage
+                                 )
+                             }
+
+
+                         }
+
+                  }
+
+              }
+
+
+          }) {
+
+      }
+  */
 }
 
 @Composable
@@ -396,4 +454,192 @@ fun FileTransferAnimation() {
         )
     }
 }
+
+
+@Composable
+fun PowerButtonBody(
+    modifier: Modifier,
+    socketStatus: Constants.SocketStatus,
+    isConnecting: Boolean,
+    serverAddress: String,
+    formIsFilled: Boolean,
+    onEvent: (ServerEvent) -> Unit,
+    onPowerButtonClicked: () -> Unit
+) {
+
+    var isAnimating by remember { mutableStateOf(false) }
+
+    var powerContainerCircleRadius by remember { mutableIntStateOf(0) }
+    val connectionStatusBrush = Brush.verticalGradient(
+        colors = if (isAnimating) listOf(MaterialTheme.colorScheme.tertiary, Color.White)
+        else
+            when (socketStatus.isConnected) {
+                true -> listOf(Green900, Green400)
+                false -> listOf(Color.LightGray, Color.LightGray)
+            }
+    )
+    val powerButtonTargetScale = remember { Animatable(1f) }
+    val coroutineScope = rememberCoroutineScope()
+    val currentScale = powerButtonTargetScale.value
+    val alpha = (1 - currentScale / 1.5f).coerceIn(0f, 1f)
+
+    fun animateCircle() {
+        isAnimating = true
+
+        coroutineScope.launch {
+            // Loop for continuous animation
+            while (isAnimating) {
+                // Scale up
+                powerButtonTargetScale.animateTo(
+                    targetValue = 1.5f,
+                    animationSpec = tween(durationMillis = 1000)
+                )
+
+                // Fade out the circle
+                powerButtonTargetScale.animateTo(
+                    targetValue = 1.5f,
+                    animationSpec = tween(durationMillis = 1000) // Keep it at max scale for the fade
+                )
+
+                // Fade the circle out by resetting to original scale and alpha
+                powerButtonTargetScale.snapTo(1f) // Reset scale instantly
+
+                // Optional: add a delay before restarting the animation
+                kotlinx.coroutines.delay(100)
+            }
+        }
+    }
+    LaunchedEffect(isConnecting) {
+        if (!isConnecting) {
+            isAnimating = false
+        }
+    }
+
+    val headerStartBrush = MaterialTheme.colorScheme.primary
+    val headerEndBrush = MaterialTheme.colorScheme.onPrimaryContainer
+    val animateColor = MaterialTheme.colorScheme.tertiary
+    val shadowColor = if (isAnimating) animateColor else MaterialTheme.colorScheme.primaryContainer
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        //the parent box divided to 5 parts . 3 part for the top and 2 for bottom
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .fillMaxHeight(.6f)
+        ) {
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                val powerContainerRectangle = Path().apply {
+                    arcTo(
+                        rect = Rect(
+                            left = 0-30f,
+                            top = (size.height/4),
+                            right = size.width+30f,
+                            bottom = size.height+65
+                        ),
+                        startAngleDegrees = 0f,
+                        sweepAngleDegrees = -180f,
+                        forceMoveTo = false
+                    )
+                    close()
+                }
+                drawPath(
+                    path = powerContainerRectangle,
+                    color = headerEndBrush,
+                )
+                val powerContainerRectangle2 = Path().apply {
+                    arcTo(
+                        rect = Rect(
+                            left = 0-30f,
+                            top = (size.height/4)-10,
+                            right = size.width+30f,
+                            bottom = size.height+65
+                        ),
+                        startAngleDegrees = 0f,
+                        sweepAngleDegrees = -180f,
+                        forceMoveTo = false
+                    )
+
+                }
+                 drawPath(
+                     path = powerContainerRectangle2,
+                     color = shadowColor,
+                     style = Stroke(24f)
+                 )
+
+                powerContainerCircleRadius = (size.height.toInt()) / 4
+                val powerContainerCircleOffset = Offset(size.width/2f,size.height/4)
+
+                drawCircle(color = Color.White, radius = powerContainerCircleRadius.toFloat(),center= powerContainerCircleOffset)
+                drawCircle(
+                    color = if (!isAnimating) shadowColor else animateColor,
+                    radius = powerContainerCircleRadius.toFloat(),
+                    style = Stroke(width = 14f),
+                    center= powerContainerCircleOffset
+                )
+                if (isAnimating)
+                    drawCircle(
+                        color = animateColor.copy(alpha = alpha),
+                        radius = powerContainerCircleRadius * powerButtonTargetScale.value,
+                        style = Stroke(width = 24f),
+                        center= powerContainerCircleOffset
+                    )
+            }
+
+           Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(.5f),
+                contentAlignment = Alignment.Center){
+               if (socketStatus.isConnected) {
+                    Image(
+                        modifier = Modifier.clickable {
+                            if (formIsFilled) {
+                                animateCircle()
+                            }
+                            onPowerButtonClicked()
+                        }
+                            .size((powerContainerCircleRadius / 3).dp),
+                        painter = painterResource(id = R.drawable.power_icon),
+                        contentDescription = socketStatus.title,
+                    )
+                } else {
+                    Icon(
+                        modifier = Modifier
+                            .clickable {
+                                if (formIsFilled) {
+                                    animateCircle()
+                                }
+                                onPowerButtonClicked()
+                            }
+                            .size((powerContainerCircleRadius /3).dp),
+                        painter = painterResource(id = R.drawable.power_icon),
+                        tint = Color.LightGray,
+                        contentDescription = socketStatus.title
+                    )
+                }
+            }
+
+        }
+
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(.6f)
+                .align(Alignment.BottomCenter)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(headerEndBrush, headerStartBrush)
+                    )
+                ),
+
+            ) {
+
+        }
+    }
+}
+
 
