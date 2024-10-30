@@ -1,6 +1,5 @@
 package ir.example.androidsocket.ui
 
-import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -20,17 +19,17 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -46,6 +45,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -60,12 +60,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.androidSocket.R
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import ir.example.androidsocket.Constants
-import ir.example.androidsocket.socket.SocketServerForegroundService
 import ir.example.androidsocket.socket.SocketServerForegroundService.Companion.PORT
 import ir.example.androidsocket.ui.base.AppIcon
 import ir.example.androidsocket.ui.base.AppText
 import ir.example.androidsocket.ui.base.BaseUiEvent
+import ir.example.androidsocket.ui.base.ProtocolTypeMenu
 import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
 import ir.example.androidsocket.ui.theme.Green400
@@ -113,6 +114,8 @@ internal fun ServerComposable(
     }
 
     AndroidSocketTheme(uiEvent = uiEvent, displayProgressBar = loading) {
+        val systemUiController = rememberSystemUiController()
+        systemUiController.setNavigationBarColor(MaterialTheme.colorScheme.primary)
         Surface(
             modifier = Modifier.padding(WindowInsets.navigationBars.asPaddingValues()),
             color = MaterialTheme.colorScheme.primary,
@@ -152,79 +155,109 @@ fun ServerContent(
         connectionType == Constants.ConnectionType.ETHERNET
     }
     val hasConnection = remember(isWifi, isEthernet) { isWifi || isEthernet }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(WindowInsets.statusBars.asPaddingValues()),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             AppText(
-                modifier = Modifier.padding(MaterialTheme.spacing.small),
+                modifier = Modifier .padding(WindowInsets.statusBars.asPaddingValues()),
                 text = stringResource(id = R.string.server_header, selectedProtocol.title),
                 textType = TextType.HEADER,
                 fontWeight = FontWeight.Bold,
                 textColor = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.headlineMedium
             )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(.2f),
+                contentAlignment = Alignment.Center
+            ) {
+
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = MaterialTheme.spacing.medium
+                        )
+                    //.alpha(if (clientMessage.isNotEmpty()) 1f else 0f)
+                    ,
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
+                ) {
+
+                    AppText(
+                        modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small),
+                        text = stringResource(id = R.string.message_from_client),
+                        fontWeight = FontWeight.Bold,
+                        textColor = if (clientMessage.isEmpty()) Color.Gray else MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(MaterialTheme.spacing.extraLarge),
+                        border = BorderStroke(
+                            1.dp,
+                            color = if (clientMessage.isEmpty()) Color.Gray else MaterialTheme.colorScheme.primary
+                        ),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        AppText(
+                            modifier = Modifier.padding(MaterialTheme.spacing.small),
+                            text = clientMessage
+                        )
+                    }
+
+
+                }
+            }
+
+            ConnectionBody(
+                modifier = Modifier.weight(.3f),
+                socketStatus = socketStatus,
+                isConnecting = true,
+                serverAddress = "",
+                wifiIpAddress = wifiIpAddress,
+                lanIpAddress = lanIpAddress,
+                formIsFilled = true,
+                connectionType = connectionType,
+                onEvent = onEvent,
+            ) {
+
+            }
+
+        }
+
+        Box(
+            modifier = Modifier.fillMaxWidth()
+                .wrapContentSize(Alignment.TopEnd)
+                .padding(WindowInsets.statusBars.asPaddingValues()),
+        ) {
             Icon(
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
                     .padding(MaterialTheme.spacing.small)
                     .clickable { expanded = !expanded },
                 imageVector = Icons.Default.MoreVert,
                 contentDescription = "menu",
                 tint = MaterialTheme.colorScheme.primary
             )
+            ProtocolTypeMenu(
+                expanded = expanded,
+                protocols = Constants.PROTOCOLS,
+                selectedProtocol = selectedProtocol,
+                onProtocolSelected = {
+                    onEvent(ServerEvent.SetProtocolType(it))
+                    expanded = false
+                },
+                onDismissClicked = { expanded = false })
         }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(.2f)
-        ) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.Center)
-                    .padding(MaterialTheme.spacing.medium),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                AppIcon(
-                    enable = isWifi,
-                    enableSource = R.drawable.connected_wifi_icon,
-                    disableSource = R.drawable.disconnected_wifi_icon,
-                    contentDescription = stringResource(id = R.string.wifi_connection_description),
-                )
-                AppIcon(
-                    enable = isEthernet,
-                    enableSource = R.drawable.connected_ethernet_icon,
-                    disableSource = R.drawable.disconnected_ethernet_icon,
-                    contentDescription = stringResource(id = R.string.ethernet_connection_description),
-                )
-            }
-        }
-
-        ConnectionBody(
-            modifier = Modifier.weight(.3f),
-            socketStatus = Constants.SocketStatus.CONNECTED, onPowerButtonClicked = {
-
-            },
-            isConnecting = true,
-            serverAddress = "",
-            wifiIpAddress = wifiIpAddress,
-            lanIpAddress = lanIpAddress,
-            formIsFilled = true,
-            connectionType = connectionType,
-            onEvent = onEvent
-        )
-
     }
+
     /*  AppBaseScreen(
           headerTitle = stringResource(id = R.string.server_header, selectedProtocol.title),
           headerBackGround = Indigo,
@@ -598,7 +631,7 @@ fun ConnectionBody(
                             left = 0 - 30f,
                             top = (size.height / 4),
                             right = size.width + 30f,
-                            bottom = size.height + 65
+                            bottom = size.height + 100
                         ),
                         startAngleDegrees = 0f,
                         sweepAngleDegrees = -180f,
@@ -614,9 +647,9 @@ fun ConnectionBody(
                     arcTo(
                         rect = Rect(
                             left = 0 - 30f,
-                            top = (size.height / 4) - 10,
+                            top = (size.height / 4),
                             right = size.width + 30f,
-                            bottom = size.height + 65
+                            bottom = size.height + 85
                         ),
                         startAngleDegrees = 0f,
                         sweepAngleDegrees = -180f,
@@ -718,10 +751,9 @@ fun ServerInfoContainer(
     wifiIpAddress: String,
     lanIpAddress: String,
     socketStatus: Constants.SocketStatus,
+) {
 
-    ) {
-
-    val ip by remember(connectionType,wifiIpAddress,lanIpAddress) {
+    val ip by remember(connectionType, wifiIpAddress, lanIpAddress) {
         derivedStateOf {
             when (connectionType) {
                 Constants.ConnectionType.NONE -> ""
@@ -730,10 +762,49 @@ fun ServerInfoContainer(
             }
         }
     }
+    val isWifi = remember(connectionType) {
+        connectionType == Constants.ConnectionType.WIFI
+    }
+    val isEthernet = remember(connectionType) {
+        connectionType == Constants.ConnectionType.ETHERNET
+    }
 
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
 
-        AppText(text = "$ip : $PORT" , textColor = Color.White, style = MaterialTheme.typography.bodyLarge)
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .weight(.5f)
+                .padding(MaterialTheme.spacing.medium),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            AppIcon(
+                enable = isWifi,
+                enableSource = R.drawable.connected_wifi_icon,
+                disableSource = R.drawable.disconnected_wifi_icon,
+                contentDescription = stringResource(id = R.string.wifi_connection_description),
+            )
+            AppIcon(
+                enable = isEthernet,
+                enableSource = R.drawable.connected_ethernet_icon,
+                disableSource = R.drawable.disconnected_ethernet_icon,
+                contentDescription = stringResource(id = R.string.ethernet_connection_description),
+            )
+        }
+        AppText(
+            modifier = Modifier
+                .padding(MaterialTheme.spacing.small)
+                .weight(.5f),
+            text = "$ip : $PORT",
+            textColor = Color.White,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
 //        Row(
 //            Modifier
 //                .fillMaxSize()
