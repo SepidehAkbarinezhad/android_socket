@@ -221,7 +221,6 @@ fun ServerContent(
                 modifier = Modifier.weight(.3f),
                 socketStatus = socketStatus,
                 isConnecting = true,
-                serverAddress = "",
                 wifiIpAddress = wifiIpAddress,
                 lanIpAddress = lanIpAddress,
                 formIsFilled = true,
@@ -536,7 +535,6 @@ fun ConnectionBody(
     modifier: Modifier,
     socketStatus: Constants.SocketStatus,
     isConnecting: Boolean,
-    serverAddress: String,
     wifiIpAddress: String,
     lanIpAddress: String,
     formIsFilled: Boolean,
@@ -796,15 +794,18 @@ fun ServerInfoContainer(
                 contentDescription = stringResource(id = R.string.ethernet_connection_description),
             )
         }
-        AppText(
-            modifier = Modifier
-                .padding(MaterialTheme.spacing.small)
-                .weight(.5f),
-            text = "$ip : $PORT",
-            textColor = Color.White,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
+        if(connectionType != Constants.ConnectionType.NONE){
+            AppText(
+                modifier = Modifier
+                    .padding(MaterialTheme.spacing.small)
+                    .weight(.5f),
+                text = "$ip : $PORT",
+                textColor = Color.White,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
 //        Row(
 //            Modifier
 //                .fillMaxSize()
