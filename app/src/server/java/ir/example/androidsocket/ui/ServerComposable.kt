@@ -73,6 +73,7 @@ import ir.example.androidsocket.ui.theme.Green400
 import ir.example.androidsocket.ui.theme.Green900
 import ir.example.androidsocket.ui.theme.spacing
 import ir.example.androidsocket.utils.ConnectionTypeManager
+import ir.example.androidsocket.utils.serverLog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -94,6 +95,7 @@ internal fun ServerComposable(
     val isWifiConnected by connectionTypeManager.isWifiConnected.collectAsState()
     val isEthernetConnected by connectionTypeManager.isEthernetConnected.collectAsState()
     val selectedProtocol by viewModel.selectedProtocol.collectAsState()
+    val isConnecting by viewModel.isConnecting.collectAsState()
     val wifiIpAddress by viewModel.wifiServerIp.collectAsState()
     val lanIpAddress by viewModel.ethernetServerIp.collectAsState()
     val socketStatus by viewModel.socketStatus.collectAsState()
@@ -124,6 +126,7 @@ internal fun ServerComposable(
                 onEvent = onEvent,
                 connectionType = connectionType,
                 selectedProtocol = selectedProtocol,
+                isConnecting = isConnecting,
                 wifiIpAddress = wifiIpAddress,
                 lanIpAddress = lanIpAddress,
                 socketStatus = socketStatus,
@@ -139,6 +142,7 @@ internal fun ServerComposable(
 fun ServerContent(
     onEvent: (ServerEvent) -> Unit,
     selectedProtocol: Constants.ProtocolType,
+    isConnecting: Boolean,
     connectionType: Constants.ConnectionType,
     wifiIpAddress: String,
     lanIpAddress: String,
@@ -147,6 +151,8 @@ fun ServerContent(
     fileProgress: Int?,
     fileIsSaved: Boolean
 ) {
+    var isAnimating by remember { mutableStateOf(false) }
+
     var expanded by remember { mutableStateOf(false) }
     val isWifi = remember(connectionType) {
         connectionType == Constants.ConnectionType.WIFI
@@ -155,13 +161,25 @@ fun ServerContent(
         connectionType == Constants.ConnectionType.ETHERNET
     }
     val hasConnection = remember(isWifi, isEthernet) { isWifi || isEthernet }
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    LaunchedEffect(isConnecting) {
+        serverLog("LaunchedEffect(isConnecting)  $isConnecting")
+        if (!isConnecting) {
+            serverLog("...................")
+            isAnimating = false
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         Column(
-            modifier = Modifier.fillMaxSize() ,
+            modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             AppText(
-                modifier = Modifier .padding(WindowInsets.statusBars.asPaddingValues()),
+                modifier = Modifier.padding(WindowInsets.statusBars.asPaddingValues()),
                 text = stringResource(id = R.string.server_header, selectedProtocol.title),
                 textType = TextType.HEADER,
                 fontWeight = FontWeight.Bold,
@@ -210,8 +228,6 @@ fun ServerContent(
                             text = clientMessage
                         )
                     }
-
-
                 }
             }
 
@@ -221,8 +237,8 @@ fun ServerContent(
                 isConnecting = true,
                 wifiIpAddress = wifiIpAddress,
                 lanIpAddress = lanIpAddress,
-                formIsFilled = true,
                 connectionType = connectionType,
+                isAnimating = isAnimating,
                 onEvent = onEvent,
             ) {
 
@@ -231,14 +247,17 @@ fun ServerContent(
         }
 
         Box(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .wrapContentSize(Alignment.TopEnd)
                 .padding(WindowInsets.statusBars.asPaddingValues()),
         ) {
             Icon(
                 modifier = Modifier
                     .padding(MaterialTheme.spacing.small)
-                    .clickable { expanded = !expanded },
+                    .clickable {
+                        expanded = !expanded
+                    },
                 imageVector = Icons.Default.MoreVert,
                 contentDescription = "menu",
                 tint = MaterialTheme.colorScheme.primary
@@ -248,7 +267,11 @@ fun ServerContent(
                 protocols = Constants.PROTOCOLS,
                 selectedProtocol = selectedProtocol,
                 onProtocolSelected = {
-                    onEvent(ServerEvent.SetProtocolType(it))
+                    if(connectionType != Constants.ConnectionType.NONE){
+                        isAnimating = true
+                        onEvent(ServerEvent.SetIsConnecting(true))
+                    }
+                    onEvent(ServerEvent.SetProtocolType(it, connectionType = connectionType))
                     expanded = false
                 },
                 onDismissClicked = { expanded = false })
@@ -498,7 +521,6 @@ fun FileTransferAnimation() {
             delay(1000) // Delay before starting the next cycle
         }
     }
-
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier.size(250.dp)
@@ -535,13 +557,11 @@ fun ConnectionBody(
     isConnecting: Boolean,
     wifiIpAddress: String,
     lanIpAddress: String,
-    formIsFilled: Boolean,
     connectionType: Constants.ConnectionType,
+    isAnimating: Boolean,
     onEvent: (ServerEvent) -> Unit,
     onPowerButtonClicked: () -> Unit
 ) {
-
-    var isAnimating by remember { mutableStateOf(false) }
 
     var powerContainerCircleRadius by remember { mutableIntStateOf(0) }
     val connectionStatusBrush = Brush.verticalGradient(
@@ -558,8 +578,7 @@ fun ConnectionBody(
     val alpha = (1 - currentScale / 1.5f).coerceIn(0f, 1f)
 
     fun animateCircle() {
-        isAnimating = true
-
+        serverLog("animateCircle  $isAnimating")
         coroutineScope.launch {
             // Loop for continuous animation
             while (isAnimating) {
@@ -583,11 +602,6 @@ fun ConnectionBody(
             }
         }
     }
-    LaunchedEffect(isConnecting) {
-        if (!isConnecting) {
-            isAnimating = false
-        }
-    }
 
     val headerStartBrush = MaterialTheme.colorScheme.primary
     val headerEndBrush = MaterialTheme.colorScheme.onPrimaryContainer
@@ -601,6 +615,14 @@ fun ConnectionBody(
                 socketStatus.isConnected -> connectColor
                 else -> disConnectColor
             }
+        }
+    }
+
+    LaunchedEffect(isAnimating) {
+        serverLog("LaunchedEffect(isAnimating)  $isAnimating")
+        if (isAnimating){
+            serverLog("LaunchedEffect(isAnimating)  ........")
+            animateCircle()
         }
     }
 
@@ -691,10 +713,8 @@ fun ConnectionBody(
                     Image(
                         modifier = Modifier
                             .clickable {
-                                if (formIsFilled) {
-                                    animateCircle()
-                                }
-                                onPowerButtonClicked()
+
+
                             }
                             .size((powerContainerCircleRadius / 3).dp),
                         painter = painterResource(id = R.drawable.power_icon),
@@ -704,10 +724,7 @@ fun ConnectionBody(
                     Icon(
                         modifier = Modifier
                             .clickable {
-                                if (formIsFilled) {
-                                    animateCircle()
-                                }
-                                onPowerButtonClicked()
+
                             }
                             .size((powerContainerCircleRadius / 3).dp),
                         painter = painterResource(id = R.drawable.power_icon),
@@ -791,7 +808,7 @@ fun ServerInfoContainer(
                 contentDescription = stringResource(id = R.string.ethernet_connection_description),
             )
         }
-        if(connectionType != Constants.ConnectionType.NONE){
+        if (connectionType != Constants.ConnectionType.NONE) {
             AppText(
                 modifier = Modifier
                     .padding(MaterialTheme.spacing.small)

@@ -19,10 +19,12 @@ import ir.example.androidsocket.MainApplication
 import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.socket.SocketServerForegroundService
 import ir.example.androidsocket.ui.base.BaseViewModel
+import ir.example.androidsocket.utils.ConnectionTypeManager
 import ir.example.androidsocket.utils.IpAddressManager
 import ir.example.androidsocket.utils.serverLog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
@@ -53,19 +55,27 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
     var isServiceBound = MutableStateFlow<Boolean>(false)
         private set
 
+    var isConnecting = MutableStateFlow(false)
+        private set
+
 
     private var serverForgroundService: SocketServerForegroundService? = null
 
     val socketConnectionListener = object : SocketConnectionListener {
         override fun onStart() {
+            /*
+            * server starts successfully and is ready to accept connections
+            * */
             serverLog("SocketConnectionListener onStart")
             onEvent(ServerEvent.SetLoading(false))
+            onEvent(ServerEvent.SetIsConnecting(false))
         }
 
         override fun onConnected() {
             serverLog("SocketConnectionListener onConnected")
             socketStatus.value = Constants.SocketStatus.CONNECTED
             onEvent(ServerEvent.SetLoading(false))
+
         }
 
         override fun onMessage(messageContentType: Int?, message: String?) {
@@ -111,12 +121,15 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             *message got error on >=31 ,the socket was connected but onError was called.
             */
             emitMessageValue(R.string.error_message, exception?.message)
+            onEvent(ServerEvent.SetIsConnecting(false))
+
         }
 
         override fun onException(exception: Exception?) {
             serverLog("SocketConnectionListener onException: ${exception?.message}")
             emitMessageValue(R.string.error_message, exception?.message)
             onEvent(ServerEvent.SetLoading(false))
+            onEvent(ServerEvent.SetIsConnecting(false))
         }
 
     }
@@ -188,7 +201,10 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
                 //if the selected protocol doesn't differ from previous one, return
                 if (selectedProtocol.value.title == event.type)
                     return
-                serverLog("SetProtocolType 1")
+                if (event.connectionType == Constants.ConnectionType.NONE) {
+                    emitMessageValue(R.string.set_protocol_error)
+                    return
+                }
                 // before running socket on new selected protocol type , close the previous
                 serverForgroundService?.closeServerSocket()
                 selectedProtocol.value = when (event.type) {
@@ -197,7 +213,14 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
                 }
                 serverForgroundService?.startSocketServer(selectedProtocol.value)
             }
+
+            is ServerEvent.SetIsConnecting -> {
+                serverLog("SetIsConnecting  ${event.isConnecting}")
+                isConnecting.value = event.isConnecting
+            }
+
             is ServerEvent.SetFileIsSaved -> fileIsSaved.value = event.saved
+
         }
     }
 

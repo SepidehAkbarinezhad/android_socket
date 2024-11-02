@@ -9,9 +9,9 @@ import kotlinx.coroutines.launch
 import okio.Timeout
 
 class ServerManager(
-    val socketProtocol: Constants.ProtocolType,
-    val websocketServerManger: WebsocketServerManger,
-    val tcpSocketManager: TcpServerManager,
+    private val socketProtocol: Constants.ProtocolType,
+    private val websocketServerManger: WebsocketServerManger,
+    private val tcpSocketManager: TcpServerManager,
 ) {
 
     private lateinit var serverManager: SocketServer

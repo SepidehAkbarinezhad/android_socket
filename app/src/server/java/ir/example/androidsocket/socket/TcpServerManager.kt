@@ -47,6 +47,7 @@ class TcpServerManager(
                 /**
                  * accept is a blocking call. It waits until a client makes a connection request to the server.
                  **/
+                serverLog("startServer: while  ${serverSocket!=null}")
                 clientSocket = serverSocket!!.accept()
                 serverLog("server connected: ${clientSocket?.inetAddress?.hostAddress}")
                 socketListener.forEach { it.onConnected() }
