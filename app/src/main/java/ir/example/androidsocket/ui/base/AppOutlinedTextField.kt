@@ -71,7 +71,7 @@ fun AppOutlinedTextField(
                 } else {
                     label
                 } ?: "",
-                textColor = if (hasError) MaterialTheme.colorScheme.error else if (enabled) MaterialTheme.colorScheme.onPrimaryContainer else Color.LightGray,
+                textColor = if (hasError) MaterialTheme.colorScheme.error else if (enabled) MaterialTheme.colorScheme.primary else Color.LightGray,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleLarge
             )

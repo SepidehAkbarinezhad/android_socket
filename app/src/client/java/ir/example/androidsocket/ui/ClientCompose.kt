@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -57,6 +58,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.font.FontWeight.Companion.Normal
 import androidx.compose.ui.text.input.KeyboardType
@@ -70,10 +72,8 @@ import ir.example.androidsocket.ui.base.BaseUiEvent
 import ir.example.androidsocket.ui.base.ProtocolTypeMenu
 import ir.example.androidsocket.ui.base.TextType
 import ir.example.androidsocket.ui.theme.AndroidSocketTheme
-import ir.example.androidsocket.ui.theme.Gray200
 import ir.example.androidsocket.ui.theme.Green400
 import ir.example.androidsocket.ui.theme.Green900
-import ir.example.androidsocket.ui.theme.Indigo
 import ir.example.androidsocket.ui.theme.spacing
 import ir.example.androidsocket.utils.clientLog
 import ir.example.androidsocket.utils.isIpValid
@@ -212,40 +212,19 @@ fun ClientContent(
     )
     val configuration = LocalConfiguration.current
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
+            modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.primary)
-                    .padding(WindowInsets.statusBars.asPaddingValues()),
-                contentAlignment = Alignment.Center
-            ) {
-                AppText(
-                    modifier = Modifier.padding(MaterialTheme.spacing.small),
-                    text = stringResource(id = R.string.client_header, selectedProtocol.title),
-                    textType = TextType.HEADER,
-                    fontWeight = Bold,
-                    textColor = White,
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Icon(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(MaterialTheme.spacing.small)
-                        .clickable { expanded = !expanded },
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "menu",
-                    tint = Color.White
-                )
-            }
-
-
+            AppText(
+                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primary).padding(WindowInsets.statusBars.asPaddingValues()),
+                text = stringResource(id = R.string.client_header, selectedProtocol.title),
+                textType = TextType.HEADER,
+                fontWeight = Bold,
+                textColor = White,
+                style = MaterialTheme.typography.headlineMedium
+            )
             PowerButtonBody(
                 modifier = Modifier.weight(.3f),
                 socketStatus = socketStatus, onPowerButtonClicked = {
@@ -288,7 +267,6 @@ fun ClientContent(
 
         }
         ProtocolTypeMenu(
-            modifier = Modifier.align(Alignment.TopEnd),
             expanded = expanded,
             protocols = Constants.PROTOCOLS,
             selectedProtocol = Constants.ProtocolType.WEBSOCKET,
@@ -297,6 +275,30 @@ fun ClientContent(
                 expanded = false
             },
             onDismissClicked = { expanded = false })
+
+        Box(
+            modifier = Modifier.fillMaxWidth()
+                .wrapContentSize(Alignment.TopEnd)
+                .padding(WindowInsets.statusBars.asPaddingValues()),
+        ) {
+            Icon(
+                modifier = Modifier
+                    .padding(MaterialTheme.spacing.small)
+                    .clickable { expanded = !expanded },
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "menu",
+                tint = White
+            )
+            ProtocolTypeMenu(
+                expanded = expanded,
+                protocols = Constants.PROTOCOLS,
+                selectedProtocol = selectedProtocol,
+                onProtocolSelected = {
+                    onEvent(ClientEvent.SetProtocolType(it))
+                    expanded = false
+                },
+                onDismissClicked = { expanded = false })
+        }
     }
 
 }
@@ -363,7 +365,17 @@ fun PowerButtonBody(
     val headerStartBrush = MaterialTheme.colorScheme.primary
     val headerEndBrush = MaterialTheme.colorScheme.onPrimaryContainer
     val animateColor = MaterialTheme.colorScheme.tertiary
-    val shadowColor = if(isAnimating)animateColor else MaterialTheme.colorScheme.primaryContainer
+    val connectColor = MaterialTheme.colorScheme.onSecondary
+    val disConnectColor = MaterialTheme.colorScheme.primaryContainer
+    val borderColor by remember(socketStatus.isConnected, isAnimating) {
+        derivedStateOf {
+            when {
+                isAnimating -> animateColor
+                socketStatus.isConnected -> connectColor
+                else -> disConnectColor
+            }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -400,7 +412,7 @@ fun PowerButtonBody(
 
                 drawCircle(color = White, radius = powerContainerCircleRadius.toFloat())
                 drawCircle(
-                    color = if (!isAnimating) LightGray else animateColor,
+                    color = if (!isAnimating) borderColor else animateColor,
                     radius = powerContainerCircleRadius.toFloat(),
                     style = Stroke(width = 14f)
                 )
@@ -449,7 +461,7 @@ fun PowerButtonBody(
                     arcTo(
                         rect = Rect(
                             left = 0 - 140f,
-                            top = 0f,
+                            top = -10f,
                             right = size.width + 140,
                             bottom = size.height
                         ),
@@ -478,8 +490,8 @@ fun PowerButtonBody(
                 }
                 drawPath(
                     path = shadowArcPath,
-                    color = shadowColor,
-                    style = Stroke(width = 40f)
+                    color = borderColor,
+                    style = Stroke(width = 24f)
                 )
             }
 
@@ -496,7 +508,7 @@ fun PowerButtonBody(
                         true -> Bold
                         false -> Normal
                     },
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    style = MaterialTheme.typography.titleLarge.copy(
                         brush = connectionStatusBrush
                     )
                 )
@@ -505,8 +517,9 @@ fun PowerButtonBody(
                         .padding(MaterialTheme.spacing.small)
                         .alpha(if (socketStatus.isConnected) 1f else 0f),
                     text = serverAddress,
-                    style = MaterialTheme.typography.titleSmall,
-                    textColor = LightGray
+                    style = MaterialTheme.typography.titleMedium,
+                    textColor = LightGray,
+                    fontWeight = Bold
                 )
             }
 
@@ -627,7 +640,7 @@ fun MessageContainer(
                         Icon(
                             modifier = Modifier.size(28.dp),
                             painter = painterResource(id = R.drawable.attach_file_icon),
-                            tint = Gray200,
+                            tint = LightGray,
                             contentDescription = "Attach File"
                         )
                     }
@@ -641,7 +654,7 @@ fun MessageContainer(
                             Icon(
                                 modifier = Modifier.size(28.dp),
                                 painter = painterResource(id = R.drawable.attach_file_icon),
-                                tint = Indigo,
+                                tint = MaterialTheme.colorScheme.primary,
                                 contentDescription = "Attach File"
                             )
                         }
@@ -662,7 +675,7 @@ fun MessageContainer(
                                 Icon(
                                     modifier = Modifier.size(28.dp),
                                     painter = painterResource(id = R.drawable.seen_icon),
-                                    tint = if (waitingForServer == true) Gray200 else Color.Green,
+                                    tint = if (waitingForServer == true) LightGray else Color.Green,
                                     contentDescription = "send check"
                                 )
                             }

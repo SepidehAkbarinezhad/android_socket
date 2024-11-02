@@ -155,11 +155,9 @@ fun ServerContent(
         connectionType == Constants.ConnectionType.ETHERNET
     }
     val hasConnection = remember(isWifi, isEthernet) { isWifi || isEthernet }
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
+            modifier = Modifier.fillMaxSize() ,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             AppText(
@@ -596,7 +594,6 @@ fun ConnectionBody(
     val animateColor = MaterialTheme.colorScheme.tertiary
     val connectColor = MaterialTheme.colorScheme.onSecondary
     val disConnectColor = MaterialTheme.colorScheme.primaryContainer
-    // val shadowColor = if (isAnimating) animateColor else if(socketStatus.isConnected) Green400 else MaterialTheme.colorScheme.primaryContainer
     val borderColor by remember(socketStatus.isConnected, isAnimating) {
         derivedStateOf {
             when {
@@ -641,7 +638,7 @@ fun ConnectionBody(
                     path = powerContainerRectangle,
                     color = headerEndBrush,
                 )
-                val powerContainerRectangle2 = Path().apply {
+                val shadowArcPath = Path().apply {
                     arcTo(
                         rect = Rect(
                             left = 0 - 30f,
@@ -656,7 +653,7 @@ fun ConnectionBody(
 
                 }
                 drawPath(
-                    path = powerContainerRectangle2,
+                    path = shadowArcPath,
                     color = borderColor,
                     style = Stroke(24f)
                 )
