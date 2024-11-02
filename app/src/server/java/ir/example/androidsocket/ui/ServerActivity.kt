@@ -47,8 +47,8 @@ class ServerActivity : ComponentActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
         val connectionTypeManager = ConnectionTypeManager(this)
 
         val activity = this@ServerActivity

@@ -3,7 +3,10 @@ package ir.example.androidsocket.ui.theme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Scaffold
@@ -30,8 +33,8 @@ import ir.example.androidsocket.ui.base.BaseUiEvent
 private val DarkColorScheme = darkColorScheme(
     primary = AppColors.Dark.primary,
     onPrimary = AppColors.Dark.onPrimary,
-    primaryContainer=AppColors.Dark.primaryContainer,
-    onPrimaryContainer=AppColors.Dark.onPrimaryContainer,
+    primaryContainer = AppColors.Dark.primaryContainer,
+    onPrimaryContainer = AppColors.Dark.onPrimaryContainer,
     secondary = AppColors.Dark.secondary,
     onSecondary = AppColors.Dark.onSecondary,
     tertiary = AppColors.Dark.tertiary,
@@ -42,13 +45,13 @@ private val DarkColorScheme = darkColorScheme(
     error = AppColors.Dark.error,
     onError = AppColors.Dark.onError,
 
-)
+    )
 
 private val LightColorScheme = lightColorScheme(
     primary = AppColors.Light.primary,
     onPrimary = AppColors.Light.onPrimary,
-    primaryContainer=AppColors.Light.primaryContainer,
-    onPrimaryContainer=AppColors.Light.onPrimaryContainer,
+    primaryContainer = AppColors.Light.primaryContainer,
+    onPrimaryContainer = AppColors.Light.onPrimaryContainer,
     secondary = AppColors.Light.secondary,
     onSecondary = AppColors.Light.onSecondary,
     tertiary = AppColors.Light.tertiary,
@@ -94,14 +97,18 @@ fun AndroidSocketTheme(
                             onResetScreenMessage()
                         }
                     }
-                    else->{}
+
+                    else -> {}
 
                 }
             }
             Scaffold(
                 scaffoldState = scaffoldState,
                 snackbarHost = {
-                    SnackbarHost(hostState = it) { data ->
+                    SnackbarHost(
+                        modifier = Modifier.padding(WindowInsets.navigationBars.asPaddingValues()),
+                        hostState = it
+                    ) { data ->
                         CompositionLocalProvider(
                             direction
                         ) {

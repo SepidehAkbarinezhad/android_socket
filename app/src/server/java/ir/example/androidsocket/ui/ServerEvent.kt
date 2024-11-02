@@ -2,7 +2,6 @@ package ir.example.androidsocket.ui
 
 import android.content.Context
 import ir.example.androidsocket.Constants
-import ir.example.androidsocket.utils.ConnectionTypeManager
 
 sealed class ServerEvent {
     data class SetLoading(val value: Boolean) : ServerEvent()

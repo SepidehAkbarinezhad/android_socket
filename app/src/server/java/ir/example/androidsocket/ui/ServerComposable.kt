@@ -691,7 +691,7 @@ fun ConnectionBody(
                 drawCircle(
                     color = if (!isAnimating) borderColor else animateColor,
                     radius = powerContainerCircleRadius.toFloat(),
-                    style = Stroke(width = 14f),
+                    style = Stroke(width = 24f),
                     center = powerContainerCircleOffset
                 )
                 if (isAnimating)
@@ -713,7 +713,6 @@ fun ConnectionBody(
                     Image(
                         modifier = Modifier
                             .clickable {
-
 
                             }
                             .size((powerContainerCircleRadius / 3).dp),

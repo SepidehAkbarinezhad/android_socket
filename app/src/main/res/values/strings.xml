@@ -9,6 +9,6 @@
     <string name="port_label">port </string>
     <string name="protocol_type">"protocol type : "</string>
     <string name="connecting_label">"Connecting"</string>
-    <string name="set_protocol_error">"there is no ip address"</string>
+    <string name="set_protocol_error">"there is no wifi or ethernet available"</string>
 
 </resources>

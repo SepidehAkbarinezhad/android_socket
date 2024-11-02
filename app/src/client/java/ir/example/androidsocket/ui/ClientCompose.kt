@@ -2,7 +2,6 @@ package ir.example.androidsocket.ui
 
 import android.app.Activity
 import android.content.Intent
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
@@ -12,6 +11,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,15 +50,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.LightGray
-import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.font.FontWeight.Companion.Normal
 import androidx.compose.ui.text.input.KeyboardType
@@ -86,7 +85,6 @@ internal fun ClientCompose(
     viewModel: ClientViewModel,
     onEvent: (ClientEvent) -> Unit
 ) {
-
     val keyboardController = LocalSoftwareKeyboardController.current
     val selectedProtocol by viewModel.selectedProtocol.collectAsState()
     val clientMessage by viewModel.clientMessage.collectAsStateWithLifecycle("")
@@ -266,18 +264,9 @@ fun ClientContent(
                 )
 
         }
-        ProtocolTypeMenu(
-            expanded = expanded,
-            protocols = Constants.PROTOCOLS,
-            selectedProtocol = Constants.ProtocolType.WEBSOCKET,
-            onProtocolSelected = {
-                onEvent(ClientEvent.SetProtocolType(it))
-                expanded = false
-            },
-            onDismissClicked = { expanded = false })
-
         Box(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .wrapContentSize(Alignment.TopEnd)
                 .padding(WindowInsets.statusBars.asPaddingValues()),
         ) {
@@ -313,9 +302,8 @@ fun PowerButtonBody(
     onEvent: (ClientEvent) -> Unit,
     onPowerButtonClicked: () -> Unit
 ) {
-
     var isAnimating by remember { mutableStateOf(false) }
-
+    var circleCenter by remember { mutableStateOf(Offset(0f, 0f)) }
     var powerContainerCircleRadius by remember { mutableIntStateOf(0) }
     val connectionStatusBrush = Brush.verticalGradient(
         colors = if (isAnimating) listOf(MaterialTheme.colorScheme.tertiary, White)
@@ -385,18 +373,29 @@ fun PowerButtonBody(
             Modifier
                 .fillMaxWidth()
                 .weight(.3f)
-                .clickable {
-                    if (formIsFilled) {
-                        animateCircle()
-                    }
-                    onEvent(ClientEvent.SetIsConnecting(true))
-                    onPowerButtonClicked()
-                }
         ) {
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures { offset ->
+                            // Check if the tap is within the circle's bounds
+                            val distanceFromCenter = (offset - circleCenter).getDistance()
+                            clientLog("pointerInput  $distanceFromCenter  $powerContainerCircleRadius  ${distanceFromCenter <= powerContainerCircleRadius}")
+                            if (distanceFromCenter <= powerContainerCircleRadius) {
+                                if(!isConnecting){
+                                    if (formIsFilled) {
+                                        animateCircle()
+                                        onEvent(ClientEvent.SetIsConnecting(true))
+                                    }
+                                    onPowerButtonClicked()
+                                }
+
+                            }
+                        }
+                    }
             ) {
+                circleCenter = Offset(size.width / 2, size.height / 2)
                 powerContainerCircleRadius = size.height.toInt() / 3
                 drawRect(
                     brush = Brush.linearGradient(
@@ -414,7 +413,7 @@ fun PowerButtonBody(
                 drawCircle(
                     color = if (!isAnimating) borderColor else animateColor,
                     radius = powerContainerCircleRadius.toFloat(),
-                    style = Stroke(width = 14f)
+                    style = Stroke(width = 24f)
                 )
                 if (isAnimating)
                     drawCircle(
