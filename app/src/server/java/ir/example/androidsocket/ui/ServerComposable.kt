@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
@@ -215,16 +216,17 @@ fun ServerContent(
 
                     Card(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(MaterialTheme.spacing.extraLarge),
+                            .padding(MaterialTheme.spacing.small)
+                            .fillMaxWidth(),
                         border = BorderStroke(
                             1.dp,
                             color = if (clientMessage.isEmpty()) Color.Gray else MaterialTheme.colorScheme.primary
                         ),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(MaterialTheme.spacing.extraMedium)
                     ) {
                         AppText(
-                            modifier = Modifier.padding(MaterialTheme.spacing.small),
+                            modifier = Modifier.padding(MaterialTheme.spacing.medium),
                             text = clientMessage
                         )
                     }
@@ -267,7 +269,7 @@ fun ServerContent(
                 protocols = Constants.PROTOCOLS,
                 selectedProtocol = selectedProtocol,
                 onProtocolSelected = {
-                    if(connectionType != Constants.ConnectionType.NONE){
+                    if (connectionType != Constants.ConnectionType.NONE) {
                         isAnimating = true
                         onEvent(ServerEvent.SetIsConnecting(true))
                     }
@@ -620,7 +622,7 @@ fun ConnectionBody(
 
     LaunchedEffect(isAnimating) {
         serverLog("LaunchedEffect(isAnimating)  $isAnimating")
-        if (isAnimating){
+        if (isAnimating) {
             serverLog("LaunchedEffect(isAnimating)  ........")
             animateCircle()
         }

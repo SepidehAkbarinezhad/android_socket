@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -77,6 +78,7 @@ import ir.example.androidsocket.ui.theme.spacing
 import ir.example.androidsocket.utils.clientLog
 import ir.example.androidsocket.utils.isIpValid
 import ir.example.androidsocket.utils.isPortValid
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 
@@ -109,9 +111,9 @@ internal fun ClientCompose(
             // Get the URI of the selected file (result.data?.data)
             val uri = result.data?.data
             if (uri != null) {
+                clientLog("File selected: $uri")
                 onEvent(ClientEvent.SetClientMessage(uri.toString()))
                 onEvent(ClientEvent.SetFileUrl(uri))
-                println("File selected: $uri")
             }
         }
     }
@@ -169,7 +171,7 @@ internal fun ClientCompose(
                     clientLog("onSendMessageEvent")
                     keyboardController?.hide()
                     onEvent(ClientEvent.SetServerMessage(""))
-                    onEvent(ClientEvent.SetLoading(true))
+                    // onEvent(ClientEvent.SetLoading(true))
                     onEvent(ClientEvent.SendMessageToServer(message))
 
                 },
@@ -210,13 +212,23 @@ fun ClientContent(
     )
     val configuration = LocalConfiguration.current
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             AppText(
-                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primary).padding(WindowInsets.statusBars.asPaddingValues()),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(WindowInsets.statusBars.asPaddingValues()),
                 text = stringResource(id = R.string.client_header, selectedProtocol.title),
                 textType = TextType.HEADER,
                 fontWeight = Bold,
@@ -257,9 +269,9 @@ fun ClientContent(
                         .padding(MaterialTheme.spacing.small),
                     socketStatus = socketStatus,
                     clientMessage = clientMessage,
-                    fileUrl = fileUrl,
                     fileProgress = fileProgress,
                     waitingForServer = waitingForServer,
+                    onSendMessageEvent = { onSendMessageEvent(it) },
                     onEvent = onEvent
                 )
 
@@ -383,7 +395,7 @@ fun PowerButtonBody(
                             val distanceFromCenter = (offset - circleCenter).getDistance()
                             clientLog("pointerInput  $distanceFromCenter  $powerContainerCircleRadius  ${distanceFromCenter <= powerContainerCircleRadius}")
                             if (distanceFromCenter <= powerContainerCircleRadius) {
-                                if(!isConnecting){
+                                if (!isConnecting) {
                                     if (formIsFilled) {
                                         animateCircle()
                                         onEvent(ClientEvent.SetIsConnecting(true))
@@ -582,13 +594,14 @@ fun MessageContainer(
     modifier: Modifier,
     socketStatus: Constants.SocketStatus,
     clientMessage: String,
-    fileUrl: String,
     fileProgress: Int?,
     waitingForServer: Boolean?,
+    onSendMessageEvent: (String) -> Unit,
     onEvent: (ClientEvent) -> Unit
 ) {
+
     val attachVisibility by remember(clientMessage, waitingForServer) {
-        derivedStateOf { clientMessage.isEmpty() || (fileUrl.isNotEmpty() && waitingForServer != true) }
+        derivedStateOf { clientMessage.isEmpty() }
     }
     val animatedProgress by animateFloatAsState(
         targetValue = fileProgress?.toFloat() ?: 0f,
@@ -631,58 +644,80 @@ fun MessageContainer(
             singleLine = true,
             label = stringResource(id = R.string.message),
             trailingIcon = {
-                if (!socketStatus.isConnected) {
+                clientLog("trailingIcon:  ${socketStatus.isConnected}  $attachVisibility  $waitingForServer")
+
+                if (attachVisibility) {
                     IconButton(
                         onClick = {
+                            onAttachFile()
                         }
                     ) {
                         Icon(
                             modifier = Modifier.size(28.dp),
                             painter = painterResource(id = R.drawable.attach_file_icon),
-                            tint = LightGray,
+                            tint = MaterialTheme.colorScheme.primary,
                             contentDescription = "Attach File"
                         )
                     }
-                } else {
-                    if (attachVisibility) {
+                } else if (waitingForServer != null) {
+                    if (fileProgress != null) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(28.dp),
+                            progress = animatedProgress / 100,
+                            color = MaterialTheme.colorScheme.onSecondary,
+                            trackColor = LightGray
+                        )
+                    } else {
                         IconButton(
+                            modifier = Modifier,
                             onClick = {
                                 onAttachFile()
                             }
                         ) {
                             Icon(
                                 modifier = Modifier.size(28.dp),
-                                painter = painterResource(id = R.drawable.attach_file_icon),
-                                tint = MaterialTheme.colorScheme.primary,
-                                contentDescription = "Attach File"
+                                painter = painterResource(id = R.drawable.seen_icon),
+                                tint = if (waitingForServer == true) LightGray else MaterialTheme.colorScheme.primary,
+                                contentDescription = "send check"
                             )
                         }
-                    } else if (waitingForServer != null) {
-                        if (fileProgress != null) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(28.dp),
-                                progress = animatedProgress / 100,
-                                color = MaterialTheme.colorScheme.tertiary,
-                            )
-                        } else {
-                            IconButton(
-                                modifier = Modifier,
-                                onClick = {
-                                    onAttachFile()
-                                }
-                            ) {
-                                Icon(
-                                    modifier = Modifier.size(28.dp),
-                                    painter = painterResource(id = R.drawable.seen_icon),
-                                    tint = if (waitingForServer == true) LightGray else Color.Green,
-                                    contentDescription = "send check"
-                                )
+                    }
+
+                } else {
+                    if (clientMessage.isNotEmpty()) {
+                        IconButton(
+                            onClick = {
+                                onSendMessageEvent(clientMessage)
                             }
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(28.dp),
+                                painter = painterResource(id = R.drawable.send_icon),
+                                tint = MaterialTheme.colorScheme.primary,
+                                contentDescription = "send check"
+                            )
                         }
+                    }
+
+                }
+
+            },
+            leadingIcon = {
+                if (clientMessage.isNotEmpty()) {
+                    IconButton(
+                        onClick = {
+                            onEvent(ClientEvent.ResetClientMessage)
+                        }
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(12.dp),
+                            painter = painterResource(id = R.drawable.close_icon),
+                            tint = MaterialTheme.colorScheme.primary,
+                            contentDescription = "reset message"
+                        )
 
                     }
                 }
-
             })
     }
 

@@ -2,6 +2,7 @@ package ir.example.androidsocket.ui.base
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -51,7 +52,6 @@ fun AppOutlinedTextField(
     hasError: Boolean = false,
     shape: RoundedCornerShape = RoundedCornerShape(MaterialTheme.spacing.extraMedium)
 ) {
-
 
     val focusRequester = remember { FocusRequester() }
 

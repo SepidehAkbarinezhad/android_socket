@@ -105,6 +105,19 @@ class TcpClientManager(
                 clientLog("sendFile--> try $uri")
                 val outputStream = socket?.getOutputStream()
 
+                val mimeType = contentResolver.getType(uri)
+                clientLog("Detected MIME type: $mimeType")
+
+                // Extract the specific type after the "/"
+                val fileType = mimeType?.substringAfter("/") ?: "unknown"
+                clientLog("Extracted file type: $fileType")
+                val fileTypeBytes = fileType.toByteArray(Charsets.UTF_8)
+                val fileTypeLength = fileTypeBytes.size
+                clientLog("sendFile--> Sending file fileTypeLength: $fileTypeLength")
+                clientLog("sendFile--> Sending file fileTypeBytes bytesToHex: ${BytesUtils.bytesToHex(fileTypeBytes)}")
+                clientLog("sendFile--> Sending file hexToString: ${BytesUtils.hexToString(BytesUtils.bytesToHex(fileTypeBytes))}")
+
+
                 /**
                  * Get the file size using ContentResolver
                  * ParcelFileDescriptor : allows you to perform file operations like reading or writing on the file associated with the URI.
@@ -123,10 +136,15 @@ class TcpClientManager(
                     val messageSizeBytes = ByteBuffer.allocate(4).putInt(fileSize.toInt()).array()
 
 
-                    // Send message type and file size in a single array
-                    val header = ByteArray(1 + 4) // 1 byte for message type + 4 bytes for file size
+                    // 1 byte for message type + 4 bytes for file size + 1 byte for file type length + file type bytes
+                    val headerSize = 1 + 4 + 1 + fileTypeLength
+                    val header = ByteArray(headerSize)
+
                     header[0] = messageType // Set the message type
-                    System.arraycopy(messageSizeBytes, 0, header, 1, 4) // Copy the file size after the message type
+                    System.arraycopy(messageSizeBytes, 0, header, 1, 4)// Copy the file size bytes to the header
+                    header[5] = fileTypeLength.toByte()// Set the file type length (1 byte)
+                    System.arraycopy(fileTypeBytes, 0, header, 6, fileTypeLength) // Copy the file type bytes after the length byte
+
 
                     // Write the header (message type + file size)
                     outputStream?.write(header)

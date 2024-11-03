@@ -87,7 +87,9 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
 
         override fun onProgressUpdate(progress: Int) {
             clientLog("clientConnectionListener onProgressUpdate : $progress", "progressCheck")
-            fileProgress.value = progress
+            setFileProgress(progress)
+            if (fileProgress.value == 100)
+                setFileProgress(null)
         }
 
         override fun onDisconnected(code: Int?, reason: String?) {
@@ -96,7 +98,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             )
             emitMessageValue(R.string.disconnected_error_message, reason)
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
-            onEvent(ClientEvent.SetLoading(false))
+            //onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetIsConnecting(false))
         }
 
@@ -105,7 +107,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 "clientConnectionListener ClientActivity onError  ${exception?.message}"
             )
             emitMessageValue(R.string.error_message, exception?.message ?: "")
-            onEvent(ClientEvent.SetLoading(false))
+            //onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetIsConnecting(false))
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
         }
@@ -114,7 +116,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             clientLog(
                 "clientConnectionListener onException() ${exception?.message}"
             )
-            onEvent(ClientEvent.SetLoading(false))
+            // onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetIsConnecting(false))
             emitMessageValue(R.string.error_message, exception?.message ?: "")
         }
@@ -169,7 +171,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 loading.value = event.value
             }
 
-            is ClientEvent.SetIsConnecting-> {
+            is ClientEvent.SetIsConnecting -> {
                 isConnecting.value = event.value
             }
 
@@ -229,9 +231,18 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 Constants.ProtocolType.TCP.title -> Constants.ProtocolType.TCP
                 else -> Constants.ProtocolType.WEBSOCKET
             }
+
+            ClientEvent.ResetClientMessage -> {
+                onEvent(ClientEvent.SetClientMessage(""))
+                onEvent(ClientEvent.SetFileUrl(null))
+                setFileProgress(null)
+            }
         }
     }
 
+    private fun setFileProgress(progress: Int?) {
+        fileProgress.value = progress
+    }
 
     private fun setWaitingForServer(waiting: Boolean?) {
         waitingForServerConfirmation.value = waiting

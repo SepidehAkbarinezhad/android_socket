@@ -13,9 +13,10 @@ sealed class ClientEvent {
     data class SetServerPort(val port: String) : ClientEvent()
     data class SetSocketConnectionStatus(val status: Constants.SocketStatus) : ClientEvent()
     data class SetClientMessage(val message: String) : ClientEvent()
-    data class SetFileUrl(val uri: Uri) : ClientEvent()
+    data class SetFileUrl(val uri: Uri?) : ClientEvent()
     data class SetServerMessage(val message: String) : ClientEvent()
     data class SendMessageToServer(val message: String) : ClientEvent()
     data object OnConnectToServer : ClientEvent()
     data object OnDisconnectFromServer : ClientEvent()
+    data object ResetClientMessage : ClientEvent()
 }

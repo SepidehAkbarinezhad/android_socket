@@ -34,7 +34,6 @@ class TcpServerManager(
 
     // private val clientSockets = mutableListOf<Socket>()
     private var clientSocket: Socket? = null
-    val BUFFER_SIZE = 1024
     private var inputStream: InputStream? = null
     private var outputStream: OutputStream? = null
 
@@ -79,7 +78,6 @@ class TcpServerManager(
         withContext(Dispatchers.IO) {
             try {
                 serverLog("listenToClient try")
-
                 while (clientSocket.isConnected) {
                     // Read the first byte to determine the message type
                     val messageType = inputStream?.read()?.toByte() ?: break
@@ -116,7 +114,7 @@ class TcpServerManager(
         if (totalMessageBytesRead == messageSize) {
             val stringMessage = String(messageBuffer, 0, messageSize)
             serverLog("Received complete text message: $stringMessage")
-            socketListener.forEach { it.onMessage(MESSAGE_TYPE_TEXT_CONTENT,stringMessage) }
+            socketListener.forEach { it.onMessage(MESSAGE_TYPE_TEXT_CONTENT, stringMessage) }
         } else {
             serverLog("Failed to read the entire message. Only $totalMessageBytesRead bytes read.")
         }
@@ -128,12 +126,16 @@ class TcpServerManager(
         val fileSize = readMessageSizeFromStream() ?: return
         serverLog("handleFileMessage: Receiving file of size: $fileSize bytes")
 
+        val fileTypeLength = readFileTypeLengthFromStream() ?: return
+        serverLog("handleFileMessage: fileTypeLength: $fileTypeLength")
+        val fileType = readFileType(fileTypeLength) ?: return
+        serverLog("handleFileMessage: fileType: $fileType")
+
         val fileName = "received_file_${System.currentTimeMillis()}"
         val fileContent = receiveFileContent(fileSize)
         fileContent?.let {
-            saveFileBasedOnVersion(fileName, fileContent)
+            saveFileBasedOnVersion(fileName,fileContent,fileType)
         }
-
     }
 
     private fun receiveFileContent(fileSize: Int): ByteArray? {
@@ -170,11 +172,11 @@ class TcpServerManager(
         }
     }
 
-    private fun saveFileBasedOnVersion(fileName: String, fileContent: ByteArray) {
+    private fun saveFileBasedOnVersion(fileName: String, fileContent: ByteArray, fileType : String) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 // Use MediaStore for Android 10+ (Scoped Storage)
-                saveFileToDownloads(fileName, fileContent)
+                saveFileToDownloads(fileName, fileContent,fileType)
             } else {
                 // Use external storage for Android 9 and below
                 val file = prepareFileForReceptionInDownloads(fileName)
@@ -207,6 +209,39 @@ class TcpServerManager(
         }
     }
 
+    private suspend fun readFileTypeLengthFromStream(): Int? {
+        serverLog("readFileTypeLengthFromStream()")
+        return withContext(Dispatchers.IO) {
+            val sizeBuffer = ByteArray(1) // 1 byte for file type length
+            val bytesRead = inputStream?.read(sizeBuffer) ?: return@withContext null
+            serverLog("readFileTypeLengthFromStream() bytesRead $bytesRead")
+
+            if (bytesRead == 1) {
+                sizeBuffer[0].toInt() // Convert the single byte to an integer
+            } else {
+                serverLog("Failed to read file type length.")
+                null // Indicates failure to read the byte
+            }
+        }
+    }
+
+    private suspend fun readFileType(fileLength: Int): String? {
+        serverLog("readMessageSizeFromStream()")
+        return withContext(Dispatchers.IO) {
+            // Read the entire file type based on the length
+            val messageBuffer = ByteArray(fileLength)
+            val fileType = readFully(messageBuffer, fileLength)
+            if (fileType == fileLength) {
+                val stringMessage = String(messageBuffer, 0, fileLength)
+                serverLog("Received file type: $stringMessage")
+                stringMessage
+            } else {
+                serverLog("Failed to read the entire file type")
+                null
+            }
+        }
+    }
+
     private fun readFully(buffer: ByteArray, expectedSize: Int): Int {
         var totalBytesRead = 0
         var bytesRead: Int
@@ -223,9 +258,10 @@ class TcpServerManager(
         return totalBytesRead
     }
 
-    private fun saveFileToDownloads(fileName: String, fileContent: ByteArray) {
+    private fun saveFileToDownloads(fileName: String, fileContent: ByteArray, fileType : String) {
+        val fullFileName = "$fileName.$fileType"
         val contentValues = ContentValues().apply {
-            put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+            put(MediaStore.Downloads.DISPLAY_NAME, fullFileName)
             put(MediaStore.Downloads.MIME_TYPE, "application/octet-stream")
             put(
                 MediaStore.Downloads.RELATIVE_PATH,
