@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -49,7 +48,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.LightGray
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.Path
@@ -78,7 +76,6 @@ import ir.example.androidsocket.ui.theme.spacing
 import ir.example.androidsocket.utils.clientLog
 import ir.example.androidsocket.utils.isIpValid
 import ir.example.androidsocket.utils.isPortValid
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 
@@ -101,7 +98,7 @@ internal fun ClientCompose(
     val serverPort by viewModel.serverPort.collectAsState()
     val serverPortError by viewModel.serverPortError.collectAsState()
     val socketStatus by viewModel.socketStatus.collectAsState()
-    val isConnecting by viewModel.isConnecting.collectAsState()
+    val inConnectionProcess by viewModel.inConnectionProcess.collectAsState()
     val uiEvent by viewModel.uiEvent.collectAsStateWithLifecycle(initialValue = BaseUiEvent.None)
 
     val launcher = rememberLauncherForActivityResult(
@@ -128,6 +125,7 @@ internal fun ClientCompose(
 
 
     LaunchedEffect(key1 = socketStatus) {
+        clientLog("LaunchedEffect socketStatus $socketStatus  ${socketStatus.isConnected}")
         if (!socketStatus.isConnected) {
             onEvent(ClientEvent.SetClientMessage(""))
             onEvent(ClientEvent.SetServerMessage(""))
@@ -157,14 +155,9 @@ internal fun ClientCompose(
                 serverMessage = serverMessage,
                 waitingForServer = waitingForServerConfirmation,
                 socketStatus = socketStatus,
-                isConnecting = isConnecting,
-                onConnectToServer = {
-                    clientLog("onConnectToServer")
-                    onEvent(ClientEvent.OnConnectToServer)
-                    keyboardController?.hide()
-                },
-                onDisconnectFromServer = {
-                    onEvent(ClientEvent.OnDisconnectFromServer)
+                inConnectionProcess = inConnectionProcess,
+                onConnectionButtonClicked = {
+                    onEvent(ClientEvent.OnConnectionButtonClicked)
                     keyboardController?.hide()
                 },
                 onSendMessageEvent = { message ->
@@ -195,14 +188,16 @@ fun ClientContent(
     serverMessage: String,
     waitingForServer: Boolean?,
     socketStatus: Constants.SocketStatus,
-    isConnecting: Boolean,
-    onConnectToServer: () -> Unit,
-    onDisconnectFromServer: () -> Unit,
+    inConnectionProcess: Boolean,
+    onConnectionButtonClicked: () -> Unit,
     onSendMessageEvent: (String) -> Unit,
     onAttachFileEvent: () -> Unit,
 ) {
+    clientLog("ClientContent1 $socketStatus  ${socketStatus.isConnected}")
 
     var expanded by remember { mutableStateOf(false) }
+    clientLog("ClientContent2")
+
     val attachVisibility by remember(clientMessage, waitingForServer) {
         derivedStateOf { clientMessage.isEmpty() || (fileUrl.isNotEmpty() && waitingForServer != true) }
     }
@@ -237,13 +232,9 @@ fun ClientContent(
             )
             PowerButtonBody(
                 modifier = Modifier.weight(.3f),
-                socketStatus = socketStatus, onPowerButtonClicked = {
-                    when (socketStatus.isConnected) {
-                        true -> onDisconnectFromServer()
-                        false -> onConnectToServer()
-                    }
-                },
-                isConnecting = isConnecting,
+                socketStatus = socketStatus,
+                onPowerButtonClicked = onConnectionButtonClicked,
+                inConnectionProcess = inConnectionProcess,
                 serverAddress = if (serverIp.isNotEmpty() && serverPort.isNotEmpty() && socketStatus.isConnected) "$serverIp : $serverPort" else "",
                 formIsFilled = serverIp.isNotEmpty() && serverPort.isNotEmpty(),
                 onEvent = onEvent
@@ -308,12 +299,13 @@ fun ClientContent(
 fun PowerButtonBody(
     modifier: Modifier,
     socketStatus: Constants.SocketStatus,
-    isConnecting: Boolean,
+    inConnectionProcess: Boolean,
     serverAddress: String,
     formIsFilled: Boolean,
     onEvent: (ClientEvent) -> Unit,
     onPowerButtonClicked: () -> Unit
 ) {
+    clientLog("PowerButtonBody inConnectionProcess $inConnectionProcess  ${socketStatus.isConnected}")
     var isAnimating by remember { mutableStateOf(false) }
     var circleCenter by remember { mutableStateOf(Offset(0f, 0f)) }
     var powerContainerCircleRadius by remember { mutableIntStateOf(0) }
@@ -356,8 +348,11 @@ fun PowerButtonBody(
             }
         }
     }
-    LaunchedEffect(isConnecting) {
-        if (!isConnecting) {
+    LaunchedEffect(inConnectionProcess) {
+        clientLog("LaunchedEffect inConnectionProcess $inConnectionProcess ")
+
+        if (!inConnectionProcess) {
+            clientLog("LaunchedEffect inConnectionProcess if ")
             isAnimating = false
         }
     }
@@ -393,12 +388,11 @@ fun PowerButtonBody(
                         detectTapGestures { offset ->
                             // Check if the tap is within the circle's bounds
                             val distanceFromCenter = (offset - circleCenter).getDistance()
-                            clientLog("pointerInput  $distanceFromCenter  $powerContainerCircleRadius  ${distanceFromCenter <= powerContainerCircleRadius}")
                             if (distanceFromCenter <= powerContainerCircleRadius) {
-                                if (!isConnecting) {
+                                if (!inConnectionProcess) {
                                     if (formIsFilled) {
                                         animateCircle()
-                                        onEvent(ClientEvent.SetIsConnecting(true))
+                                        onEvent(ClientEvent.SetInConnectionProcess(true))
                                     }
                                     onPowerButtonClicked()
                                 }
@@ -514,7 +508,7 @@ fun PowerButtonBody(
             ) {
                 AppText(
                     Modifier.padding(MaterialTheme.spacing.small),
-                    text = if (isConnecting) stringResource(id = R.string.connecting_label) else socketStatus.title,
+                    text = if (inConnectionProcess) stringResource(id = R.string.connecting_label) else socketStatus.title,
                     fontWeight = when (socketStatus.isConnected) {
                         true -> Bold
                         false -> Normal

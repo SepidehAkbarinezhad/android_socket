@@ -199,9 +199,7 @@ fun ServerContent(
                         .fillMaxWidth()
                         .padding(
                             horizontal = MaterialTheme.spacing.medium
-                        )
-                    //.alpha(if (clientMessage.isNotEmpty()) 1f else 0f)
-                    ,
+                        ),
                     horizontalAlignment = Alignment.Start,
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
                 ) {
@@ -219,10 +217,10 @@ fun ServerContent(
                             .padding(MaterialTheme.spacing.small)
                             .fillMaxWidth(),
                         border = BorderStroke(
-                            1.dp,
+                            2.dp,
                             color = if (clientMessage.isEmpty()) Color.Gray else MaterialTheme.colorScheme.primary
                         ),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = if (clientMessage.isEmpty())  Color.White else MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(MaterialTheme.spacing.extraMedium)
                     ) {
                         AppText(
