@@ -26,11 +26,13 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -48,7 +50,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.graphics.Color.Companion.LightGray
+import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -98,6 +102,9 @@ internal fun ClientCompose(
     val serverPort by viewModel.serverPort.collectAsState()
     val serverPortError by viewModel.serverPortError.collectAsState()
     val socketStatus by viewModel.socketStatus.collectAsState()
+    val socketIsConnected by remember(socketStatus) {
+        mutableStateOf(socketStatus == Constants.SocketStatus.CONNECTED)
+    }
     val inConnectionProcess by viewModel.inConnectionProcess.collectAsState()
     val uiEvent by viewModel.uiEvent.collectAsStateWithLifecycle(initialValue = BaseUiEvent.None)
 
@@ -125,11 +132,17 @@ internal fun ClientCompose(
 
 
     LaunchedEffect(key1 = socketStatus) {
-        clientLog("LaunchedEffect socketStatus $socketStatus  ${socketStatus.isConnected}")
-        if (!socketStatus.isConnected) {
+        if (!socketIsConnected) {
             onEvent(ClientEvent.SetClientMessage(""))
             onEvent(ClientEvent.SetServerMessage(""))
         }
+    }
+
+    LaunchedEffect(socketIsConnected, socketStatus) {
+        clientLog(
+            "LaunchedEffect---->ClientCompose-->  socketIsConnected:$socketIsConnected  title:${socketStatus.title}",
+            "connection"
+        )
     }
 
     AndroidSocketTheme(
@@ -142,34 +155,43 @@ internal fun ClientCompose(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            ClientContent(
-                onEvent = onEvent,
-                selectedProtocol = selectedProtocol,
-                serverIp = serverIp,
-                serverIpError = serverIpError,
-                serverPort = serverPort,
-                serverPortError = serverPortError,
-                clientMessage = clientMessage,
-                fileUrl = fileUrl?.toString() ?: "",
-                fileProgress = fileProgress,
-                serverMessage = serverMessage,
-                waitingForServer = waitingForServerConfirmation,
-                socketStatus = socketStatus,
-                inConnectionProcess = inConnectionProcess,
-                onConnectionButtonClicked = {
-                    onEvent(ClientEvent.OnConnectionButtonClicked)
-                    keyboardController?.hide()
-                },
-                onSendMessageEvent = { message ->
-                    clientLog("onSendMessageEvent")
-                    keyboardController?.hide()
-                    onEvent(ClientEvent.SetServerMessage(""))
-                    // onEvent(ClientEvent.SetLoading(true))
-                    onEvent(ClientEvent.SendMessageToServer(message))
+            Box(modifier = Modifier.fillMaxSize()) {
+                ClientContent(
+                    onEvent = onEvent,
+                    selectedProtocol = selectedProtocol,
+                    serverIp = serverIp,
+                    serverIpError = serverIpError,
+                    serverPort = serverPort,
+                    serverPortError = serverPortError,
+                    clientMessage = clientMessage,
+                    fileUrl = fileUrl?.toString() ?: "",
+                    fileProgress = fileProgress,
+                    serverMessage = serverMessage,
+                    waitingForServer = waitingForServerConfirmation,
+                    socketStatus = socketStatus,
+                    socketIsConnected = socketIsConnected,
+                    inConnectionProcess = inConnectionProcess,
+                    onConnectionButtonClicked = {
+                        clientLog(
+                            "if (!inConnectionProcess)  $socketIsConnected  ${socketStatus.title}",
+                            "connectionnnn"
+                        )
+                        onEvent(ClientEvent.OnConnectionButtonClicked)
+                        keyboardController?.hide()
+                    },
+                    onSendMessageEvent = { message ->
+                        clientLog("onSendMessageEvent")
+                        keyboardController?.hide()
+                        onEvent(ClientEvent.SetServerMessage(""))
+                        // onEvent(ClientEvent.SetLoading(true))
+                        onEvent(ClientEvent.SendMessageToServer(message))
 
-                },
-                onAttachFileEvent = { onAttachFile() }
-            )
+                    },
+                    onAttachFileEvent = { onAttachFile() }
+                )
+
+            }
+
         }
     }
 }
@@ -188,27 +210,20 @@ fun ClientContent(
     serverMessage: String,
     waitingForServer: Boolean?,
     socketStatus: Constants.SocketStatus,
+    socketIsConnected: Boolean,
     inConnectionProcess: Boolean,
     onConnectionButtonClicked: () -> Unit,
     onSendMessageEvent: (String) -> Unit,
     onAttachFileEvent: () -> Unit,
 ) {
-    clientLog("ClientContent1 $socketStatus  ${socketStatus.isConnected}")
 
-    var expanded by remember { mutableStateOf(false) }
-    clientLog("ClientContent2")
-
-    val attachVisibility by remember(clientMessage, waitingForServer) {
-        derivedStateOf { clientMessage.isEmpty() || (fileUrl.isNotEmpty() && waitingForServer != true) }
+    LaunchedEffect(socketIsConnected, socketStatus) {
+        clientLog(
+            "LaunchedEffect---->ClientContent-->  socketIsConnected:$socketIsConnected  title:${socketStatus.title}",
+            "connection"
+        )
     }
-    val animatedProgress by animateFloatAsState(
-        targetValue = fileProgress?.toFloat() ?: 0f,
-        animationSpec = tween(durationMillis = 500), label = ""
-    )
-    val configuration = LocalConfiguration.current
-
-    val keyboardController = LocalSoftwareKeyboardController.current
-
+    var expanded by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -233,14 +248,15 @@ fun ClientContent(
             PowerButtonBody(
                 modifier = Modifier.weight(.3f),
                 socketStatus = socketStatus,
+                socketIsConnected = socketIsConnected,
                 onPowerButtonClicked = onConnectionButtonClicked,
                 inConnectionProcess = inConnectionProcess,
-                serverAddress = if (serverIp.isNotEmpty() && serverPort.isNotEmpty() && socketStatus.isConnected) "$serverIp : $serverPort" else "",
+                serverAddress = if (serverIp.isNotEmpty() && serverPort.isNotEmpty() && socketIsConnected) "$serverIp : $serverPort" else "",
                 formIsFilled = serverIp.isNotEmpty() && serverPort.isNotEmpty(),
                 onEvent = onEvent
             )
 
-            if (!socketStatus.isConnected)
+            if (!socketIsConnected)
                 ServerInfoForm(
                     modifier = Modifier
                         .weight(.3f)
@@ -252,7 +268,7 @@ fun ClientContent(
                     onEvent = onEvent
                 )
 
-            if (socketStatus.isConnected)
+            if (socketIsConnected)
                 MessageContainer(
                     modifier = Modifier
                         .weight(.3f)
@@ -299,20 +315,24 @@ fun ClientContent(
 fun PowerButtonBody(
     modifier: Modifier,
     socketStatus: Constants.SocketStatus,
+    socketIsConnected: Boolean,
     inConnectionProcess: Boolean,
     serverAddress: String,
     formIsFilled: Boolean,
     onEvent: (ClientEvent) -> Unit,
     onPowerButtonClicked: () -> Unit
 ) {
-    clientLog("PowerButtonBody inConnectionProcess $inConnectionProcess  ${socketStatus.isConnected}")
+    clientLog(
+        "PowerButtonBody  socketIsConnected:$socketIsConnected  ${socketStatus.title}",
+        "connectionnnn"
+    )
     var isAnimating by remember { mutableStateOf(false) }
     var circleCenter by remember { mutableStateOf(Offset(0f, 0f)) }
     var powerContainerCircleRadius by remember { mutableIntStateOf(0) }
     val connectionStatusBrush = Brush.verticalGradient(
         colors = if (isAnimating) listOf(MaterialTheme.colorScheme.tertiary, White)
         else
-            when (socketStatus.isConnected) {
+            when (socketIsConnected) {
                 true -> listOf(Green900, Green400)
                 false -> listOf(LightGray, LightGray)
             }
@@ -321,10 +341,10 @@ fun PowerButtonBody(
     val coroutineScope = rememberCoroutineScope()
     val currentScale = powerButtonTargetScale.value
     val alpha = (1 - currentScale / 1.5f).coerceIn(0f, 1f)
+    var onConnectedClicked by remember { mutableStateOf(false) }
 
     fun animateCircle() {
         isAnimating = true
-
         coroutineScope.launch {
             // Loop for continuous animation
             while (isAnimating) {
@@ -348,11 +368,23 @@ fun PowerButtonBody(
             }
         }
     }
-    LaunchedEffect(inConnectionProcess) {
-        clientLog("LaunchedEffect inConnectionProcess $inConnectionProcess ")
+    LaunchedEffect(onConnectedClicked) {
+        if(onConnectedClicked){
+            if (formIsFilled &&  !socketIsConnected) {
+                animateCircle()
+                onEvent(ClientEvent.SetInConnectionProcess(true))
+            }
+            onPowerButtonClicked()
+        }
 
+    }
+    LaunchedEffect(socketIsConnected) {
+        //whenever socket status changed set it false
+        onConnectedClicked = false
+    }
+
+    LaunchedEffect(inConnectionProcess) {
         if (!inConnectionProcess) {
-            clientLog("LaunchedEffect inConnectionProcess if ")
             isAnimating = false
         }
     }
@@ -362,170 +394,167 @@ fun PowerButtonBody(
     val animateColor = MaterialTheme.colorScheme.tertiary
     val connectColor = MaterialTheme.colorScheme.onSecondary
     val disConnectColor = MaterialTheme.colorScheme.primaryContainer
-    val borderColor by remember(socketStatus.isConnected, isAnimating) {
+    val borderColor by remember(socketIsConnected, isAnimating) {
         derivedStateOf {
             when {
                 isAnimating -> animateColor
-                socketStatus.isConnected -> connectColor
+                socketIsConnected -> connectColor
                 else -> disConnectColor
             }
         }
     }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-    ) {
-        Box(
-            Modifier
+    Box(modifier.fillMaxWidth()) {
+        Column(
+            modifier = modifier
                 .fillMaxWidth()
-                .weight(.3f)
         ) {
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectTapGestures { offset ->
-                            // Check if the tap is within the circle's bounds
-                            val distanceFromCenter = (offset - circleCenter).getDistance()
-                            if (distanceFromCenter <= powerContainerCircleRadius) {
-                                if (!inConnectionProcess) {
-                                    if (formIsFilled) {
-                                        animateCircle()
-                                        onEvent(ClientEvent.SetInConnectionProcess(true))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .weight(.3f)
+            ) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            detectTapGestures { offset ->
+                                // Check if the tap is within the circle's bounds
+                                val distanceFromCenter = (offset - circleCenter).getDistance()
+                                if (distanceFromCenter <= powerContainerCircleRadius) {
+                                    if (!inConnectionProcess) {
+                                        onConnectedClicked = true
                                     }
-                                    onPowerButtonClicked()
                                 }
-
                             }
                         }
-                    }
-            ) {
-                circleCenter = Offset(size.width / 2, size.height / 2)
-                powerContainerCircleRadius = size.height.toInt() / 3
-                drawRect(
-                    brush = Brush.linearGradient(
-                        colors = listOf(headerStartBrush, headerEndBrush),
-                        start = Offset(0f, 0f), // Top of the arc
-                        end = Offset(
-                            0f,
-                            size.height - (size.height / 4) - 2
-                        )                        // Bottom of the arc
-                    ),
-                    size = Size(size.width, size.height)
-                )
+                ) {
+                    circleCenter = Offset(size.width / 2, size.height / 2)
+                    powerContainerCircleRadius = size.height.toInt() / 3
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = listOf(headerStartBrush, headerEndBrush),
+                            start = Offset(0f, 0f), // Top of the arc
+                            end = Offset(
+                                0f,
+                                size.height - (size.height / 4) - 2
+                            )                        // Bottom of the arc
+                        ),
+                        size = Size(size.width, size.height)
+                    )
 
-                drawCircle(color = White, radius = powerContainerCircleRadius.toFloat())
-                drawCircle(
-                    color = if (!isAnimating) borderColor else animateColor,
-                    radius = powerContainerCircleRadius.toFloat(),
-                    style = Stroke(width = 24f)
-                )
-                if (isAnimating)
+                    drawCircle(color = White, radius = powerContainerCircleRadius.toFloat())
                     drawCircle(
-                        color = animateColor.copy(alpha = alpha),
-                        radius = powerContainerCircleRadius * powerButtonTargetScale.value,
+                        color = if (!isAnimating) borderColor else animateColor,
+                        radius = powerContainerCircleRadius.toFloat(),
                         style = Stroke(width = 24f)
                     )
+                    if (isAnimating)
+                        drawCircle(
+                            color = animateColor.copy(alpha = alpha),
+                            radius = powerContainerCircleRadius * powerButtonTargetScale.value,
+                            style = Stroke(width = 24f)
+                        )
 
 
-            }
-            if (socketStatus.isConnected) {
-                Image(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size((powerContainerCircleRadius / 3).dp),
-                    painter = painterResource(id = R.drawable.power_icon),
-                    contentDescription = socketStatus.title,
-                )
-            } else {
-                Icon(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size((powerContainerCircleRadius / 3).dp),
-                    painter = painterResource(id = R.drawable.power_icon),
-                    tint = LightGray,
-                    contentDescription = socketStatus.title
-                )
-            }
-        }
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .weight(.2f)
-        ) {
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-            ) {
-                drawRect(
-                    color = headerEndBrush,
-                    size = Size(size.width, size.height / 2)
-                )
-                val downHeaderRectangle = Path().apply {
-                    arcTo(
-                        rect = Rect(
-                            left = 0 - 140f,
-                            top = -10f,
-                            right = size.width + 140,
-                            bottom = size.height
-                        ),
-                        startAngleDegrees = 0f,
-                        sweepAngleDegrees = 180f,
-                        forceMoveTo = false
-                    )
-                    close()
                 }
-                drawPath(
-                    path = downHeaderRectangle,
-                    color = headerEndBrush,
-                )
-                val shadowArcPath = Path().apply {
-                    arcTo(
-                        rect = Rect(
-                            left = 0 - 100f,
-                            top = 0f,
-                            right = size.width + 100,
-                            bottom = size.height
-                        ),
-                        startAngleDegrees = 0f,
-                        sweepAngleDegrees = 180f,
-                        forceMoveTo = false
+                if (socketIsConnected) {
+                    Image(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size((powerContainerCircleRadius / 3).dp),
+                        painter = painterResource(id = R.drawable.power_icon),
+                        contentDescription = socketStatus.title,
+                    )
+                } else {
+                    Icon(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size((powerContainerCircleRadius / 3).dp),
+                        painter = painterResource(id = R.drawable.power_icon),
+                        tint = LightGray,
+                        contentDescription = socketStatus.title
                     )
                 }
-                drawPath(
-                    path = shadowArcPath,
-                    color = borderColor,
-                    style = Stroke(width = 24f)
-                )
             }
-
-            Column(
+            Box(
                 Modifier
-                    .align(Alignment.Center),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .fillMaxWidth()
+                    .weight(.2f)
             ) {
-                AppText(
-                    Modifier.padding(MaterialTheme.spacing.small),
-                    text = if (inConnectionProcess) stringResource(id = R.string.connecting_label) else socketStatus.title,
-                    fontWeight = when (socketStatus.isConnected) {
-                        true -> Bold
-                        false -> Normal
-                    },
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        brush = connectionStatusBrush
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    drawRect(
+                        color = headerEndBrush,
+                        size = Size(size.width, size.height / 2)
                     )
-                )
-                AppText(
+                    val downHeaderRectangle = Path().apply {
+                        arcTo(
+                            rect = Rect(
+                                left = 0 - 140f,
+                                top = -10f,
+                                right = size.width + 140,
+                                bottom = size.height
+                            ),
+                            startAngleDegrees = 0f,
+                            sweepAngleDegrees = 180f,
+                            forceMoveTo = false
+                        )
+                        close()
+                    }
+                    drawPath(
+                        path = downHeaderRectangle,
+                        color = headerEndBrush,
+                    )
+                    val shadowArcPath = Path().apply {
+                        arcTo(
+                            rect = Rect(
+                                left = 0 - 100f,
+                                top = 0f,
+                                right = size.width + 100,
+                                bottom = size.height
+                            ),
+                            startAngleDegrees = 0f,
+                            sweepAngleDegrees = 180f,
+                            forceMoveTo = false
+                        )
+                    }
+                    drawPath(
+                        path = shadowArcPath,
+                        color = borderColor,
+                        style = Stroke(width = 24f)
+                    )
+                }
+
+                Column(
                     Modifier
-                        .padding(MaterialTheme.spacing.small)
-                        .alpha(if (socketStatus.isConnected) 1f else 0f),
-                    text = serverAddress,
-                    style = MaterialTheme.typography.titleMedium,
-                    textColor = LightGray,
-                    fontWeight = Bold
-                )
+                        .align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    AppText(
+                        Modifier.padding(MaterialTheme.spacing.small),
+                        text = if (inConnectionProcess) stringResource(id = R.string.connecting_label) else socketStatus.title,
+                        fontWeight = when (socketIsConnected) {
+                            true -> Bold
+                            false -> Normal
+                        },
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            brush = connectionStatusBrush
+                        )
+                    )
+                    AppText(
+                        Modifier
+                            .padding(MaterialTheme.spacing.small)
+                            .alpha(if (socketIsConnected) 1f else 0f),
+                        text = serverAddress,
+                        style = MaterialTheme.typography.titleMedium,
+                        textColor = LightGray,
+                        fontWeight = Bold
+                    )
+                }
+
             }
 
         }
@@ -634,11 +663,9 @@ fun MessageContainer(
             onValueChange = {
                 onEvent(ClientEvent.SetClientMessage(it))
             },
-            enabled = socketStatus.isConnected,
             singleLine = true,
             label = stringResource(id = R.string.message),
             trailingIcon = {
-                clientLog("trailingIcon:  ${socketStatus.isConnected}  $attachVisibility  $waitingForServer")
 
                 if (attachVisibility) {
                     IconButton(

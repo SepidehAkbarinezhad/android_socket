@@ -100,10 +100,12 @@ internal fun ServerComposable(
     val wifiIpAddress by viewModel.wifiServerIp.collectAsState()
     val lanIpAddress by viewModel.ethernetServerIp.collectAsState()
     val socketStatus by viewModel.socketStatus.collectAsState()
-
+    val socketIsConnected by remember(socketStatus) {
+        mutableStateOf(socketStatus == Constants.SocketStatus.CONNECTED)
+    }
 
     LaunchedEffect(key1 = socketStatus) {
-        if (!socketStatus.isConnected) {
+        if (!socketIsConnected) {
             viewModel.onEvent(ServerEvent.SetClientMessage(""))
         }
     }
@@ -131,6 +133,7 @@ internal fun ServerComposable(
                 wifiIpAddress = wifiIpAddress,
                 lanIpAddress = lanIpAddress,
                 socketStatus = socketStatus,
+                socketIsConnected = socketIsConnected,
                 clientMessage = clientMessage,
                 fileProgress = fileProgress,
                 fileIsSaved = fileIsSaved
@@ -148,6 +151,7 @@ fun ServerContent(
     wifiIpAddress: String,
     lanIpAddress: String,
     socketStatus: Constants.SocketStatus,
+    socketIsConnected : Boolean,
     clientMessage: String,
     fileProgress: Int?,
     fileIsSaved: Boolean
@@ -234,6 +238,7 @@ fun ServerContent(
             ConnectionBody(
                 modifier = Modifier.weight(.3f),
                 socketStatus = socketStatus,
+                socketIsConnected = socketIsConnected,
                 isConnecting = true,
                 wifiIpAddress = wifiIpAddress,
                 lanIpAddress = lanIpAddress,
@@ -554,6 +559,7 @@ fun FileTransferAnimation() {
 fun ConnectionBody(
     modifier: Modifier,
     socketStatus: Constants.SocketStatus,
+    socketIsConnected : Boolean,
     isConnecting: Boolean,
     wifiIpAddress: String,
     lanIpAddress: String,
@@ -567,7 +573,7 @@ fun ConnectionBody(
     val connectionStatusBrush = Brush.verticalGradient(
         colors = if (isAnimating) listOf(MaterialTheme.colorScheme.tertiary, Color.White)
         else
-            when (socketStatus.isConnected) {
+            when (socketIsConnected) {
                 true -> listOf(Green900, Green400)
                 false -> listOf(Color.LightGray, Color.LightGray)
             }
@@ -608,11 +614,11 @@ fun ConnectionBody(
     val animateColor = MaterialTheme.colorScheme.tertiary
     val connectColor = MaterialTheme.colorScheme.onSecondary
     val disConnectColor = MaterialTheme.colorScheme.primaryContainer
-    val borderColor by remember(socketStatus.isConnected, isAnimating) {
+    val borderColor by remember(socketIsConnected, isAnimating) {
         derivedStateOf {
             when {
                 isAnimating -> animateColor
-                socketStatus.isConnected -> connectColor
+                socketIsConnected -> connectColor
                 else -> disConnectColor
             }
         }
@@ -709,7 +715,7 @@ fun ConnectionBody(
                     .fillMaxHeight(.5f),
                 contentAlignment = Alignment.Center
             ) {
-                if (socketStatus.isConnected) {
+                if (socketIsConnected) {
                     Image(
                         modifier = Modifier
                             .clickable {

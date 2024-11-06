@@ -6,9 +6,8 @@ object Constants {
 
     enum class SocketStatus(
         val title: String,
-        val isConnected: Boolean,
     ) {
-        CONNECTED("Connected", isConnected = true), DISCONNECTED("Disconnected", isConnected = false)
+        CONNECTED("Connected"), DISCONNECTED("Disconnected")
     }
 
     enum class ConnectionType(

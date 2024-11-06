@@ -9,7 +9,7 @@ interface SocketClient {
     var port : String
     val socketListener: List<SocketConnectionListener>
 
-    suspend fun connectWithTimeout(timeoutMillis: Long = 35000)
+    suspend fun connectWithTimeout(timeoutMillis: Long = 90000)
     fun sendMessage(message: String,timeoutMillis : Long)
     fun sendFile(uri: Uri)
     fun onMessage(message: String?)
