@@ -26,13 +26,11 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -50,14 +48,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.graphics.Color.Companion.LightGray
-import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -106,7 +101,6 @@ internal fun ClientCompose(
         mutableStateOf(socketStatus == Constants.SocketStatus.CONNECTED)
     }
     val inConnectionProcess by viewModel.inConnectionProcess.collectAsState()
-    val uiEvent by viewModel.uiEvent.collectAsStateWithLifecycle(initialValue = BaseUiEvent.None)
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -145,55 +139,40 @@ internal fun ClientCompose(
         )
     }
 
-    AndroidSocketTheme(
-        displayProgressBar = viewModel.loading.value,
-        uiEvent = uiEvent,
-        onResetScreenMessage = { viewModel.emitMessageValue(null) }
-    ) {
-        // A surface container using the 'background' color from the theme
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                ClientContent(
-                    onEvent = onEvent,
-                    selectedProtocol = selectedProtocol,
-                    serverIp = serverIp,
-                    serverIpError = serverIpError,
-                    serverPort = serverPort,
-                    serverPortError = serverPortError,
-                    clientMessage = clientMessage,
-                    fileUrl = fileUrl?.toString() ?: "",
-                    fileProgress = fileProgress,
-                    serverMessage = serverMessage,
-                    waitingForServer = waitingForServerConfirmation,
-                    socketStatus = socketStatus,
-                    socketIsConnected = socketIsConnected,
-                    inConnectionProcess = inConnectionProcess,
-                    onConnectionButtonClicked = {
-                        clientLog(
-                            "if (!inConnectionProcess)  $socketIsConnected  ${socketStatus.title}",
-                            "connectionnnn"
-                        )
-                        onEvent(ClientEvent.OnConnectionButtonClicked)
-                        keyboardController?.hide()
-                    },
-                    onSendMessageEvent = { message ->
-                        clientLog("onSendMessageEvent")
-                        keyboardController?.hide()
-                        onEvent(ClientEvent.SetServerMessage(""))
-                        // onEvent(ClientEvent.SetLoading(true))
-                        onEvent(ClientEvent.SendMessageToServer(message))
+    ClientContent(
+        onEvent = onEvent,
+        selectedProtocol = selectedProtocol,
+        serverIp = serverIp,
+        serverIpError = serverIpError,
+        serverPort = serverPort,
+        serverPortError = serverPortError,
+        clientMessage = clientMessage,
+        fileUrl = fileUrl?.toString() ?: "",
+        fileProgress = fileProgress,
+        serverMessage = serverMessage,
+        waitingForServer = waitingForServerConfirmation,
+        socketStatus = socketStatus,
+        socketIsConnected = socketIsConnected,
+        inConnectionProcess = inConnectionProcess,
+        onConnectionButtonClicked = {
+            clientLog(
+                "if (!inConnectionProcess)  $socketIsConnected  ${socketStatus.title}",
+                "connectionnnn"
+            )
+            onEvent(ClientEvent.OnConnectionButtonClicked)
+            keyboardController?.hide()
+        },
+        onSendMessageEvent = { message ->
+            clientLog("onSendMessageEvent")
+            keyboardController?.hide()
+            onEvent(ClientEvent.SetServerMessage(""))
+            // onEvent(ClientEvent.SetLoading(true))
+            onEvent(ClientEvent.SendMessageToServer(message))
 
-                    },
-                    onAttachFileEvent = { onAttachFile() }
-                )
+        },
+        onAttachFileEvent = { onAttachFile() }
+    )
 
-            }
-
-        }
-    }
 }
 
 @Composable
@@ -217,12 +196,6 @@ fun ClientContent(
     onAttachFileEvent: () -> Unit,
 ) {
 
-    LaunchedEffect(socketIsConnected, socketStatus) {
-        clientLog(
-            "LaunchedEffect---->ClientContent-->  socketIsConnected:$socketIsConnected  title:${socketStatus.title}",
-            "connection"
-        )
-    }
     var expanded by remember { mutableStateOf(false) }
 
     Box(

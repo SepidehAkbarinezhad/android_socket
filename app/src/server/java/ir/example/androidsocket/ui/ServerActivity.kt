@@ -16,22 +16,28 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.androidSocket.R
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dagger.hilt.android.AndroidEntryPoint
 import ir.example.androidsocket.Constants
 import ir.example.androidsocket.MainApplication
+import ir.example.androidsocket.ui.base.BaseUiEvent
 import ir.example.androidsocket.ui.base.PermissionDialog
+import ir.example.androidsocket.ui.theme.AndroidSocketTheme
 import ir.example.androidsocket.utils.ConnectionTypeManager
 import ir.example.androidsocket.utils.NotificationMessageBroadcastReceiver
 import ir.example.androidsocket.utils.serverLog
@@ -43,7 +49,6 @@ class ServerActivity : ComponentActivity() {
     private val viewModel: ServerViewModel by viewModels()
     private lateinit var connectivityBroadcastReceiver: BroadcastReceiver
     private lateinit var notificationMessageReceiver: NotificationMessageBroadcastReceiver
-
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -90,7 +95,8 @@ class ServerActivity : ComponentActivity() {
             val openStoragePermissionDialog by viewModel.openStoragePermissionDialog.collectAsStateWithLifecycle(
                 initialValue = false
             )
-
+            val uiEvent by viewModel.uiEvent.collectAsStateWithLifecycle(initialValue = BaseUiEvent.None)
+            val loading by viewModel.loading
             LaunchedEffect(Unit) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     /**
@@ -108,10 +114,10 @@ class ServerActivity : ComponentActivity() {
                             activity, Manifest.permission.POST_NOTIFICATIONS
                         ) -> {
                             /**
-                            * true if the user has previously denied the permission request .
-                            * explain to the user why your app requires this permission for a specific feature to behave as expected
-                            * and what features are disabled if it's declined.
-                            * */
+                             * true if the user has previously denied the permission request .
+                             * explain to the user why your app requires this permission for a specific feature to behave as expected
+                             * and what features are disabled if it's declined.
+                             * */
                             viewModel.setOpenNotificationPermissionDialog(true)
 
                         }
@@ -128,7 +134,7 @@ class ServerActivity : ComponentActivity() {
 
             }
             LaunchedEffect(notificationPermissionGranted) {
-                if(notificationPermissionGranted){
+                if (notificationPermissionGranted) {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                         when {
                             ContextCompat.checkSelfPermission(
@@ -143,6 +149,7 @@ class ServerActivity : ComponentActivity() {
                             ) -> {
                                 viewModel.setOpenStoragePermissionDialog(true)
                             }
+
                             else -> {
                                 // The registered ActivityResultCallback gets the result of this request.
                                 viewModel.setOpenStoragePermissionDialog(false)
@@ -157,43 +164,52 @@ class ServerActivity : ComponentActivity() {
                 }
             }
 
-            Box(Modifier.fillMaxSize()) {
-                ServerComposable(
-                    viewModel = viewModel,
-                    connectionTypeManager = connectionTypeManager,
-                    onEvent = { viewModel.onEvent(it) }
-                )
-                if (openNotificationPermissionDialog) {
-                    PermissionDialog(
-                        modifier = Modifier.align(Alignment.Center),
-                        permissionReason = R.string.notification_permission_reason,
-                        onDismissRequest = {
+            AndroidSocketTheme(uiEvent = uiEvent, displayProgressBar = loading) {
+                val systemUiController = rememberSystemUiController()
+                systemUiController.setNavigationBarColor(MaterialTheme.colorScheme.primary)
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                ) {
+                    ServerComposable(
+                        viewModel = viewModel,
+                        connectionTypeManager = connectionTypeManager,
+                        onEvent = { viewModel.onEvent(it) }
+                    )
+                    if (openNotificationPermissionDialog) {
+                        PermissionDialog(
+                            modifier = Modifier.align(Alignment.Center),
+                            permissionReason = R.string.notification_permission_reason,
+                            onDismissRequest = {
+                                viewModel.setOpenNotificationPermissionDialog(false)
+                                finish()
+                            }
+                        ) {
                             viewModel.setOpenNotificationPermissionDialog(false)
-                            finish()
+                            requestNotificationPermissionLauncher.launch(
+                                Manifest.permission.POST_NOTIFICATIONS
+                            )
                         }
-                    ) {
-                        viewModel.setOpenNotificationPermissionDialog(false)
-                        requestNotificationPermissionLauncher.launch(
-                            Manifest.permission.POST_NOTIFICATIONS
-                        )
                     }
-                }
-                if(openStoragePermissionDialog){
-                    PermissionDialog(
-                        modifier = Modifier.align(Alignment.Center),
-                        permissionReason = R.string.storage_permission_reason,
-                        onDismissRequest = {
+                    if (openStoragePermissionDialog) {
+                        PermissionDialog(
+                            modifier = Modifier.align(Alignment.Center),
+                            permissionReason = R.string.storage_permission_reason,
+                            onDismissRequest = {
+                                viewModel.setOpenStoragePermissionDialog(false)
+                                finish()
+                            }
+                        ) {
                             viewModel.setOpenStoragePermissionDialog(false)
-                            finish()
+                            requestStoragePermissionLauncher.launch(
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                            )
                         }
-                    ) {
-                        viewModel.setOpenStoragePermissionDialog(false)
-                        requestStoragePermissionLauncher.launch(
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE
-                        )
                     }
                 }
             }
+
         }
     }
 

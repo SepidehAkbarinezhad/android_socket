@@ -86,9 +86,6 @@ internal fun ServerComposable(
 ) {
 
     val context = LocalContext.current
-
-    val uiEvent by viewModel.uiEvent.collectAsStateWithLifecycle(initialValue = BaseUiEvent.None)
-    val loading by viewModel.loading
     val clientMessage by viewModel.clientMessage.collectAsState()
     val connectionType by connectionTypeManager.connectionType.collectAsState()
     val fileProgress by viewModel.fileProgress.collectAsState()
@@ -118,28 +115,19 @@ internal fun ServerComposable(
         viewModel.onEvent(ServerEvent.GetLanIpAddress(context))
     }
 
-    AndroidSocketTheme(uiEvent = uiEvent, displayProgressBar = loading) {
-        val systemUiController = rememberSystemUiController()
-        systemUiController.setNavigationBarColor(MaterialTheme.colorScheme.primary)
-        Surface(
-            modifier = Modifier.padding(WindowInsets.navigationBars.asPaddingValues()),
-            color = MaterialTheme.colorScheme.primary,
-        ) {
-            ServerContent(
-                onEvent = onEvent,
-                connectionType = connectionType,
-                selectedProtocol = selectedProtocol,
-                isConnecting = isConnecting,
-                wifiIpAddress = wifiIpAddress,
-                lanIpAddress = lanIpAddress,
-                socketStatus = socketStatus,
-                socketIsConnected = socketIsConnected,
-                clientMessage = clientMessage,
-                fileProgress = fileProgress,
-                fileIsSaved = fileIsSaved
-            )
-        }
-    }
+    ServerContent(
+        onEvent = onEvent,
+        connectionType = connectionType,
+        selectedProtocol = selectedProtocol,
+        isConnecting = isConnecting,
+        wifiIpAddress = wifiIpAddress,
+        lanIpAddress = lanIpAddress,
+        socketStatus = socketStatus,
+        socketIsConnected = socketIsConnected,
+        clientMessage = clientMessage,
+        fileProgress = fileProgress,
+        fileIsSaved = fileIsSaved
+    )
 }
 
 @Composable
@@ -177,7 +165,6 @@ fun ServerContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -559,7 +546,7 @@ fun FileTransferAnimation() {
 fun ConnectionBody(
     modifier: Modifier,
     socketStatus: Constants.SocketStatus,
-    socketIsConnected : Boolean,
+    socketIsConnected: Boolean,
     isConnecting: Boolean,
     wifiIpAddress: String,
     lanIpAddress: String,

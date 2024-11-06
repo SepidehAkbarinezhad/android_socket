@@ -22,7 +22,9 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.androidSocket.R
 import dagger.hilt.android.AndroidEntryPoint
+import ir.example.androidsocket.ui.base.BaseUiEvent
 import ir.example.androidsocket.ui.base.PermissionDialog
+import ir.example.androidsocket.ui.theme.AndroidSocketTheme
 import ir.example.androidsocket.utils.clientLog
 
 
@@ -33,7 +35,6 @@ class ClientActivity : ComponentActivity() {
 
     @SuppressLint("SuspiciousIndentation")
     override fun onCreate(savedInstanceState: Bundle?) {
-        clientLog("ClientActivity onCreate()")
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val activity = this@ClientActivity
@@ -95,28 +96,37 @@ class ClientActivity : ComponentActivity() {
                 }
 
             }
+            val uiEvent by viewModel.uiEvent.collectAsStateWithLifecycle(initialValue = BaseUiEvent.None)
 
-            Box(Modifier.fillMaxSize()) {
-                ClientCompose(
-                    viewModel = viewModel,
-                ) { event -> viewModel.onEvent(event) }
 
-                if (openPermissionDialog) {
-                    clientLog("showPermissionDialog")
-                    PermissionDialog(
-                        modifier = Modifier.align(Alignment.Center),
-                        permissionReason = R.string.notification_permission_reason,
-                        onDismissRequest = {
-                            viewModel.setOpenNotificationPermissionDialog(false)
-                            finish()
+            AndroidSocketTheme(
+                displayProgressBar = viewModel.loading.value,
+                uiEvent = uiEvent,
+                onResetScreenMessage = { viewModel.emitMessageValue(null) }
+            ) {
+                Box(Modifier.fillMaxSize()) {
+                    ClientCompose(
+                        viewModel = viewModel,
+                    ) { event -> viewModel.onEvent(event) }
+
+                    if (openPermissionDialog) {
+                        clientLog("showPermissionDialog")
+                        PermissionDialog(
+                            modifier = Modifier.align(Alignment.Center),
+                            permissionReason = R.string.notification_permission_reason,
+                            onDismissRequest = {
+                                viewModel.setOpenNotificationPermissionDialog(false)
+                                finish()
+                            }
+                        ) {
+                            requestPermissionLauncher.launch(
+                                Manifest.permission.POST_NOTIFICATIONS
+                            )
                         }
-                    ) {
-                        requestPermissionLauncher.launch(
-                            Manifest.permission.POST_NOTIFICATIONS
-                        )
                     }
                 }
             }
+
         }
     }
 

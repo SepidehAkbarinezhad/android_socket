@@ -8,13 +8,12 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Typography
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -74,8 +73,6 @@ fun AndroidSocketTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-
-
     CompositionLocalProvider(LocalSpacing provides Spacing()) {
         androidx.compose.material3.MaterialTheme(
             colorScheme = colorScheme,
@@ -102,10 +99,9 @@ fun AndroidSocketTheme(
 
                 }
             }
-
             Scaffold(
+                modifier = Modifier.fillMaxSize(),
                 snackbarHost = {
-
                     SnackbarHost(
                         modifier = Modifier.padding(WindowInsets.navigationBars.asPaddingValues()),
                         hostState = scaffoldState
@@ -115,7 +111,7 @@ fun AndroidSocketTheme(
                         ) {
                             Snackbar(
                                 snackbarData = data,
-                                containerColor  = MaterialTheme.colorScheme.tertiary,
+                                containerColor = androidx.compose.material.MaterialTheme.colors.secondary,
                                 contentColor = Color.White
                             )
                         }
