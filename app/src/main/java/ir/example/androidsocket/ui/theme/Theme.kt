@@ -3,17 +3,20 @@ package ir.example.androidsocket.ui.theme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Scaffold
-import androidx.compose.material.ScaffoldState
-import androidx.compose.material.Snackbar
-import androidx.compose.material.SnackbarHost
-import androidx.compose.material.Typography
-import androidx.compose.material.darkColors
-import androidx.compose.material.lightColors
-import androidx.compose.material.rememberScaffoldState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -27,49 +30,56 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import ir.example.androidsocket.ui.base.BaseUiEvent
 
-private val DarkColorPalette = darkColors(
+private val DarkColorScheme = darkColorScheme(
     primary = AppColors.Dark.primary,
     onPrimary = AppColors.Dark.onPrimary,
-    surface = AppColors.Dark.surface,
-    onSurface = AppColors.Dark.onSurface,
+    primaryContainer = AppColors.Dark.primaryContainer,
+    onPrimaryContainer = AppColors.Dark.onPrimaryContainer,
     secondary = AppColors.Dark.secondary,
     onSecondary = AppColors.Dark.onSecondary,
+    tertiary = AppColors.Dark.tertiary,
+    onTertiary = AppColors.Dark.onTertiary,
+    surface = AppColors.Dark.surface,
+    onSurface = AppColors.Dark.onSurface,
     background = AppColors.Dark.background,
-    onBackground = AppColors.Dark.onBackground
-)
+    error = AppColors.Dark.error,
+    onError = AppColors.Dark.onError,
 
-private val LightColorPalette = lightColors(
+    )
+
+private val LightColorScheme = lightColorScheme(
     primary = AppColors.Light.primary,
     onPrimary = AppColors.Light.onPrimary,
-    surface = AppColors.Light.surface,
-    onSurface = AppColors.Light.onSurface,
+    primaryContainer = AppColors.Light.primaryContainer,
+    onPrimaryContainer = AppColors.Light.onPrimaryContainer,
     secondary = AppColors.Light.secondary,
     onSecondary = AppColors.Light.onSecondary,
+    tertiary = AppColors.Light.tertiary,
+    onTertiary = AppColors.Light.onTertiary,
+    surface = AppColors.Light.surface,
+    onSurface = AppColors.Light.onSurface,
     background = AppColors.Light.background,
-    onBackground = AppColors.Light.onBackground
+    error = AppColors.Light.error,
+    onError = AppColors.Light.onError,
 )
 
 @Composable
 fun AndroidSocketTheme(
     direction: ProvidedValue<LayoutDirection> = LocalLayoutDirection provides LayoutDirection.Ltr,
     darkTheme: Boolean = isSystemInDarkTheme(),
-    scaffoldState: ScaffoldState = rememberScaffoldState(),
+    scaffoldState: SnackbarHostState = SnackbarHostState(),
     uiEvent: BaseUiEvent,
     onResetScreenMessage: () -> Unit = {},
     displayProgressBar: Boolean? = null,
     content: @Composable () -> Unit
 ) {
-    val colors = if (darkTheme) {
-        DarkColorPalette
-    } else {
-        LightColorPalette
-    }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
 
     CompositionLocalProvider(LocalSpacing provides Spacing()) {
-        androidx.compose.material.MaterialTheme(
-            colors = colors,
+        androidx.compose.material3.MaterialTheme(
+            colorScheme = colorScheme,
             typography = Typography(),
-            shapes = appShape,
         ) {
             val context = LocalContext.current
 
@@ -83,24 +93,29 @@ fun AndroidSocketTheme(
                                 } else {
                                     context.getString(messageId)
                                 }
-                            scaffoldState.snackbarHostState.showSnackbar(message = messageValue)
+                            scaffoldState.showSnackbar(message = messageValue)
                             onResetScreenMessage()
                         }
                     }
-                    else->{}
+
+                    else -> {}
 
                 }
             }
+
             Scaffold(
-                scaffoldState = scaffoldState,
                 snackbarHost = {
-                    SnackbarHost(hostState = it) { data ->
+
+                    SnackbarHost(
+                        modifier = Modifier.padding(WindowInsets.navigationBars.asPaddingValues()),
+                        hostState = scaffoldState
+                    ) { data ->
                         CompositionLocalProvider(
                             direction
                         ) {
                             Snackbar(
                                 snackbarData = data,
-                                backgroundColor = androidx.compose.material.MaterialTheme.colors.secondary,
+                                containerColor  = MaterialTheme.colorScheme.tertiary,
                                 contentColor = Color.White
                             )
                         }

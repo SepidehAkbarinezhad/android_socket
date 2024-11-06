@@ -1,12 +1,12 @@
 package ir.example.androidsocket.ui.base
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +21,7 @@ import ir.example.androidsocket.ui.theme.spacing
 @Composable
 fun PermissionDialog(
     modifier: Modifier = Modifier,
+    permissionReason : Int,
     onDismissRequest: () -> Unit,
     onGrantClicked: () -> Unit,
 ) {
@@ -48,7 +49,7 @@ fun PermissionDialog(
                 .height(1.dp)
                 .background(Color.Red))
             AppText(
-                text = stringResource(id = R.string.permission_dialog_message),
+                text = stringResource(id = permissionReason),
                 maxLine = 5
             )
             AppButtonsRow(

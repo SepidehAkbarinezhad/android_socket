@@ -8,26 +8,38 @@ import android.content.ServiceConnection
 import android.os.Build
 import android.os.IBinder
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.viewModelScope
 import com.example.androidSocket.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import ir.example.androidsocket.Constants
 import ir.example.androidsocket.Constants.CLIENT_MESSAGE_NOTIFICATION_ID
+import ir.example.androidsocket.Constants.MessageConstantType.MESSAGE_TYPE_FILE_CONTENT
+import ir.example.androidsocket.Constants.MessageConstantType.MESSAGE_TYPE_TEXT_CONTENT
 import ir.example.androidsocket.MainApplication
 import ir.example.androidsocket.SocketConnectionListener
-import ir.example.androidsocket.SocketServerForegroundService
-import ir.example.androidsocket.ui.ServerEvent
+import ir.example.androidsocket.socket.SocketServerForegroundService
 import ir.example.androidsocket.ui.base.BaseViewModel
+import ir.example.androidsocket.utils.ConnectionTypeManager
 import ir.example.androidsocket.utils.IpAddressManager
 import ir.example.androidsocket.utils.serverLog
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import org.java_websocket.WebSocket
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
 @HiltViewModel
 internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
+    var openStoragePermissionDialog = MutableStateFlow(false)
+
     var clientMessage = MutableStateFlow("")
+        private set
+
+    var fileProgress = MutableStateFlow<Int?>(null)
+        private set
+
+    var fileIsSaved = MutableStateFlow<Boolean>(false)
         private set
 
     var wifiServerIp = MutableStateFlow("")
@@ -43,28 +55,59 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
     var isServiceBound = MutableStateFlow<Boolean>(false)
         private set
 
+    var isConnecting = MutableStateFlow(false)
+        private set
 
-    private var socketServerService: SocketServerForegroundService? = null
+
+    private var serverForgroundService: SocketServerForegroundService? = null
 
     val socketConnectionListener = object : SocketConnectionListener {
         override fun onStart() {
+            /*
+            * server starts successfully and is ready to accept connections
+            * */
             serverLog("SocketConnectionListener onStart")
-            onEvent(ServerEvent.SetLoading(true))
+            onEvent(ServerEvent.SetLoading(false))
+            onEvent(ServerEvent.SetIsConnecting(false))
         }
 
         override fun onConnected() {
             serverLog("SocketConnectionListener onConnected")
             socketStatus.value = Constants.SocketStatus.CONNECTED
+            onEvent(ServerEvent.SetLoading(false))
+
         }
 
-        override fun onMessage(conn: WebSocket?, message: String?) {
-            serverLog("SocketConnectionListener onMessage:  $message")
-            socketServerService?.sendMessageWithTimeout("message is received by server")
-            onEvent(ServerEvent.SetClientMessage(message ?: ""))
-            createNotificationFromClientMessage(message = message)
+        override fun onMessage(messageContentType: Int?, message: String?) {
+            serverLog("SocketConnectionListener onMessage:  $message", "progressCheck")
+            when (messageContentType) {
+                MESSAGE_TYPE_TEXT_CONTENT -> {
+                    onEvent(ServerEvent.SetClientMessage(message ?: ""))
+                    createNotificationFromClientMessage(message = message)
+                    serverForgroundService?.sendMessageWithTimeout("message is received by server")
+                }
+
+                MESSAGE_TYPE_FILE_CONTENT -> {
+                    serverLog("MESSAGE_TYPE_FILE_CONTENT", "progressCheck")
+                    onEvent(ServerEvent.SetFileIsSaved(true))
+                    emitMessageValue(R.string.file_message_saved)
+                }
+            }
         }
 
-        override fun onDisconnected(code: Int, reason: String?) {
+        override fun onProgressUpdate(progress: Int) {
+            serverLog("SocketConnectionListener onProgressUpdate:  $progress", "progressCheck")
+            fileProgress.value = progress
+            if (progress == 100) {
+                emitMessageValue(R.string.file_message_received)
+                createNotificationFromClientMessage(message = "a file message is received")
+                serverForgroundService?.sendMessageWithTimeout("message is received by server")
+                fileProgress.value = null
+            }
+
+        }
+
+        override fun onDisconnected(code: Int?, reason: String?) {
             serverLog("SocketConnectionListener onDisconnected: $reason")
             emitMessageValue(R.string.disconnected_error_message, reason)
             socketStatus.value = Constants.SocketStatus.DISCONNECTED
@@ -78,12 +121,15 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             *message got error on >=31 ,the socket was connected but onError was called.
             */
             emitMessageValue(R.string.error_message, exception?.message)
+            onEvent(ServerEvent.SetIsConnecting(false))
+
         }
 
         override fun onException(exception: Exception?) {
             serverLog("SocketConnectionListener onException: ${exception?.message}")
             emitMessageValue(R.string.error_message, exception?.message)
             onEvent(ServerEvent.SetLoading(false))
+            onEvent(ServerEvent.SetIsConnecting(false))
         }
 
     }
@@ -92,8 +138,8 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             serverLog("serverConnectionListener onServiceConnected")
             val binder = service as SocketServerForegroundService.LocalBinder
-            socketServerService = binder.getService()
-            socketServerService?.registerConnectionListener(socketConnectionListener)
+            serverForgroundService = binder.getService()
+            serverForgroundService?.registerConnectionListener(socketConnectionListener)
             isServiceBound.value = true
         }
 
@@ -107,10 +153,13 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
+    fun setOpenStoragePermissionDialog(value: Boolean) {
+        openStoragePermissionDialog.value = value
+    }
 
     fun startServerService(context: Context) {
         serverLog("startServerService() ${isServiceBound.value}")
-        if(!isServiceBound.value){
+        if (!isServiceBound.value) {
             try {
                 serverLog("startServerService() try")
                 serviceConnection?.let { connection ->
@@ -143,14 +192,41 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             is ServerEvent.SetClientMessage -> clientMessage.value = event.message
             is ServerEvent.GetWifiIpAddress -> wifiServerIp.value =
                 IpAddressManager.getLocalIpAddress(event.context).first ?: ""
+
             is ServerEvent.GetLanIpAddress -> ethernetServerIp.value =
                 IpAddressManager.getLocalIpAddress(event.context).second ?: ""
+
+            is ServerEvent.SetProtocolType -> {
+                serverLog("SetProtocolType  ${event.type}")
+                //if the selected protocol doesn't differ from previous one, return
+                if (selectedProtocol.value.title == event.type)
+                    return
+                if (event.connectionType == Constants.ConnectionType.NONE) {
+                    emitMessageValue(R.string.set_protocol_error)
+                    return
+                }
+                // before running socket on new selected protocol type , close the previous
+                serverForgroundService?.closeServerSocket()
+                selectedProtocol.value = when (event.type) {
+                    Constants.ProtocolType.TCP.title -> Constants.ProtocolType.TCP
+                    else -> Constants.ProtocolType.WEBSOCKET
+                }
+                serverForgroundService?.startSocketServer(selectedProtocol.value)
+            }
+
+            is ServerEvent.SetIsConnecting -> {
+                serverLog("SetIsConnecting  ${event.isConnecting}")
+                isConnecting.value = event.isConnecting
+            }
+
+            is ServerEvent.SetFileIsSaved -> fileIsSaved.value = event.saved
+
         }
     }
 
     private fun createNotificationFromClientMessage(message: String?) {
         if (!message.isNullOrEmpty())
-            socketServerService?.displayNotification(
+            serverForgroundService?.displayNotification(
                 notificationId = CLIENT_MESSAGE_NOTIFICATION_ID,
                 title = Constants.ActionCode.NotificationMessage.title,
                 message = message,
@@ -173,7 +249,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
     fun performCleanup() {
         serverLog("performCleanup()")
         try {
-            socketServerService?.let {foregroundService->
+            serverForgroundService?.let { foregroundService ->
                 serviceConnection?.let {
                     //stopping the service makes it automatically unbinds all clients that are bound to it
                     foregroundService.stopSelf()

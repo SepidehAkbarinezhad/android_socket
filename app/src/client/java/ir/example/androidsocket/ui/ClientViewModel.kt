@@ -1,21 +1,23 @@
 package ir.example.androidsocket.ui
 
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.viewModelScope
 import com.example.androidSocket.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import ir.example.androidsocket.Constants
-import ir.example.androidsocket.SocketClientForegroundService
+import ir.example.androidsocket.client.SocketClientForegroundService
 import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.ui.base.BaseViewModel
 import ir.example.androidsocket.utils.clientLog
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import org.java_websocket.WebSocket
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
@@ -26,10 +28,16 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     var clientMessage = MutableStateFlow("")
         private set
 
+    var fileUrl: MutableStateFlow<Uri?> = MutableStateFlow(null)
+        private set
+
+    var fileProgress = MutableStateFlow<Int?>(null)
+        private set
+
     var serverMessage = MutableStateFlow("")
         private set
 
-    var waitingForServerConfirmation = MutableStateFlow<Boolean>(false)
+    var waitingForServerConfirmation = MutableStateFlow<Boolean?>(null)
         private set
 
     var serverIp = MutableStateFlow<String>("")
@@ -47,6 +55,9 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     var socketStatus = MutableStateFlow(Constants.SocketStatus.DISCONNECTED)
         private set
 
+    var inConnectionProcess = MutableStateFlow(false)
+        private set
+
     var isServiceBound = MutableStateFlow<Boolean>(false)
         private set
 
@@ -61,38 +72,43 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         }
 
         override fun onConnected() {
-            clientLog(
-                "clientConnectionListener onConnected"
-            )
+            clientLog("clientConnectionListener onConnected","connectionnnn")
             onEvent(ClientEvent.SetLoading(false))
+            onEvent(ClientEvent.SetInConnectionProcess(false))
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.CONNECTED))
         }
 
-        override fun onMessage(conn: WebSocket?, message: String?) {
-            clientLog(
-                "clientConnectionListener onMessage : $message"
-            )
+        override fun onMessage(messageContentType: Int?, message: String?) {
+            clientLog("clientConnectionListener onMessage : $message", "progressCheck")
             onEvent(ClientEvent.SetLoading(false))
+            setWaitingForServer(false)
             onEvent(ClientEvent.SetServerMessage(message ?: ""))
-
         }
 
-        override fun onDisconnected(code: Int, reason: String?) {
+        override fun onProgressUpdate(progress: Int) {
+            clientLog("clientConnectionListener onProgressUpdate : $progress", "progressCheck")
+            setFileProgress(progress)
+            if (fileProgress.value == 100)
+                setFileProgress(null)
+        }
+
+        override fun onDisconnected(code: Int?, reason: String?) {
             clientLog(
-                "clientConnectionListener onDisconnected : $code $reason"
+                "clientConnectionListener onDisconnected : $code $reason","connectionnnn"
             )
             emitMessageValue(R.string.disconnected_error_message, reason)
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
-            onEvent(ClientEvent.SetLoading(false))
-
+            //onEvent(ClientEvent.SetLoading(false))
+            onEvent(ClientEvent.SetInConnectionProcess(false))
         }
 
         override fun onError(exception: Exception?) {
             clientLog(
-                "clientConnectionListener ClientActivity onError  ${exception?.message}"
+                "clientConnectionListener ClientActivity onError  ${exception?.message}","connectionnnn"
             )
             emitMessageValue(R.string.error_message, exception?.message ?: "")
-            onEvent(ClientEvent.SetLoading(false))
+            //onEvent(ClientEvent.SetLoading(false))
+            onEvent(ClientEvent.SetInConnectionProcess(false))
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
         }
 
@@ -100,7 +116,8 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             clientLog(
                 "clientConnectionListener onException() ${exception?.message}"
             )
-            onEvent(ClientEvent.SetLoading(false))
+            // onEvent(ClientEvent.SetLoading(false))
+            onEvent(ClientEvent.SetInConnectionProcess(false))
             emitMessageValue(R.string.error_message, exception?.message ?: "")
         }
     }
@@ -123,10 +140,11 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     fun onEvent(event: ClientEvent) {
         when (event) {
             is ClientEvent.StartClientService -> {
-                if (!isServiceBound.value){
+                if (!isServiceBound.value) {
                     try {
                         serviceConnection?.let { connection ->
-                            val serviceIntent = Intent(event.context, SocketClientForegroundService::class.java)
+                            val serviceIntent =
+                                Intent(event.context, SocketClientForegroundService::class.java)
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                 event.context.startForegroundService(serviceIntent)
                             } else {
@@ -148,51 +166,109 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 }
 
             }
+
             is ClientEvent.SetLoading -> {
                 loading.value = event.value
             }
+
+            is ClientEvent.SetInConnectionProcess -> {
+                clientLog("SetInConnectionProcess-> ${event.value}","connectionnnn")
+
+                inConnectionProcess.value = event.value
+            }
+
             is ClientEvent.SetServerIp -> {
                 serverIp.value = event.ip
             }
+
             is ClientEvent.SetServerPort -> serverPort.value = event.port
-            is ClientEvent.SetSocketConnectionStatus -> socketStatus.value = event.status
+            is ClientEvent.SetSocketConnectionStatus -> {
+                clientLog("ClientEvent.SetSocketConnectionStatus ->  ${event.status}","connectionnnn")
+                socketStatus.value = event.status}
             is ClientEvent.SetClientMessage -> {
                 clientMessage.value = event.message
-            }
-            is ClientEvent.SetServerMessage -> {
-                serverMessage.value = event.message
-                setWaitingForServer(false)
-            }
-            ClientEvent.OnConnectToServer -> {
-                serverIpError.value = serverIp.value.isEmpty()
-                serverPortError.value = serverPort.value.isEmpty()
-
-                if (!serverIpError.value && !serverPortError.value && isServiceBound.value) {
-                    onEvent(ClientEvent.SetLoading(true))
-                    clientForegroundService?.let { service ->
-                        service.setServerAddress(ip = serverIp.value, port = serverPort.value)
-                        service.connectWebSocket()
-                    }
+                if (clientMessage.value.isEmpty()) {
+                    setWaitingForServer(null)
                 }
             }
 
-            ClientEvent.OnDisconnectFromServer -> clientForegroundService?.closeClientSocket()
+            is ClientEvent.SetFileUrl -> {
+                fileUrl.value = event.uri
+            }
+
+            is ClientEvent.SetServerMessage -> {
+                clientLog("ClientEvent.SetServerMessage ${waitingForServerConfirmation.value}")
+                serverMessage.value = event.message
+            }
+            ClientEvent.OnConnectionButtonClicked->{
+                when (socketStatus.value == Constants.SocketStatus.CONNECTED) {
+                    true -> {
+                        clientLog("onDisconnectFromServer","connection")
+                        onDisconnectFromServer()
+                    }
+                    false -> {
+                        clientLog("onConnectToServer","connection")
+                        onConnectToServer()
+                    }
+                }
+            }
             is ClientEvent.SendMessageToServer -> {
-                if(event.message.isNotEmpty()){
-                setWaitingForServer(true)}
-                clientForegroundService?.sendMessageWithTimeout(message = event.message)}
+                clientLog("SocketClientForegroundService SendMessageToServer")
+
+                setWaitingForServer(true)
+                viewModelScope.launch {
+                    delay(1000)
+                    fileUrl.value?.let {
+                        clientLog("SocketClientForegroundService SendMessageToServer 1")
+                        clientForegroundService?.sendFile(it)
+                    } ?: clientForegroundService?.sendMessageWithTimeout(message = event.message)
+                }
+
+            }
+
+            is ClientEvent.SetProtocolType -> selectedProtocol.value = when (event.type) {
+                Constants.ProtocolType.TCP.title -> Constants.ProtocolType.TCP
+                else -> Constants.ProtocolType.WEBSOCKET
+            }
+
+            ClientEvent.ResetClientMessage -> {
+                onEvent(ClientEvent.SetClientMessage(""))
+                onEvent(ClientEvent.SetFileUrl(null))
+                setFileProgress(null)
+            }
         }
     }
 
+    private fun onConnectToServer(){
+        serverIpError.value = serverIp.value.isEmpty()
+        serverPortError.value = serverPort.value.isEmpty()
 
-    private fun setWaitingForServer(waiting : Boolean){
-        waitingForServerConfirmation.value=waiting
+        if (!serverIpError.value && !serverPortError.value && isServiceBound.value) {
+            clientForegroundService?.let { service ->
+                service.connectWebSocket(
+                    selectedProtocol.value,
+                    ip = serverIp.value,
+                    port = serverPort.value
+                )
+            }
+        }
+    }
+    private fun onDisconnectFromServer(){
+        clientLog("onDisconnectFromServer()","connectionnnn")
+        clientForegroundService?.closeClientSocket()
+    }
+    private fun setFileProgress(progress: Int?) {
+        fileProgress.value = progress
+    }
+
+    private fun setWaitingForServer(waiting: Boolean?) {
+        waitingForServerConfirmation.value = waiting
     }
 
     fun performCleanup() {
         clientLog("performCleanup()")
         try {
-            clientForegroundService?.let {foregroundService->
+            clientForegroundService?.let { foregroundService ->
                 serviceConnection?.let { serviceConnection ->
                     //stopping the service makes it automatically unbinds all clients that are bound to it
                     foregroundService.stopSelf()
@@ -206,4 +282,5 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         }
 
     }
+
 }

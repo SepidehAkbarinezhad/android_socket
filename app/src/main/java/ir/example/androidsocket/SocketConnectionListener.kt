@@ -1,12 +1,11 @@
 package ir.example.androidsocket
 
-import org.java_websocket.WebSocket
-
 interface SocketConnectionListener {
     fun onStart()
     fun onConnected()
-    fun onMessage(conn: WebSocket?, message: String?)
-    fun onDisconnected(code: Int, reason: String?)
+    fun onMessage(messageContentType : Int?, message: String?)
+    fun onProgressUpdate(progress : Int)
+    fun onDisconnected(code: Int?, reason: String?)
     fun onError(exception: Exception?)
     fun onException(exception: Exception?)
 }

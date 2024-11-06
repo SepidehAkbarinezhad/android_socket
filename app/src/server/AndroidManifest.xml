@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:label="@string/app_name"
@@ -23,7 +24,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name="ir.example.androidsocket.SocketServerForegroundService"
+            android:name="ir.example.androidsocket.socket.SocketServerForegroundService"
             android:foregroundServiceType="remoteMessaging"
             tools:ignore="ForegroundServicePermission" />
 

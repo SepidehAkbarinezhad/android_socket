@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 
 enum class TextType {
@@ -16,7 +17,7 @@ enum class TextType {
     TEXT2,
     TITLE,
     SUBTITLE,
-    BUTTON
+    BUTTON,
 }
 
 @Composable
@@ -27,23 +28,25 @@ fun AppText(
     textColor: Color = Color.DarkGray,
     textAlign: TextAlign = TextAlign.Center,
     maxLine: Int = 1,
-    fontWeight: FontWeight = FontWeight.Normal
+    fontWeight: FontWeight = FontWeight.Normal,
+    textDecoration: TextDecoration? = null,
+    style: TextStyle = TextStyle()
 ) {
     Text(
         modifier = modifier,
         text = text,
         color = textColor,
-        style = styleText(textType),
+        style = style,
         textAlign = textAlign,
         maxLines = maxLine,
         overflow = TextOverflow.Ellipsis,
-        fontWeight = fontWeight
+        fontWeight = fontWeight,
     )
 }
 
 @Composable
-fun styleText(textType: TextType): TextStyle {
-    return when (textType) {
+fun styleText(textType: TextType, textDecoration: TextDecoration? = null): TextStyle {
+    val baseStyle = when (textType) {
         TextType.HEADER -> MaterialTheme.typography.h5
         TextType.TITLE -> MaterialTheme.typography.h6
         TextType.SUBTITLE -> MaterialTheme.typography.subtitle1
@@ -51,5 +54,9 @@ fun styleText(textType: TextType): TextStyle {
         TextType.TEXT2 -> MaterialTheme.typography.body2
         TextType.BUTTON -> MaterialTheme.typography.button
     }
+
+    return baseStyle.copy(
+        textDecoration = textDecoration // Add the text decoration to the style
+    )
 }
 

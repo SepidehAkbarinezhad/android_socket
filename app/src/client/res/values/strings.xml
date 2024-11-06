@@ -1,14 +1,15 @@
 <resources>
     <string name="app_name">Android Client</string>
 
-    <string name="client_header">Socket Client</string>
+    <string name="client_header">%s Client</string>
     <string name="connect_to_server">connect to server</string>
     <string name="disconnect_from_server">disconnect</string>
     <string name="send_message">send message</string>
+    <string name="send_file">send file</string>
     <string name="message_from_server">server message :</string>
     <string name="message"> message </string>
     <string name="message_empty_error"> message is empty </string>
     <string name="server_confirmation_message"> waiting for server confirmation ... </string>
-    <string name="permission_dialog_message"> notification permission is mandatory to inform the user about the service which is running</string>
+    <string name="notification_permission_reason"> notification permission is mandatory to inform the user about the service which is running</string>
 
 </resources>
