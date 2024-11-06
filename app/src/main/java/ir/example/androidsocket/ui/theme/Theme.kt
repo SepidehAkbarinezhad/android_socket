@@ -8,13 +8,13 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Scaffold
-import androidx.compose.material.ScaffoldState
-import androidx.compose.material.Snackbar
-import androidx.compose.material.SnackbarHost
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Typography
-import androidx.compose.material.rememberScaffoldState
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -67,7 +67,7 @@ private val LightColorScheme = lightColorScheme(
 fun AndroidSocketTheme(
     direction: ProvidedValue<LayoutDirection> = LocalLayoutDirection provides LayoutDirection.Ltr,
     darkTheme: Boolean = isSystemInDarkTheme(),
-    scaffoldState: ScaffoldState = rememberScaffoldState(),
+    scaffoldState: SnackbarHostState = SnackbarHostState(),
     uiEvent: BaseUiEvent,
     onResetScreenMessage: () -> Unit = {},
     displayProgressBar: Boolean? = null,
@@ -93,7 +93,7 @@ fun AndroidSocketTheme(
                                 } else {
                                     context.getString(messageId)
                                 }
-                            scaffoldState.snackbarHostState.showSnackbar(message = messageValue)
+                            scaffoldState.showSnackbar(message = messageValue)
                             onResetScreenMessage()
                         }
                     }
@@ -102,19 +102,20 @@ fun AndroidSocketTheme(
 
                 }
             }
+
             Scaffold(
-                scaffoldState = scaffoldState,
                 snackbarHost = {
+
                     SnackbarHost(
                         modifier = Modifier.padding(WindowInsets.navigationBars.asPaddingValues()),
-                        hostState = it
+                        hostState = scaffoldState
                     ) { data ->
                         CompositionLocalProvider(
                             direction
                         ) {
                             Snackbar(
                                 snackbarData = data,
-                                backgroundColor = androidx.compose.material.MaterialTheme.colors.secondary,
+                                containerColor  = MaterialTheme.colorScheme.tertiary,
                                 contentColor = Color.White
                             )
                         }
