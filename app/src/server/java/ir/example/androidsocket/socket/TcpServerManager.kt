@@ -2,6 +2,7 @@ package ir.example.androidsocket.socket
 
 import android.content.ContentResolver
 import android.content.ContentValues
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -46,7 +47,7 @@ class TcpServerManager(
                 /**
                  * accept is a blocking call. It waits until a client makes a connection request to the server.
                  **/
-                serverLog("startServer: while  ${serverSocket!=null}")
+                serverLog("startServer: while  ${serverSocket != null}")
                 clientSocket = serverSocket!!.accept()
                 serverLog("server connected: ${clientSocket?.inetAddress?.hostAddress}")
                 socketListener.forEach { it.onConnected() }
@@ -56,6 +57,7 @@ class TcpServerManager(
                 * Handle each client in a separate coroutine
                 */
                 CoroutineScope(Dispatchers.IO).launch {
+                    serverLog("Server try::")
                     clientSocket?.let {
                         inputStream = clientSocket?.getInputStream()
                         outputStream = clientSocket?.getOutputStream()
@@ -81,11 +83,12 @@ class TcpServerManager(
                 while (clientSocket.isConnected) {
                     // Read the first byte to determine the message type
                     val messageType = inputStream?.read()?.toByte() ?: break
-                    serverLog("listenToClient messageType : $messageType")
+                    // serverLog("listenToClient messageType : $messageType")
                     when (messageType) {
                         MESSAGE_TYPE_TEXT_CONTENT.toByte() -> {
                             handleTextMessage()
                         }
+
                         MESSAGE_TYPE_FILE_CONTENT.toByte() -> {
                             handleFileMessage()
                         }
@@ -114,7 +117,13 @@ class TcpServerManager(
         if (totalMessageBytesRead == messageSize) {
             val stringMessage = String(messageBuffer, 0, messageSize)
             serverLog("Received complete text message: $stringMessage")
-            socketListener.forEach { it.onMessage(MESSAGE_TYPE_TEXT_CONTENT, stringMessage) }
+            socketListener.forEach {
+                it.onMessage(
+                    MESSAGE_TYPE_TEXT_CONTENT,
+                    message = stringMessage,
+                    fileUri = null
+                )
+            }
         } else {
             serverLog("Failed to read the entire message. Only $totalMessageBytesRead bytes read.")
         }
@@ -134,7 +143,7 @@ class TcpServerManager(
         val fileName = "received_file_${System.currentTimeMillis()}"
         val fileContent = receiveFileContent(fileSize)
         fileContent?.let {
-            saveFileBasedOnVersion(fileName,fileContent,fileType)
+            saveFileBasedOnVersion(fileName, fileContent, fileType)
         }
     }
 
@@ -144,7 +153,9 @@ class TcpServerManager(
             var totalBytesRead = 0
 
             while (totalBytesRead < fileSize) {
-                val bytesRead = inputStream?.read(fileContent, totalBytesRead, fileSize - totalBytesRead) ?: break
+                val bytesRead =
+                    inputStream?.read(fileContent, totalBytesRead, fileSize - totalBytesRead)
+                        ?: break
                 if (bytesRead > 0) {
                     totalBytesRead += bytesRead
                     // Calculate the percentage of file read
@@ -172,23 +183,31 @@ class TcpServerManager(
         }
     }
 
-    private fun saveFileBasedOnVersion(fileName: String, fileContent: ByteArray, fileType : String) {
+    private fun saveFileBasedOnVersion(fileName: String, fileContent: ByteArray, fileType: String) {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val fileUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 // Use MediaStore for Android 10+ (Scoped Storage)
-                saveFileToDownloads(fileName, fileContent,fileType)
+                saveFileToDownloads(fileName, fileContent, fileType)
             } else {
                 // Use external storage for Android 9 and below
                 val file = prepareFileForReceptionInDownloads(fileName)
                 if (file != null) {
                     serverLog("File saved to Downloads: ${file.absolutePath}")
                     file.writeBytes(fileContent) // Write file content to the prepared file
+                    Uri.fromFile(file) // Return the file URI
                 } else {
                     serverLog("Failed to save the file on Android 9 and below.")
+                    null
                 }
             }
-            socketListener.forEach { it.onMessage(MESSAGE_TYPE_FILE_CONTENT,"")}
-        }catch (e:Exception){
+            socketListener.forEach {
+                it.onMessage(
+                    MESSAGE_TYPE_FILE_CONTENT,
+                    "",
+                    fileUri = fileUri
+                )
+            }
+        } catch (e: Exception) {
             serverLog("Error saving received file message: ${e.message}")
             socketListener.forEach { it.onError(e) }
         }
@@ -258,7 +277,11 @@ class TcpServerManager(
         return totalBytesRead
     }
 
-    private fun saveFileToDownloads(fileName: String, fileContent: ByteArray, fileType : String) {
+    private fun saveFileToDownloads(
+        fileName: String,
+        fileContent: ByteArray,
+        fileType: String
+    ): Uri? {
         val fullFileName = "$fileName.$fileType"
         val contentValues = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, fullFileName)
@@ -281,10 +304,12 @@ class TcpServerManager(
                 serverLog("File saved to Downloads: $fileName")
             }
         } ?: serverLog("Failed to save file.")
+        return uri
     }
 
     private fun prepareFileForReceptionInDownloads(fileName: String): File? {
-        val downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val downloadsFolder =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         if (!downloadsFolder.exists()) {
             downloadsFolder.mkdirs() // Create the directory if it doesn't exist
         }

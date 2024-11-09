@@ -13,7 +13,8 @@
     <string name="notification_permission_reason"> notification permission is mandatory to inform the user about the service which is running and about the received message from client when server is in background</string>
     <string name="storage_permission_reason">write external storage permission is mandatory to save received file by server in external storage</string>
     <string name="file_message_received">a file is received by server</string>
-    <string name="file_message_saved">the file is saved in download folder</string>
+    <string name="file_message_saved">file is saved in download folder</string>
+    <string name="file_message_saved_error">No app found to open the folder</string>
 
 
 </resources>

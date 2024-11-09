@@ -1,5 +1,6 @@
 package ir.example.androidsocket.ui.base
 
+import android.content.Intent
 import android.os.Build
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -24,9 +25,9 @@ internal abstract class BaseViewModel() : ViewModel() {
         uiEvent.value = event
     }
 
-    fun emitMessageValue(messageId: Int?, vararg parameters: String? = emptyArray()) {
+    fun emitMessageValue(messageId: Int?, vararg parameters: String? = emptyArray(), openActionIntent : Intent?=null) {
         serverLog("emitMessageValue : $messageId","progressCheck")
-        sendUiEvent(BaseUiEvent.ShowToast(messageId, parameters))
+        sendUiEvent(BaseUiEvent.ShowToast(messageId, parameters,openActionIntent))
     }
 
     fun setOpenNotificationPermissionDialog(value : Boolean){

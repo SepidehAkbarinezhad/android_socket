@@ -239,7 +239,8 @@ class ServerActivity : ComponentActivity() {
         notificationMessageReceiver = NotificationMessageBroadcastReceiver(
             onMessageReceivedAction = {
                 serverLog(message = "notificationReceiver onMessageReceivedAction ")
-                //handle the tasks you want to be done in case of message is sent by client
+                //handle the tasks you want to be done in case of message is sent from client
+
             }
         )
 

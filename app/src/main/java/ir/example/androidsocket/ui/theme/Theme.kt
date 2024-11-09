@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material.Scaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Typography
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -73,8 +75,9 @@ fun AndroidSocketTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
     CompositionLocalProvider(LocalSpacing provides Spacing()) {
-        androidx.compose.material3.MaterialTheme(
+        MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography(),
         ) {
@@ -90,7 +93,13 @@ fun AndroidSocketTheme(
                                 } else {
                                     context.getString(messageId)
                                 }
-                            scaffoldState.showSnackbar(message = messageValue)
+                            val result = scaffoldState.showSnackbar(message = messageValue ,  actionLabel = if(uiEvent.openActionIntent!=null) "Open" else null)
+                            // Check if the "Open" action was clicked
+                            if (result == SnackbarResult.ActionPerformed) {
+                                uiEvent.openActionIntent?.let {
+                                    context.startActivity(uiEvent.openActionIntent)
+                                }
+                            }
                             onResetScreenMessage()
                         }
                     }
@@ -111,8 +120,9 @@ fun AndroidSocketTheme(
                         ) {
                             Snackbar(
                                 snackbarData = data,
-                                containerColor = androidx.compose.material.MaterialTheme.colors.secondary,
-                                contentColor = Color.White
+                                containerColor = MaterialTheme.colorScheme.tertiary,
+                                contentColor = MaterialTheme.colorScheme.primary,
+                                actionColor = MaterialTheme.colorScheme.primary
                             )
                         }
 
@@ -123,7 +133,6 @@ fun AndroidSocketTheme(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(it)
-                        .background(color = androidx.compose.material.MaterialTheme.colors.background)
                 ) {
 
                     AppLayoutDirection(direction, content)

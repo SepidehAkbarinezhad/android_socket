@@ -17,6 +17,7 @@ class ServerManager(
     private lateinit var serverManager: SocketServer
 
     fun startServer() {
+        serverLog("startServer()")
         serverManager = when (socketProtocol) {
             Constants.ProtocolType.WEBSOCKET -> websocketServerManger
             Constants.ProtocolType.TCP -> tcpSocketManager

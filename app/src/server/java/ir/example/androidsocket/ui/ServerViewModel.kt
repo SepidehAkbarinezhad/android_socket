@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import androidx.activity.ComponentActivity
@@ -78,7 +79,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
 
         }
 
-        override fun onMessage(messageContentType: Int?, message: String?) {
+        override fun onMessage(messageContentType: Int?, message: String?, fileUri: Uri?) {
             serverLog("SocketConnectionListener onMessage:  $message", "progressCheck")
             when (messageContentType) {
                 MESSAGE_TYPE_TEXT_CONTENT -> {
@@ -90,7 +91,11 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
                 MESSAGE_TYPE_FILE_CONTENT -> {
                     serverLog("MESSAGE_TYPE_FILE_CONTENT", "progressCheck")
                     onEvent(ServerEvent.SetFileIsSaved(true))
-                    emitMessageValue(R.string.file_message_saved)
+                    emitMessageValue(
+                        R.string.file_message_saved,
+                        parameters = emptyArray(),
+                        openDownloadsFolderIntent(fileUri = fileUri)
+                    )
                 }
             }
         }
@@ -111,7 +116,6 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
             serverLog("SocketConnectionListener onDisconnected: $reason")
             emitMessageValue(R.string.disconnected_error_message, reason)
             socketStatus.value = Constants.SocketStatus.DISCONNECTED
-
         }
 
         override fun onError(exception: Exception?) {
@@ -151,6 +155,14 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
              terminated or crashes.*/
 
         }
+    }
+
+    private fun openDownloadsFolderIntent(fileUri: Uri?): Intent {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = fileUri
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        return intent
     }
 
     fun setOpenStoragePermissionDialog(value: Boolean) {
