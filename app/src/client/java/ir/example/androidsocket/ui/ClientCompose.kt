@@ -655,6 +655,7 @@ fun MessageContainer(
                     }
                 } else if (waitingForServer != null) {
                     if (fileProgress != null) {
+                        //client is sending file
                         CircularProgressIndicator(
                             modifier = Modifier.size(28.dp),
                             progress = animatedProgress / 100,
@@ -662,6 +663,7 @@ fun MessageContainer(
                             trackColor = LightGray
                         )
                     } else {
+                        //client is sending text
                         IconButton(
                             modifier = Modifier,
                             onClick = {
@@ -672,7 +674,7 @@ fun MessageContainer(
                                 modifier = Modifier.size(28.dp),
                                 painter = painterResource(id = R.drawable.seen_icon),
                                 tint = if (waitingForServer == true) LightGray else MaterialTheme.colorScheme.primary,
-                                contentDescription = "send check"
+                                contentDescription = "seen"
                             )
                         }
                     }
@@ -697,7 +699,7 @@ fun MessageContainer(
 
             },
             leadingIcon = {
-                if (clientMessage.isNotEmpty()) {
+                if (clientMessage.isNotEmpty() && waitingForServer == false) {
                     IconButton(
                         onClick = {
                             onEvent(ClientEvent.ResetClientMessage)

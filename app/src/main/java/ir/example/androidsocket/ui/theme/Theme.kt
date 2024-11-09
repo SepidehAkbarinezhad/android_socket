@@ -80,8 +80,13 @@ fun AndroidSocketTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    var isErrorToast by remember {
-        mutableStateOf(false)
+    val isErrorToast by remember(uiEvent) {
+        mutableStateOf(
+            when (uiEvent) {
+                is BaseUiEvent.ShowToast -> uiEvent.openActionIntent == null
+                else -> false
+            }
+        )
     }
 
     CompositionLocalProvider(LocalSpacing provides Spacing()) {
@@ -105,7 +110,6 @@ fun AndroidSocketTheme(
                                 message = messageValue,
                                 actionLabel = if (uiEvent.openActionIntent != null) "Open" else null
                             )
-                            isErrorToast = uiEvent.openActionIntent == null
                             // Check if the "Open" action was clicked
                             if (result == SnackbarResult.ActionPerformed) {
                                 uiEvent.openActionIntent?.let {
@@ -132,7 +136,7 @@ fun AndroidSocketTheme(
                         ) {
                             Snackbar(
                                 snackbarData = data,
-                                containerColor = if(isErrorToast)MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSecondary,
+                                containerColor = if (isErrorToast) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSecondary,
                                 contentColor = Color.White,
                                 actionColor = Color.White
                             )

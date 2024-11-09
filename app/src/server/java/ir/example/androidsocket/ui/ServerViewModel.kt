@@ -96,6 +96,7 @@ internal class ServerViewModel @Inject constructor() : BaseViewModel() {
                         parameters = emptyArray(),
                         openDownloadsFolderIntent(fileUri = fileUri)
                     )
+                    onEvent(ServerEvent.SetClientMessage(""))
                 }
             }
         }
