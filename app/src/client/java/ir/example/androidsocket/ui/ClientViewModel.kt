@@ -78,7 +78,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.CONNECTED))
         }
 
-        override fun onMessage(messageContentType: Int?, message: String?) {
+        override fun onMessage(messageContentType: Int?, message: String?, fileUri: Uri?) {
             clientLog("clientConnectionListener onMessage : $message", "progressCheck")
             onEvent(ClientEvent.SetLoading(false))
             setWaitingForServer(false)

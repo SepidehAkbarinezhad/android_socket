@@ -22,6 +22,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ProvidedValue
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -75,6 +80,9 @@ fun AndroidSocketTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    var isErrorToast by remember {
+        mutableStateOf(false)
+    }
 
     CompositionLocalProvider(LocalSpacing provides Spacing()) {
         MaterialTheme(
@@ -93,7 +101,11 @@ fun AndroidSocketTheme(
                                 } else {
                                     context.getString(messageId)
                                 }
-                            val result = scaffoldState.showSnackbar(message = messageValue ,  actionLabel = if(uiEvent.openActionIntent!=null) "Open" else null)
+                            val result = scaffoldState.showSnackbar(
+                                message = messageValue,
+                                actionLabel = if (uiEvent.openActionIntent != null) "Open" else null
+                            )
+                            isErrorToast = uiEvent.openActionIntent == null
                             // Check if the "Open" action was clicked
                             if (result == SnackbarResult.ActionPerformed) {
                                 uiEvent.openActionIntent?.let {
@@ -120,9 +132,9 @@ fun AndroidSocketTheme(
                         ) {
                             Snackbar(
                                 snackbarData = data,
-                                containerColor = MaterialTheme.colorScheme.tertiary,
-                                contentColor = MaterialTheme.colorScheme.primary,
-                                actionColor = MaterialTheme.colorScheme.primary
+                                containerColor = if(isErrorToast)MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSecondary,
+                                contentColor = Color.White,
+                                actionColor = Color.White
                             )
                         }
 
