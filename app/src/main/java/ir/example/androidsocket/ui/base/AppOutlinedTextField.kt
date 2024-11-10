@@ -47,7 +47,7 @@ fun AppOutlinedTextField(
         backgroundColor = MaterialTheme.colorScheme.surface,
     ),
     keyboardActions: KeyboardActions = KeyboardActions.Default,
-    textStyle: TextStyle = styleText(TextType.TEXT),
+    textStyle: TextStyle ,
     isFocused: Boolean = false,
     hasError: Boolean = false,
     shape: RoundedCornerShape = RoundedCornerShape(MaterialTheme.spacing.extraMedium)
@@ -73,7 +73,7 @@ fun AppOutlinedTextField(
                 } ?: "",
                 textColor = if (hasError) MaterialTheme.colorScheme.error else if (enabled) MaterialTheme.colorScheme.primary else Color.LightGray,
                 fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleSmall
             )
         },
         singleLine = singleLine,
@@ -97,19 +97,3 @@ fun AppOutlinedTextField(
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun AppOutlinedTextFieldPreview() {
-    AppOutlinedTextField(
-        modifier = Modifier
-            .background(Color.White)
-            .padding(24.dp),
-        value = "موبایل",
-        onValueChange = {},
-        hint = "mobileHint",
-        singleLine = false,
-        enabled = true,
-        label = "label"
-
-    )
-}

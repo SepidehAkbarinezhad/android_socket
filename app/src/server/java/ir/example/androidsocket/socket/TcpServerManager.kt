@@ -57,7 +57,6 @@ class TcpServerManager(
                 * Handle each client in a separate coroutine
                 */
                 CoroutineScope(Dispatchers.IO).launch {
-                    serverLog("Server try::")
                     clientSocket?.let {
                         inputStream = clientSocket?.getInputStream()
                         outputStream = clientSocket?.getOutputStream()
@@ -79,7 +78,6 @@ class TcpServerManager(
         serverLog("listenToClient()")
         withContext(Dispatchers.IO) {
             try {
-                serverLog("listenToClient try ")
                 while (clientSocket.isConnected && !clientSocket.isClosed) {
 
                     // Read the first byte to determine the message type
@@ -168,8 +166,6 @@ class TcpServerManager(
 
                     // Call the onProgressUpdate callback with the progress percentage
                     socketListener.forEach { it.onProgressUpdate(progress) }
-
-                    serverLog("Progress: $progress%")
                 } else {
                     break
                 }
@@ -197,7 +193,6 @@ class TcpServerManager(
                 // Use external storage for Android 9 and below
                 val file = prepareFileForReceptionInDownloads(fileName)
                 if (file != null) {
-                    serverLog("File saved to Downloads: ${file.absolutePath}")
                     file.writeBytes(fileContent) // Write file content to the prepared file
                     Uri.fromFile(file) // Return the file URI
                 } else {
@@ -224,7 +219,6 @@ class TcpServerManager(
         return withContext(Dispatchers.IO) {
             val sizeBuffer = ByteArray(4)
             val bytesRead = inputStream?.read(sizeBuffer) ?: return@withContext -1
-            serverLog("readMessageSizeFromStream() bytesRead $bytesRead")
             if (bytesRead == 4) {
                 ByteBuffer.wrap(sizeBuffer).order(ByteOrder.BIG_ENDIAN).int
             } else {
@@ -363,10 +357,9 @@ class TcpServerManager(
     }
 
     override suspend fun sendMessageWithTimeout(message: String, timeoutMillis: Long) {
-        serverLog("sendMessageWithTimeout")
+        serverLog("sendMessageWithTimeout()")
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                clientLog("send-->try")
                 outputStream?.write(message.toByteArray())
                 outputStream?.flush()
             } catch (e: Exception) {

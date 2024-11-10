@@ -71,7 +71,6 @@ class TcpClientManager(
         clientLog("sendMessage() $message")
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                clientLog("send-->try")
                 val outputStream = socket?.getOutputStream()
 
                 // Convert message to byte array
@@ -93,7 +92,7 @@ class TcpClientManager(
                 outputStream?.write(dataToSend)
                 outputStream?.flush()
 
-
+                //when client disconnect
                 if(message=="GOODBYE"){
                     // Close output and input streams
                     outputStream?.close()
@@ -113,20 +112,16 @@ class TcpClientManager(
     override fun sendFile(uri: Uri) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                clientLog("sendFile--> try $uri")
+                clientLog("sendFile $uri")
                 val outputStream = socket?.getOutputStream()
 
                 val mimeType = contentResolver.getType(uri)
-                clientLog("Detected MIME type: $mimeType")
 
                 // Extract the specific type after the "/"
                 val fileType = mimeType?.substringAfter("/") ?: "unknown"
                 clientLog("Extracted file type: $fileType")
                 val fileTypeBytes = fileType.toByteArray(Charsets.UTF_8)
                 val fileTypeLength = fileTypeBytes.size
-                clientLog("sendFile--> Sending file fileTypeLength: $fileTypeLength")
-                clientLog("sendFile--> Sending file fileTypeBytes bytesToHex: ${BytesUtils.bytesToHex(fileTypeBytes)}")
-                clientLog("sendFile--> Sending file hexToString: ${BytesUtils.hexToString(BytesUtils.bytesToHex(fileTypeBytes))}")
 
 
                 /**
@@ -139,8 +134,6 @@ class TcpClientManager(
                         fileDescriptor.statSize // Get the file size directly from the file descriptor
 
                     val messageType = 0x02.toByte()
-
-                    clientLog("sendFile--> write1")
 
                     // Send the file size to the server first
                     clientLog("sendFile--> Sending file size: $fileSize bytes")
@@ -200,14 +193,12 @@ class TcpClientManager(
      *  listen to stream came from server
      *  **/
     private suspend fun listenToServer(clientSocket: Socket) {
-        clientLog("listenToServer")
+        clientLog("listenToServer()")
 
         withContext(Dispatchers.IO) {
 
             try {
-                clientLog("listenToServer try")
                 val buffer = ByteArray(BUFFER_SIZE)
-                clientLog("listenToServer try ${clientSocket.isConnected}")
                 var bytesRead: Int = 0
                 // Read data into the buffer and assign the number of bytes read
                 while (clientSocket.isConnected && inputStream?.read(buffer)
@@ -215,7 +206,6 @@ class TcpClientManager(
                 ) {
                     clientLog("listenToServer while: ${clientSocket.isConnected}")
                     if (bytesRead > 0) {
-                        clientLog("handleClient try bytesRead > 0")
                         val hexMessage = BytesUtils.bytesToHex(buffer.copyOf(bytesRead))
                         val stringMessage = BytesUtils.hexToString(hexMessage)
                         socketListener.forEach { it.onMessage(null,stringMessage) }
@@ -259,7 +249,6 @@ class TcpClientManager(
     override fun onMessage(message: String?) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                clientLog("send-->try")
                 inputStream = socket?.getInputStream()
                 val buffer = ByteArray(BUFFER_SIZE)
                 val bytesRead = inputStream?.read(buffer)

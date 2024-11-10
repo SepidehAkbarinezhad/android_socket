@@ -11,8 +11,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.androidSocket.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import ir.example.androidsocket.Constants
-import ir.example.androidsocket.client.SocketClientForegroundService
 import ir.example.androidsocket.SocketConnectionListener
+import ir.example.androidsocket.client.SocketClientForegroundService
 import ir.example.androidsocket.ui.base.BaseViewModel
 import ir.example.androidsocket.utils.clientLog
 import kotlinx.coroutines.delay
@@ -75,7 +75,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         }
 
         override fun onConnected() {
-            clientLog("clientConnectionListener onConnected", "connectionnnn")
+            clientLog("clientConnectionListener onConnected")
             onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetInConnectionProcess(false))
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.CONNECTED))
@@ -83,14 +83,14 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         }
 
         override fun onMessage(messageContentType: Int?, message: String?, fileUri: Uri?) {
-            clientLog("clientConnectionListener onMessage : $message", "progressCheck")
+            clientLog("clientConnectionListener onMessage : $message")
             onEvent(ClientEvent.SetLoading(false))
             setWaitingForServer(false)
             onEvent(ClientEvent.SetServerMessage(message ?: ""))
         }
 
         override fun onProgressUpdate(progress: Int) {
-            clientLog("clientConnectionListener onProgressUpdate : $progress", "progressCheck")
+            clientLog("clientConnectionListener onProgressUpdate : $progress")
             setFileProgress(progress)
             if (fileProgress.value == 100)
                 setFileProgress(null)
@@ -98,11 +98,10 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
 
         override fun onDisconnected(code: Int?, reason: String?) {
             clientLog(
-                "clientConnectionListener onDisconnected : $code $reason", "connectionnnn"
+                "clientConnectionListener onDisconnected : $code $reason"
             )
             emitMessageValue(R.string.disconnected_error_message, reason)
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
-            //onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetInConnectionProcess(false))
             onEvent(ClientEvent.SetOnConnectedButtonClicked(false))
         }
@@ -110,7 +109,6 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         override fun onError(exception: Exception?) {
             clientLog("clientConnectionListener ClientActivity onError  ${exception?.message}" )
             emitMessageValue(R.string.error_message, exception?.message ?: "")
-            //onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetInConnectionProcess(false))
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
             onEvent(ClientEvent.SetOnConnectedButtonClicked(false))
@@ -120,7 +118,6 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             clientLog(
                 "clientConnectionListener onException() ${exception?.message}"
             )
-            // onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetInConnectionProcess(false))
             emitMessageValue(R.string.error_message, exception?.message ?: "")
             onEvent(ClientEvent.SetOnConnectedButtonClicked(false))
@@ -177,7 +174,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             }
 
             is ClientEvent.SetInConnectionProcess -> {
-                clientLog("SetInConnectionProcess-> ${event.value}", "connectionnnn")
+                clientLog("SetInConnectionProcess-> ${event.value}")
 
                 inConnectionProcess.value = event.value
             }
@@ -189,9 +186,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             is ClientEvent.SetServerPort -> serverPort.value = event.port
             is ClientEvent.SetSocketConnectionStatus -> {
                 clientLog(
-                    "ClientEvent.SetSocketConnectionStatus ->  ${event.status}",
-                    "connectionnnn"
-                )
+                    "ClientEvent.SetSocketConnectionStatus ->  ${event.status}")
                 socketStatus.value = event.status
             }
 
@@ -214,12 +209,12 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             ClientEvent.OnConnectionButtonClicked -> {
                 when (socketStatus.value == Constants.SocketStatus.CONNECTED) {
                     true -> {
-                        clientLog("onDisconnectFromServer", "connection")
+                        clientLog("onDisconnectFromServer")
                         onDisconnectFromServer()
                     }
 
                     false -> {
-                        clientLog("onConnectToServer", "connection")
+                        clientLog("onConnectToServer")
                         onConnectToServer()
                     }
                 }
@@ -232,7 +227,6 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 viewModelScope.launch {
                     delay(1000)
                     fileUrl.value?.let {
-                        clientLog("SocketClientForegroundService SendMessageToServer 1")
                         clientForegroundService?.sendFile(it)
                     } ?: clientForegroundService?.sendMessageWithTimeout(message = event.message)
                 }
@@ -284,10 +278,8 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         clientLog("performCleanup()")
         try {
             clientForegroundService?.let { foregroundService ->
-                clientLog("performCleanup() foregroundService ->")
                 onDisconnectFromServer()
                 serviceConnection?.let { _ ->
-                    clientLog("performCleanup() foregroundService ->>>>")
                     //stopping the service makes it automatically unbinds all clients that are bound to it
                     foregroundService.stopSelf()
                     isServiceBound.value = false

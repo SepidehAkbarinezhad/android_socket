@@ -156,8 +156,7 @@ internal fun ClientCompose(
         inConnectionProcess = inConnectionProcess,
         onConnectionButtonClicked = {
             clientLog(
-                "if (!inConnectionProcess)  $socketIsConnected  ${socketStatus.title}",
-                "connectionnnn"
+                "if (!inConnectionProcess)  $socketIsConnected  ${socketStatus.title}"
             )
             onEvent(ClientEvent.OnConnectionButtonClicked)
             keyboardController?.hide()
@@ -245,7 +244,7 @@ fun ClientContent(
                         .weight(.3f)
                         .fillMaxWidth()
                         .padding(MaterialTheme.spacing.small),
-                    socketStatus = socketStatus,
+                    selectedProtocol = selectedProtocol,
                     clientMessage = clientMessage,
                     fileProgress = fileProgress,
                     waitingForServer = waitingForServer,
@@ -295,8 +294,7 @@ fun PowerButtonBody(
     onPowerButtonClicked: () -> Unit
 ) {
     clientLog(
-        "PowerButtonBody  socketIsConnected:$socketIsConnected  ${socketStatus.title}",
-        "connectionnnn"
+        "PowerButtonBody  socketIsConnected:$socketIsConnected  ${socketStatus.title}"
     )
     var isAnimating by remember { mutableStateOf(false) }
     var circleCenter by remember { mutableStateOf(Offset(0f, 0f)) }
@@ -582,7 +580,7 @@ fun ServerInfoForm(
 @Composable
 fun MessageContainer(
     modifier: Modifier,
-    socketStatus: Constants.SocketStatus,
+    selectedProtocol: Constants.ProtocolType,
     clientMessage: String,
     fileProgress: Int?,
     waitingForServer: Boolean?,
@@ -590,8 +588,8 @@ fun MessageContainer(
     onEvent: (ClientEvent) -> Unit
 ) {
 
-    val attachVisibility by remember(clientMessage, waitingForServer) {
-        derivedStateOf { clientMessage.isEmpty() }
+    val attachVisibility by remember(clientMessage, waitingForServer, selectedProtocol) {
+        derivedStateOf { selectedProtocol.title == Constants.ProtocolType.TCP.title && clientMessage.isEmpty() }
     }
     val animatedProgress by animateFloatAsState(
         targetValue = fileProgress?.toFloat() ?: 0f,
