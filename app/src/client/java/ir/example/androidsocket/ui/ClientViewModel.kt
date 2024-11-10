@@ -269,7 +269,8 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         clientLog("performCleanup()")
         try {
             clientForegroundService?.let { foregroundService ->
-                serviceConnection?.let { serviceConnection ->
+                onDisconnectFromServer()
+                serviceConnection?.let { _ ->
                     //stopping the service makes it automatically unbinds all clients that are bound to it
                     foregroundService.stopSelf()
                     isServiceBound.value = false
