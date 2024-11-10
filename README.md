@@ -9,7 +9,6 @@ The Android Socket Project is a robust Android application that enables real-tim
 - File Transfer Capability: Supports file exchange by allowing clients to send files to the server, which automatically saves them in the download folder for easy access.
 - Real-Time Notifications: Displays incoming messages as notifications whenever the server receives messages from clients, keeping users informed of real-time interactions.
 - Modern Android Stack: Utilizes Jetpack Compose for UI development and is fully implemented in Kotlin.
-- BroadcastReceiver Integration: Utilizes BroadcastReceiver to respond to specific system or app events, enhancing responsiveness to connectivity and other real-time changes.
 
 ###  demo
 <img src="/android_socket.gif" width="500"  height="560"/>
