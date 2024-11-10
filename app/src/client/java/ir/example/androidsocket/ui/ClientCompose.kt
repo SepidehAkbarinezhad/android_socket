@@ -97,6 +97,7 @@ internal fun ClientCompose(
     val serverPort by viewModel.serverPort.collectAsState()
     val serverPortError by viewModel.serverPortError.collectAsState()
     val socketStatus by viewModel.socketStatus.collectAsState()
+    val onConnectedClicked by viewModel.onConnectedClicked.collectAsState()
     val socketIsConnected by remember(socketStatus) {
         mutableStateOf(socketStatus == Constants.SocketStatus.CONNECTED)
     }
@@ -147,11 +148,10 @@ internal fun ClientCompose(
         serverPort = serverPort,
         serverPortError = serverPortError,
         clientMessage = clientMessage,
-        fileUrl = fileUrl?.toString() ?: "",
         fileProgress = fileProgress,
-        serverMessage = serverMessage,
         waitingForServer = waitingForServerConfirmation,
         socketStatus = socketStatus,
+        onConnectedClicked = onConnectedClicked,
         socketIsConnected = socketIsConnected,
         inConnectionProcess = inConnectionProcess,
         onConnectionButtonClicked = {
@@ -170,7 +170,6 @@ internal fun ClientCompose(
             onEvent(ClientEvent.SendMessageToServer(message))
 
         },
-        onAttachFileEvent = { onAttachFile() }
     )
 
 }
@@ -184,16 +183,14 @@ fun ClientContent(
     serverPort: String,
     serverPortError: Boolean,
     clientMessage: String,
-    fileUrl: String,
     fileProgress: Int?,
-    serverMessage: String,
     waitingForServer: Boolean?,
     socketStatus: Constants.SocketStatus,
+    onConnectedClicked: Boolean,
     socketIsConnected: Boolean,
     inConnectionProcess: Boolean,
     onConnectionButtonClicked: () -> Unit,
     onSendMessageEvent: (String) -> Unit,
-    onAttachFileEvent: () -> Unit,
 ) {
 
     var expanded by remember { mutableStateOf(false) }
@@ -222,6 +219,7 @@ fun ClientContent(
                 modifier = Modifier.weight(.3f),
                 socketStatus = socketStatus,
                 socketIsConnected = socketIsConnected,
+                onConnectedClicked = onConnectedClicked,
                 onPowerButtonClicked = onConnectionButtonClicked,
                 inConnectionProcess = inConnectionProcess,
                 serverAddress = if (serverIp.isNotEmpty() && serverPort.isNotEmpty() && socketIsConnected) "$serverIp : $serverPort" else "",
@@ -288,6 +286,7 @@ fun ClientContent(
 fun PowerButtonBody(
     modifier: Modifier,
     socketStatus: Constants.SocketStatus,
+    onConnectedClicked: Boolean,
     socketIsConnected: Boolean,
     inConnectionProcess: Boolean,
     serverAddress: String,
@@ -314,7 +313,6 @@ fun PowerButtonBody(
     val coroutineScope = rememberCoroutineScope()
     val currentScale = powerButtonTargetScale.value
     val alpha = (1 - currentScale / 1.5f).coerceIn(0f, 1f)
-    var onConnectedClicked by remember { mutableStateOf(false) }
 
     fun animateCircle() {
         isAnimating = true
@@ -342,18 +340,14 @@ fun PowerButtonBody(
         }
     }
     LaunchedEffect(onConnectedClicked) {
-        if(onConnectedClicked){
-            if (formIsFilled &&  !socketIsConnected) {
+        if (onConnectedClicked) {
+            if (formIsFilled && !socketIsConnected) {
                 animateCircle()
                 onEvent(ClientEvent.SetInConnectionProcess(true))
             }
             onPowerButtonClicked()
         }
 
-    }
-    LaunchedEffect(socketIsConnected) {
-        //whenever socket status changed set it false
-        onConnectedClicked = false
     }
 
     LaunchedEffect(inConnectionProcess) {
@@ -395,7 +389,7 @@ fun PowerButtonBody(
                                 val distanceFromCenter = (offset - circleCenter).getDistance()
                                 if (distanceFromCenter <= powerContainerCircleRadius) {
                                     if (!inConnectionProcess) {
-                                        onConnectedClicked = true
+                                        onEvent(ClientEvent.SetOnConnectedButtonClicked(true))
                                     }
                                 }
                             }
@@ -563,7 +557,7 @@ fun ServerInfoForm(
             label = stringResource(id = R.string.ip_label),
             hasError = serverIpError,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyLarge
+            textStyle = MaterialTheme.typography.bodySmall
         )
 
         AppOutlinedTextField(
@@ -578,7 +572,7 @@ fun ServerInfoForm(
             label = stringResource(id = R.string.port_label),
             hasError = serverPortError,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyLarge
+            textStyle = MaterialTheme.typography.bodySmall
         )
     }
 
@@ -638,6 +632,7 @@ fun MessageContainer(
             },
             singleLine = true,
             label = stringResource(id = R.string.message),
+            textStyle = MaterialTheme.typography.bodySmall,
             trailingIcon = {
 
                 if (attachVisibility) {

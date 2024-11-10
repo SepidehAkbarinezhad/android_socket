@@ -55,6 +55,9 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
     var socketStatus = MutableStateFlow(Constants.SocketStatus.DISCONNECTED)
         private set
 
+    var onConnectedClicked = MutableStateFlow(false)
+        private set
+
     var inConnectionProcess = MutableStateFlow(false)
         private set
 
@@ -72,10 +75,11 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         }
 
         override fun onConnected() {
-            clientLog("clientConnectionListener onConnected","connectionnnn")
+            clientLog("clientConnectionListener onConnected", "connectionnnn")
             onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetInConnectionProcess(false))
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.CONNECTED))
+            onEvent(ClientEvent.SetOnConnectedButtonClicked(false))
         }
 
         override fun onMessage(messageContentType: Int?, message: String?, fileUri: Uri?) {
@@ -94,22 +98,22 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
 
         override fun onDisconnected(code: Int?, reason: String?) {
             clientLog(
-                "clientConnectionListener onDisconnected : $code $reason","connectionnnn"
+                "clientConnectionListener onDisconnected : $code $reason", "connectionnnn"
             )
             emitMessageValue(R.string.disconnected_error_message, reason)
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
             //onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetInConnectionProcess(false))
+            onEvent(ClientEvent.SetOnConnectedButtonClicked(false))
         }
 
         override fun onError(exception: Exception?) {
-            clientLog(
-                "clientConnectionListener ClientActivity onError  ${exception?.message}","connectionnnn"
-            )
+            clientLog("clientConnectionListener ClientActivity onError  ${exception?.message}" )
             emitMessageValue(R.string.error_message, exception?.message ?: "")
             //onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetInConnectionProcess(false))
             onEvent(ClientEvent.SetSocketConnectionStatus(Constants.SocketStatus.DISCONNECTED))
+            onEvent(ClientEvent.SetOnConnectedButtonClicked(false))
         }
 
         override fun onException(exception: Exception?) {
@@ -119,6 +123,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             // onEvent(ClientEvent.SetLoading(false))
             onEvent(ClientEvent.SetInConnectionProcess(false))
             emitMessageValue(R.string.error_message, exception?.message ?: "")
+            onEvent(ClientEvent.SetOnConnectedButtonClicked(false))
         }
     }
     private var serviceConnection: ServiceConnection? = object : ServiceConnection {
@@ -172,7 +177,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             }
 
             is ClientEvent.SetInConnectionProcess -> {
-                clientLog("SetInConnectionProcess-> ${event.value}","connectionnnn")
+                clientLog("SetInConnectionProcess-> ${event.value}", "connectionnnn")
 
                 inConnectionProcess.value = event.value
             }
@@ -183,8 +188,13 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
 
             is ClientEvent.SetServerPort -> serverPort.value = event.port
             is ClientEvent.SetSocketConnectionStatus -> {
-                clientLog("ClientEvent.SetSocketConnectionStatus ->  ${event.status}","connectionnnn")
-                socketStatus.value = event.status}
+                clientLog(
+                    "ClientEvent.SetSocketConnectionStatus ->  ${event.status}",
+                    "connectionnnn"
+                )
+                socketStatus.value = event.status
+            }
+
             is ClientEvent.SetClientMessage -> {
                 clientMessage.value = event.message
                 if (clientMessage.value.isEmpty()) {
@@ -200,18 +210,21 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
                 clientLog("ClientEvent.SetServerMessage ${waitingForServerConfirmation.value}")
                 serverMessage.value = event.message
             }
-            ClientEvent.OnConnectionButtonClicked->{
+
+            ClientEvent.OnConnectionButtonClicked -> {
                 when (socketStatus.value == Constants.SocketStatus.CONNECTED) {
                     true -> {
-                        clientLog("onDisconnectFromServer","connection")
+                        clientLog("onDisconnectFromServer", "connection")
                         onDisconnectFromServer()
                     }
+
                     false -> {
-                        clientLog("onConnectToServer","connection")
+                        clientLog("onConnectToServer", "connection")
                         onConnectToServer()
                     }
                 }
             }
+            is ClientEvent.SetOnConnectedButtonClicked ->{ onConnectedClicked.value = event.value}
             is ClientEvent.SendMessageToServer -> {
                 clientLog("SocketClientForegroundService SendMessageToServer")
 
@@ -239,7 +252,7 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
-    private fun onConnectToServer(){
+    private fun onConnectToServer() {
         serverIpError.value = serverIp.value.isEmpty()
         serverPortError.value = serverPort.value.isEmpty()
 
@@ -253,10 +266,12 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
             }
         }
     }
-    private fun onDisconnectFromServer(){
-        clientLog("onDisconnectFromServer()","connectionnnn")
+
+    private fun onDisconnectFromServer() {
+        clientLog("onDisconnectFromServer()")
         clientForegroundService?.closeClientSocket()
     }
+
     private fun setFileProgress(progress: Int?) {
         fileProgress.value = progress
     }
@@ -269,8 +284,10 @@ internal class ClientViewModel @Inject constructor() : BaseViewModel() {
         clientLog("performCleanup()")
         try {
             clientForegroundService?.let { foregroundService ->
+                clientLog("performCleanup() foregroundService ->")
                 onDisconnectFromServer()
                 serviceConnection?.let { _ ->
+                    clientLog("performCleanup() foregroundService ->>>>")
                     //stopping the service makes it automatically unbinds all clients that are bound to it
                     foregroundService.stopSelf()
                     isServiceBound.value = false

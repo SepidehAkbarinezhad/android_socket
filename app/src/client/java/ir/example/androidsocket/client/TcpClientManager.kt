@@ -4,6 +4,7 @@ package ir.example.androidsocket.client
 import android.content.ContentResolver
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import ir.example.androidsocket.Constants.MessageConstantType.MESSAGE_TYPE_TEXT_CONTENT
 import ir.example.androidsocket.SocketConnectionListener
 import ir.example.androidsocket.utils.BytesUtils
 import ir.example.androidsocket.utils.clientLog
@@ -57,7 +58,6 @@ class TcpClientManager(
                     }
                 }
 
-
             } catch (e: IOException) {
                 clientLog("connectWithTimeout IOException--> ${e.message}")
                 socketListener.forEach { it.onException(e) }
@@ -68,7 +68,7 @@ class TcpClientManager(
         }
 
     override fun sendMessage(message: String, timeoutMillis: Long) {
-        clientLog("sendMessage()")
+        clientLog("sendMessage() $message")
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 clientLog("send-->try")
@@ -81,7 +81,7 @@ class TcpClientManager(
                 val messageSizeBytes = ByteBuffer.allocate(4).putInt(messageBytes.size).array()
 
                 // Message type as a single byte (for example, 0x01 for text message)
-                val messageType = 0x01.toByte()
+                val messageType = MESSAGE_TYPE_TEXT_CONTENT.toByte()
 
                 // Combine everything into one array
                 val dataToSend = ByteArray(1 + 4 + messageBytes.size)
@@ -92,6 +92,17 @@ class TcpClientManager(
                 // Write the combined array to the output stream
                 outputStream?.write(dataToSend)
                 outputStream?.flush()
+
+
+                if(message=="GOODBYE"){
+                    // Close output and input streams
+                    outputStream?.close()
+                    inputStream?.close()
+
+                    // Close the socket
+                    socket?.close()
+                    clientLog("Socket closed successfully.")
+                }
 
             } catch (e: Exception) {
                 clientLog("send--> catch ${e.message}")
@@ -230,18 +241,14 @@ class TcpClientManager(
      * **/
     private fun closeClient() {
         clientLog("closeClient")
-        socket?.let { client ->
-            socketListener.forEach {
-                it.onDisconnected(
-                    code = null,
-                    reason = "client : ${client.inetAddress?.hostAddress} is disconnected"
-                )
+        socket?.let {
+            try {
+                // Notify the server of disconnection
+                sendMessage("GOODBYE", timeoutMillis = 50000)
+            } catch (e: IOException) {
+                clientLog("Error while closing client: ${e.message}")
             }
-            inputStream?.close()
-            outputStream?.close()
-            client.close()
         }
-
     }
 
     override fun disconnect() {

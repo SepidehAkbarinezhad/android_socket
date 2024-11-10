@@ -2,7 +2,7 @@
 
     <string name="permission_dialog_title"> permission is required </string>
     <string name="cancel_label">cancel</string>
-    <string name="disconnected_error_message">disconnected : %s</string>
+    <string name="disconnected_error_message">disconnect : %s</string>
     <string name="error_message">error : %s</string>
     <string name="socket_status_title">connection status:</string>
     <string name="ip_label">ip </string>

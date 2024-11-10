@@ -17,5 +17,6 @@ sealed class ClientEvent {
     data class SetServerMessage(val message: String) : ClientEvent()
     data class SendMessageToServer(val message: String) : ClientEvent()
     data object OnConnectionButtonClicked : ClientEvent()
+    data class SetOnConnectedButtonClicked(val value: Boolean) : ClientEvent()
     data object ResetClientMessage : ClientEvent()
 }

@@ -79,8 +79,9 @@ class TcpServerManager(
         serverLog("listenToClient()")
         withContext(Dispatchers.IO) {
             try {
-                serverLog("listenToClient try")
-                while (clientSocket.isConnected) {
+                serverLog("listenToClient try ")
+                while (clientSocket.isConnected && !clientSocket.isClosed) {
+
                     // Read the first byte to determine the message type
                     val messageType = inputStream?.read()?.toByte() ?: break
                     // serverLog("listenToClient messageType : $messageType")
@@ -117,12 +118,16 @@ class TcpServerManager(
         if (totalMessageBytesRead == messageSize) {
             val stringMessage = String(messageBuffer, 0, messageSize)
             serverLog("Received complete text message: $stringMessage")
-            socketListener.forEach {
-                it.onMessage(
-                    MESSAGE_TYPE_TEXT_CONTENT,
-                    message = stringMessage,
-                    fileUri = null
-                )
+            if(stringMessage=="GOODBYE"){
+                closeClient()
+            }else{
+                socketListener.forEach {
+                    it.onMessage(
+                        MESSAGE_TYPE_TEXT_CONTENT,
+                        message = stringMessage,
+                        fileUri = null
+                    )
+                }
             }
         } else {
             serverLog("Failed to read the entire message. Only $totalMessageBytesRead bytes read.")
@@ -328,7 +333,7 @@ class TcpServerManager(
             socketListener.forEach {
                 it.onDisconnected(
                     code = null,
-                    reason = "client : ${client.inetAddress?.hostAddress} is disconnected"
+                    reason = " ${client.inetAddress?.hostAddress} is disconnected"
                 )
             }
             inputStream?.close()
